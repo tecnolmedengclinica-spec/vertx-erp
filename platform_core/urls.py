@@ -5,7 +5,17 @@ from . import saas_views
 
 app_name = 'platform_core'
 urlpatterns = [path('', views.home, name='home'), path('organizacao/', views.select_organization, name='select_organization')]
-urlpatterns += [path('empresa/',company.configuration,name='empresa'),path('empresa/modulos/',company.configuration,{'kind':'modulos'},name='modulos'),path('empresa/permissoes/',company.configuration,{'kind':'permissao'},name='permissoes'),path('empresa/filiais/nova/',company.configuration,{'kind':'filial'},name='filial_nova'),path('empresa/filiais/<uuid:public_id>/',company.configuration,{'kind':'filial'},name='filial_editar')]
+urlpatterns += [
+    path('empresa/', company.configuration, name='empresa'),
+    path('empresa/plano/', company.meu_plano, name='meu_plano'),
+    path('empresa/plano/gerar-pix/', company.gerar_cobranca_pix_view, name='gerar_pix'),
+    path('empresa/plano/simular/<int:cobranca_id>/', company.simular_pagamento_cobranca, name='simular_pagamento'),
+    path('saas/webhook/asaas/', company.webhook_asaas_saas, name='webhook_asaas'),
+    path('empresa/modulos/', company.configuration, {'kind': 'modulos'}, name='modulos'),
+    path('empresa/permissoes/', company.configuration, {'kind': 'permissao'}, name='permissoes'),
+    path('empresa/filiais/nova/', company.configuration, {'kind': 'filial'}, name='filial_nova'),
+    path('empresa/filiais/<uuid:public_id>/', company.configuration, {'kind': 'filial'}, name='filial_editar')
+]
 urlpatterns += [
     path('saas/manifest.webmanifest', saas_views.manifest, name='saas_manifest'),
     path('saas/sw.js', saas_views.service_worker, name='saas_sw'),
@@ -19,6 +29,7 @@ urlpatterns += [
     path('saas/clientes/novo/plano/', saas_views.novo_cliente, {'step': 2}, name='saas_new_client_step2'),
     path('saas/clientes/<uuid:public_id>/', saas_views.cliente_detalhe, name='saas_client_detail'),
     path('saas/clientes/<uuid:public_id>/editar/', saas_views.editar_cliente, name='saas_client_edit'),
+    path('saas/clientes/<uuid:public_id>/modulos/', saas_views.modulos_cliente, name='saas_client_modules'),
     path('saas/clientes/<uuid:public_id>/plano/', saas_views.alterar_plano_cliente, name='saas_client_change_plan'),
     path('saas/clientes/<uuid:public_id>/status/<str:action>/', saas_views.status_cliente, name='saas_client_status'),
     path('saas/clientes/<uuid:public_id>/compartilhar-acesso/', saas_views.compartilhar_acesso, name='saas_share_access'),

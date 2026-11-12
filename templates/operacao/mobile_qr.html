@@ -1,1 +1,103 @@
-{% extends 'base.html' %}{% load static %}{% block content %}<main class="container"><h1>Identificar equipamento</h1><p>Use o QR do equipamento ou informe o código UUID. A ficha continua sujeita às permissões da organização.</p><form id="qr-manual" class="card card-body my-3"><label for="qr-code">Código UUID ou URL do QR</label><input class="form-control" id="qr-code" autocomplete="off" required><button class="btn btn-primary my-3">Abrir ficha autorizada</button></form><button class="btn btn-outline-primary" id="qr-camera" type="button">Ativar câmera para ler QR</button><button class="btn btn-outline-secondary" id="qr-stop" type="button">Parar câmera</button><video id="qr-video" class="w-100 mt-3" playsinline muted aria-label="Prévia da câmera para leitura de QR"></video><p id="qr-status" role="status">A câmera só é solicitada ao tocar em Ativar. Há alternativa manual.</p></main><script src="{% static 'mobile-qr.js' %}" defer></script>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leitor de QR Code · Vertyx Mobile{% endblock %}
+
+{% block content %}
+<main class="container py-4" style="max-width: 680px;">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="vx-indicator-dot" style="background-color: var(--vx-brand);"></span>
+        <span class="vx-section-title">OPERAÇÃO DE CAMPO</span>
+      </div>
+      <h1 class="h3 text-white mb-0">Identificação de Equipamento</h1>
+    </div>
+    <a href="{% url 'operacao:tecnico' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card p-4 mb-4 border-0" style="background: var(--vx-surface); border: 1px solid var(--vx-border) !important; border-radius: var(--vx-radius);">
+    <!-- Viewfinder Container -->
+    <div class="position-relative overflow-hidden rounded-3 mb-3" style="background: #020617; min-height: 280px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.08);">
+      <div id="qr-reader" style="width: 100%;"></div>
+      <video id="qr-video" class="w-100" playsinline muted aria-label="Prévia da câmera" style="display: none; max-height: 360px; object-fit: cover;"></video>
+
+      <!-- Viewfinder Overlay (Animated) -->
+      <div id="qr-overlay" class="position-absolute w-100 h-100 top-0 start-0 d-flex flex-column align-items-center justify-content-center pointer-events-none" style="display: none !important;">
+        <div style="width: 220px; height: 220px; position: relative; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); border-radius: 12px;">
+          <!-- Corner brackets -->
+          <div style="position: absolute; top: -2px; left: -2px; width: 28px; height: 28px; border-top: 4px solid var(--vx-brand); border-left: 4px solid var(--vx-brand); border-top-left-radius: 8px;"></div>
+          <div style="position: absolute; top: -2px; right: -2px; width: 28px; height: 28px; border-top: 4px solid var(--vx-brand); border-right: 4px solid var(--vx-brand); border-top-right-radius: 8px;"></div>
+          <div style="position: absolute; bottom: -2px; left: -2px; width: 28px; height: 28px; border-bottom: 4px solid var(--vx-brand); border-left: 4px solid var(--vx-brand); border-bottom-left-radius: 8px;"></div>
+          <div style="position: absolute; bottom: -2px; right: -2px; width: 28px; height: 28px; border-bottom: 4px solid var(--vx-brand); border-right: 4px solid var(--vx-brand); border-bottom-right-radius: 8px;"></div>
+          <!-- Animated scanning laser -->
+          <div class="scanner-laser" style="position: absolute; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--vx-brand), #38bdf8, transparent); box-shadow: 0 0 8px var(--vx-brand); animation: laserScan 2s infinite ease-in-out;"></div>
+        </div>
+      </div>
+
+      <div id="camera-placeholder" class="text-center p-4">
+        <i class="bi bi-camera-video fs-1 text-muted d-block mb-2"></i>
+        <p class="text-muted small mb-0">Toque abaixo para ligar a câmera do celular e escanear a etiqueta do equipamento.</p>
+      </div>
+    </div>
+
+    <!-- Scanner Action Controls -->
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <button class="btn btn-primary flex-grow-1" id="qr-camera" type="button">
+        <i class="bi bi-camera-fill me-1"></i> Iniciar Câmera
+      </button>
+      <button class="btn btn-outline-secondary" id="qr-stop" type="button" style="display: none;">
+        <i class="bi bi-stop-circle me-1"></i> Parar Câmera
+      </button>
+    </div>
+
+    <div id="qr-status" class="alert alert-secondary py-2 px-3 small mb-0 text-center" role="status">
+      Aponte a câmera para o QR Code colado no equipamento para abrir o prontuário.
+    </div>
+  </div>
+
+  <!-- Manual Entry Card -->
+  <div class="card p-4 border-0" style="background: var(--vx-surface); border: 1px solid var(--vx-border) !important; border-radius: var(--vx-radius);">
+    <h2 class="h5 text-white mb-2">
+      <i class="bi bi-keyboard me-2 text-muted"></i> Busca Manual
+    </h2>
+    <p class="small text-muted mb-3">Caso a etiqueta esteja ilegível ou o aparelho não possua câmera, informe o código UUID ou cole o link do QR.</p>
+
+    <form id="qr-manual" class="d-flex flex-column gap-3">
+      <div>
+        <label for="qr-code" class="form-label small text-muted fw-semibold">Código UUID ou URL do Equipamento</label>
+        <div class="input-group">
+          <span class="input-group-text bg-dark border-secondary border-opacity-25 text-muted">
+            <i class="bi bi-qr-code"></i>
+          </span>
+          <input class="form-control bg-dark border-secondary border-opacity-25 text-white" id="qr-code" placeholder="Ex: 8f4c2c54-1b32-4e42-b9cf-938221c5f32a" autocomplete="off" required>
+        </div>
+      </div>
+      <button class="btn btn-outline-primary" type="submit">
+        <i class="bi bi-search me-1"></i> Abrir Prontuário do Equipamento
+      </button>
+    </form>
+  </div>
+</main>
+
+<style>
+@keyframes laserScan {
+  0% { top: 4px; opacity: 0.8; }
+  50% { top: calc(100% - 6px); opacity: 1; }
+  100% { top: 4px; opacity: 0.8; }
+}
+#qr-reader video {
+  border-radius: 8px !important;
+  max-height: 340px !important;
+  object-fit: cover !important;
+}
+#qr-reader__scan_region {
+  background: transparent !important;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="{% static 'mobile-qr.js' %}?v=pwa-2" defer></script>
+{% endblock %}

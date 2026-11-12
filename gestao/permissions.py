@@ -13,8 +13,14 @@ ROLES = {
 
 
 def allowed(user, permission):
-    from platform_core.modules import has_capability
-    return has_capability(user, permission, ROLES.get(permission,()))
+    from platform_core.modules import has_capability, product_module_enabled, current_organization
+    if not has_capability(user, permission, ROLES.get(permission, ())):
+        return False
+    if permission in {'financeiro', 'financeiro_escrever'}:
+        org = current_organization()
+        if org and not product_module_enabled(user, 'assistencia', 'financeiro_basico', org):
+            return False
+    return True
 
 
 def require(user, permission):

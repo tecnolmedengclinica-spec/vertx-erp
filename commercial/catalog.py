@@ -33,7 +33,7 @@ DEFAULT_RESOURCES = {
 } | {key: 'FUTURO' for key in FUTURE_FEATURES}
 DEFAULT_PLANS = [
     {'slug':'basico','nome':'Básico','preco':'149.00','descricao':'Para organizar o dia a dia e dar o próximo passo.','ordem':10},
-    {'slug':'profissional','nome':'Profissional','preco':'249.00','descricao':'Para conectar a equipe e acompanhar toda a operação.','destaque':True,'ordem':20},
+    {'slug':'profissional','nome':'Profissional','preco':'249.00','descricao':'Para conectar a equipe e acompanhar toda a operação.','destaque':False,'ordem':20},
     {'slug':'empresarial','nome':'Empresarial','preco':'399.00','descricao':'Para empresas com uma operação mais ampla.','ordem':30},
     {'slug':'personalizado','nome':'Personalizado','preco':None,'descricao':'Uma proposta alinhada às necessidades da sua empresa.','ordem':40},
 ]

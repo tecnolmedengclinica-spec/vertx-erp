@@ -3,6 +3,7 @@
 {% block title %}Cliente{% endblock %}
 {% block content %}
 <h3 class="mb-3">{% if object %}Editar cliente{% else %}Novo cliente{% endif %}</h3>
+<div class="small text-muted mb-3"><i class="bi bi-info-circle text-primary me-1"></i> Os campos marcados com asterisco (<span class="text-danger">*</span>) são de preenchimento obrigatório.</div>
 
 <form method="post">
   {% csrf_token %}{{ form.errors }}
@@ -10,19 +11,19 @@
     <div class="card-header">Dados gerais</div>
     <div class="card-body row g-3"><div class="col-md-4"><label class="form-label" for="{{ form.inscricao_estadual.id_for_label }}">{{ form.inscricao_estadual.label }}</label>{{ form.inscricao_estadual|add_class:"form-control" }}{{ form.inscricao_estadual.errors }}</div><div class="col-md-4"><label class="form-label" for="{{ form.inscricao_municipal.id_for_label }}">{{ form.inscricao_municipal.label }}</label>{{ form.inscricao_municipal|add_class:"form-control" }}{{ form.inscricao_municipal.errors }}</div><div class="col-md-4"><label class="form-label" for="{{ form.responsavel.id_for_label }}">{{ form.responsavel.label }}</label>{{ form.responsavel|add_class:"form-control" }}{{ form.responsavel.errors }}</div>
       <div class="col-md-3">
-        <label class="form-label">Tipo</label>
+        <label class="form-label" for="{{ form.tipo_pessoa.id_for_label }}">Tipo <span class="text-danger" title="Campo obrigatório">*</span></label>
         {{ form.tipo_pessoa|add_class:"form-select" }}
       </div>
       <div class="col-md-5">
-        <label class="form-label">Nome / Razão social</label>
+        <label class="form-label" for="{{ form.nome_razao_social.id_for_label }}">Nome / Razão social <span class="text-danger" title="Campo obrigatório">*</span></label>
         {{ form.nome_razao_social|add_class:"form-control" }}
       </div>
       <div class="col-md-4">
-        <label class="form-label">Nome fantasia</label>
+        <label class="form-label" for="{{ form.nome_fantasia.id_for_label }}">Nome fantasia</label>
         {{ form.nome_fantasia|add_class:"form-control" }}
       </div>
       <div class="col-md-3">
-        <label class="form-label">CPF/CNPJ</label>
+        <label class="form-label" for="{{ form.cpf_cnpj.id_for_label }}">CPF/CNPJ <span class="text-danger" title="Campo obrigatório">*</span></label>
         {{ form.cpf_cnpj|add_class:"form-control" }}
       </div>
       <div class="col-md-3">

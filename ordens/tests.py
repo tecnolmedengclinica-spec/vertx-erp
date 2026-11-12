@@ -18,7 +18,7 @@ from .forms import GeoForm, AssinaturaForm, FotoForm
 from .models import OrdemServico, Status, Assinatura, Auditoria, Foto, Conferencia
 from .views import token_conferencia
 from platform_core.context import tenant_context
-from platform_core.models import Organization, OrganizationMembership, MembershipERP, ERPCatalog
+from platform_core.models import Organization, OrganizationERP, OrganizationMembership, MembershipERP, ERPCatalog
 
 
 def png(blank=False):
@@ -33,7 +33,11 @@ def png(blank=False):
 class AtendimentoTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.organization = Organization.objects.get(slug='tecnolmed')
+        cls.organization, _ = Organization.objects.get_or_create(
+            slug='tecnolmed', defaults={'razao_social': 'Organização sintética de teste'},
+        )
+        erp, _ = ERPCatalog.objects.get_or_create(code='assistencia', defaults={'name': 'ERP Assistência'})
+        OrganizationERP.objects.get_or_create(organization=cls.organization, erp=erp)
         with tenant_context(cls.organization):
             cls.create_legacy_fixtures()
 

@@ -1,2 +1,130 @@
-{% extends 'commercial/base.html' %}{% block title %}Solicitar demonstração — VERTYX{% endblock %}{% block content %}<section class="section demo-section"><div class="container demo-grid"><aside class="demo-intro"><span class="eyebrow">CONHEÇA O VERTYX</span><h1>Vamos falar sobre<br>a sua operação?</h1><p>Uma conversa para entender sua empresa e apresentar o que a plataforma pode fazer por ela.</p><ol class="demo-steps"><li><span>01</span><div><h2>Conte seu momento</h2><p>O que você precisa organizar hoje?</p></div></li><li><span>02</span><div><h2>Conheça a plataforma</h2><p>Veja os módulos e a experiência da equipe.</p></div></li><li><span>03</span><div><h2>Defina seu próximo passo</h2><p>Escopo e condições em uma proposta clara.</p></div></li></ol><div class="no-charge"><svg><use href="#i-shield"></use></svg><p>Sem pagamento nesta etapa.<br>Seu interesse não gera uma contratação.</p></div></aside>
-<div class="demo-form-card"><div class="form-heading"><h2>Solicitar demonstração</h2><p>Campos com * são obrigatórios.</p></div><form method="post" action="{% url 'commercial:demo' %}" class="demo-form">{% csrf_token %}{{ form.token }}{{ form.website }}{% if form.token.errors %}<div class="form-alert" role="alert">Recarregue a página antes de enviar sua solicitação.</div>{% endif %}{% if form.non_field_errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}<div class="form-grid">{% for field in form.visible_fields %}{% if field.name != 'consentimento' %}<div class="form-field{% if field.name == 'mensagem' or field.name == 'plano' %} full-width{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span>*</span>{% endif %}</label>{{ field }}{% if field.errors %}<div class="field-errors" id="{{ field.name }}-errors" role="alert">{{ field.errors }}</div>{% endif %}</div>{% endif %}{% endfor %}</div><label class="consent">{{ form.consentimento }}<span>Autorizo o contato sobre esta solicitação e li as <a href="{% url 'commercial:privacy' %}" target="_blank" rel="noopener">informações de privacidade</a>.</span></label>{% if form.consentimento.errors %}<div class="field-errors" id="consentimento-errors" role="alert">{{ form.consentimento.errors }}</div>{% endif %}<button class="button button-primary" type="submit">Enviar solicitação <svg><use href="#i-arrow"></use></svg></button><p class="form-fineprint">Seus dados serão usados para tratar esta solicitação. Nenhuma conta, pagamento ou assinatura será criado.</p></form></div></div></section>{% endblock %}
+{% extends 'commercial/base.html' %}
+{% load static %}
+
+{% block title %}Solicitar Demonstração Gratuita — VERTYX{% endblock %}
+
+{% block content %}
+<canvas id="vx-ambient-canvas" class="vx-ambient-canvas" aria-hidden="true"></canvas>
+
+<section class="section demo-section position-relative">
+  <div class="container demo-grid" style="position: relative; z-index: 2;">
+
+    <!-- Left Column: Value Prop & Steps -->
+    <aside class="demo-intro">
+      <span class="eyebrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1" style="vertical-align: -2px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        CONHEÇA O VERTYX NA PRÁTICA
+      </span>
+
+      <h1>Vamos falar sobre<br>a sua operação?</h1>
+      <p class="demo-subtitle">
+        Uma conversa personalizada com especialistas para entender as necessidades da sua empresa e demonstrar como o VERTYX unifica assistência, vendas, estoque e finanças.
+      </p>
+
+      <ol class="demo-steps">
+        <li>
+          <span>01</span>
+          <div>
+            <h2>Diagnóstico do seu momento</h2>
+            <p>Mapeamos os fluxos da sua equipe, gargalos de atendimento e necessidades de controle.</p>
+          </div>
+        </li>
+        <li>
+          <span>02</span>
+          <div>
+            <h2>Apresentação guiada e interativa</h2>
+            <p>Veja os módulos e a rotina do ERP em ação com cenários práticos da sua área.</p>
+          </div>
+        </li>
+        <li>
+          <span>03</span>
+          <div>
+            <h2>Proposta transparente sob medida</h2>
+            <p>Escopo exato, estimativa de implantação e o plano ideal com previsibilidade total.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="no-charge">
+        <svg aria-hidden="true"><use href="#i-shield"></use></svg>
+        <div>
+          <strong>100% Gratuito e sem compromisso</strong>
+          <p>Sua solicitação é exclusiva para apresentação comercial. Nenhuma assinatura ou cobrança será realizada nesta etapa.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Column: Demo Request Form -->
+    <div class="demo-form-card shadow-lg">
+      <div class="form-heading">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <h2>Solicitar demonstração</h2>
+          <span class="pill" style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase;">
+            <span class="status-dot"></span> Resposta rápida
+          </span>
+        </div>
+        <p>Preencha os dados abaixo e entraremos em contato rapidamente.</p>
+      </div>
+
+      <form method="post" action="{% url 'commercial:demo' %}" class="demo-form" autocomplete="on">
+        {% csrf_token %}
+        {{ form.token }}
+        {{ form.website }}
+
+        {% if form.token.errors %}
+          <div class="form-alert" role="alert">Recarregue a página antes de enviar sua solicitação.</div>
+        {% endif %}
+        {% if form.non_field_errors %}
+          <div class="form-alert" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-grid">
+          {% for field in form.visible_fields %}
+            {% if field.name != 'consentimento' %}
+              <div class="form-field{% if field.name == 'mensagem' or field.name == 'plano' %} full-width{% endif %}">
+                <label for="{{ field.id_for_label }}">
+                  {{ field.label }}{% if field.field.required %} <span class="required-star">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.errors %}
+                  <div class="field-errors" id="{{ field.name }}-errors" role="alert">{{ field.errors }}</div>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <label class="consent">
+          {{ form.consentimento }}
+          <span>Autorizo o contato comercial e li as <a href="{% url 'commercial:privacy' %}" target="_blank" rel="noopener">informações de privacidade</a>.</span>
+        </label>
+        {% if form.consentimento.errors %}
+          <div class="field-errors" id="consentimento-errors" role="alert">{{ form.consentimento.errors }}</div>
+        {% endif %}
+
+        <button class="button button-primary demo-submit-btn" type="submit">
+          <span>Agendar Demonstração Gratuita</span>
+          <svg aria-hidden="true"><use href="#i-arrow"></use></svg>
+        </button>
+
+        <div class="demo-trust-badges">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Dados protegidos
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Retorno em até 24h
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Sem cartão
+          </span>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

@@ -80,10 +80,14 @@ def produto_validar(row, crt, date):
             raise ValidationError(label+kind.upper()+' CST não suportado.')
         if tax[kind+'_codigo'] == '01' and kind+'_aliquota' not in tax:
             raise ValidationError(label+'falta '+kind.upper()+' alíquota.')
-    if tax['rtc_aplicavel'] is not False:
-        # The evolving IBS/CBS/IS branches require current XSD/NT and accountant rules.
+    if tax['rtc_aplicavel'] is True:
+        rtc_cfg = tax.get('rtc')
+        required_rtc = {'cst', 'c_class_trib', 'aliquota_cbs', 'aliquota_ibs_uf', 'aliquota_ibs_mun'}
+        if not isinstance(rtc_cfg, dict) or not required_rtc.issubset(rtc_cfg.keys()):
+            raise ValidationError(label+'IBS/CBS/IS aplicáveis: informe configuração explícita de CBS/IBS em rtc.')
+    elif tax['rtc_aplicavel'] is not False:
         raise ValidationError(label+'IBS/CBS/IS aplicáveis: leiaute/regra RTC ainda pendente; emissão bloqueada.')
-    if crt not in ('1','4') or date.year >= 2027:
+    elif crt not in ('1','4') or date.year >= 2027:
         raise ValidationError(label+'dispensa RTC não habilitada para este CRT/data; revisão normativa necessária.')
     for field in ['quantidade','valor_unitario','liquido']:
         decimal(row[field], 3 if field == 'quantidade' else 2)

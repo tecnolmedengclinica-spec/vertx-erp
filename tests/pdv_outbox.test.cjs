@@ -28,11 +28,27 @@ test('monetary values are handled in integer cents',()=>{const ctx={document:{ge
 
 test('form action controls do not break submit; only logout or tenant switch lock identity',async()=>{
   let submit;const locks=[];
-  const ctx={navigator:{},window:{isSecureContext:false},location:{pathname:'/pdv/vendas/synthetic/'},addEventListener(){},document:{addEventListener(name,handler){if(name==='submit')submit=handler;}},PDVOutbox:{state:{async put(key,value){locks.push([key,value]);}}}};
+  const ctx={navigator:{},window:{isSecureContext:false},location:{pathname:'/pdv/vendas/synthetic/'},addEventListener(){},document:{documentElement:{setAttribute(){}},addEventListener(name,handler){if(name==='submit')submit=handler;}},PDVOutbox:{state:{async put(key,value){locks.push([key,value]);}}}};
   vm.createContext(ctx);vm.runInContext(fs.readFileSync('static/js/vertyx.js','utf8'),ctx);
   let prevented=0,resubmitted=0;
   const event=action=>({target:{action:{name:'action',value:'editar'},dataset:{},getAttribute:()=>action,requestSubmit(){resubmitted++;}},preventDefault(){prevented++;}});
   await submit(event(null));assert.equal(prevented,0);assert.equal(locks.length,0);
   for(const path of ['/contas/logout/','/vertyx/organizacao/']){const e=event(path);await submit(e);assert.equal(e.target.dataset.pdvIdentityLocked,'true');await submit(e);}
   assert.equal(prevented,2);assert.equal(resubmitted,2);assert.deepEqual(locks,[['active',null],['active',null]]);
+});
+
+test('theme changes preserve the selected preference and notify the existing UI',()=>{
+  const attrs=new Map(),prefs=new Map([['vertyx_theme','light']]),events=[];
+  const ctx={navigator:{},addEventListener(){},window:{dispatchEvent(e){events.push(e);}},
+    localStorage:{getItem:key=>prefs.get(key),setItem:(key,value)=>prefs.set(key,value)},
+    CustomEvent:class {constructor(type,options){this.type=type;this.detail=options.detail;}},
+    document:{documentElement:{setAttribute:(key,value)=>attrs.set(key,value),getAttribute:key=>attrs.get(key)},
+      addEventListener(){},querySelectorAll:()=>[]}};
+  vm.createContext(ctx);vm.runInContext(fs.readFileSync('static/js/vertyx.js','utf8'),ctx);
+  assert.equal(attrs.get('data-theme'),'light');
+  ctx.window.toggleVertyxTheme();
+  assert.equal(attrs.get('data-theme'),'dark');
+  assert.equal(prefs.get('vertyx_theme'),'dark');
+  assert.equal(events.at(-1).type,'vertyxThemeChanged');
+  assert.equal(events.at(-1).detail.theme,'dark');
 });

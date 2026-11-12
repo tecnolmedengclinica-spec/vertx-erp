@@ -339,6 +339,13 @@ def public_module_available(organization, module_code):
     ).first()
     if not product or module is None:
         return False
+    from platform_core.modules import platform_module_override
+    from platform_core.saas_models import AjusteModuloSaaS
+    override = platform_module_override(organization, module_code)
+    if override == AjusteModuloSaaS.Modo.DENY:
+        return False
+    if override == AjusteModuloSaaS.Modo.ALLOW:
+        return True
     if ModuloOrganizacao.objects.filter(organization=organization, codigo=module_code, habilitado=False).exists():
         return False
     today = timezone.localdate()

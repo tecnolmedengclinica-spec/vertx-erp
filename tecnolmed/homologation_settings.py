@@ -21,6 +21,10 @@ TEMPLATES = deepcopy(TEMPLATES)
 TEMPLATES[0]['OPTIONS']['context_processors'].append('platform_core.uploads.upload_context')
 
 EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
+EXTERNAL_EMAIL_ENABLED = False
+EXTERNAL_BANKING_ENABLED = False
+EXTERNAL_FISCAL_ENABLED = False
+FISCAL_NFCE_SEFAZ_APPROVED = False
 FISCAL_SIMULATION_ENABLED = False
 FISCAL_NFCE_LOCAL_ENABLED = False
 SESSION_COOKIE_NAME = 'vertyx_homologacao_sessionid'

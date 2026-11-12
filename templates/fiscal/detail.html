@@ -3,7 +3,14 @@
 {% block content %}
 <div class="alert alert-warning"><strong>SIMULAÇÃO — SEM VALOR FISCAL</strong><br>Autorização/rejeição desta tela são respostas do simulador local, sem consulta ou transmissão oficial.</div>
 <h1>{{ doc }}</h1><p>{{ doc.estabelecimento }} · {{ doc.get_ambiente_display }} · modelo {{ doc.modelo }} · série {{ doc.serie }}</p>
-<p><strong>Estado simulado: {{ doc.get_status_display }}</strong> · R$ {{ doc.valor|floatformat:2 }}</p><p>Identificador simulado: {{ doc.chave|default:'Ainda não confirmado' }}</p>
+<p><strong>Estado: {{ doc.get_status_display }}</strong> · R$ {{ doc.valor|floatformat:2 }}</p><p>Identificador / Chave: {{ doc.chave|default:'Ainda não confirmado' }}</p>
+{% if doc.tipo == 'NFSE' %}
+<div class="my-3">
+  <a class="btn btn-outline-info" href="{% url 'operacao:nfse_danfse' doc.pk %}" target="_blank">
+    <i class="bi bi-file-earmark-pdf"></i> Visualizar DANFSE Nacional (PDF)
+  </a>
+</div>
+{% endif %}
 {% if doc.status == 'RASCUNHO' %}<form method="post" action="{% url 'operacao:fiscal_simulacao_solicitar' doc.pk 'EMITIR' %}">{% csrf_token %}{{ solicitacao_form.as_p }}<button class="btn btn-primary">Solicitar e executar simulação</button></form>{% endif %}
 {% if doc.status == 'AUTORIZADA' %}<form method="post" action="{% url 'operacao:fiscal_simulacao_solicitar' doc.pk 'CANCELAR' %}">{% csrf_token %}{{ cancelamento_form.as_p }}<button class="btn btn-outline-danger">Simular cancelamento</button></form>{% endif %}
 <h2 class="mt-4">Solicitações e tentativas</h2>{% for req in requests %}<article class="card p-3 mb-3"><p>{{ req.request_id }} · {{ req.operacao }} · <strong>{{ req.estado }}</strong></p><ul>{% for tentativa in req.tentativas.all %}<li>{{ tentativa.criado_em }} · {{ tentativa.resultado }}</li>{% endfor %}</ul>{% if req.estado != 'CONCLUIDA' %}<form method="post" action="{% url 'operacao:fiscal_simulacao_reconciliar' req.pk %}">{% csrf_token %}<button class="btn btn-outline-primary">Consultar / reconciliar a mesma solicitação</button></form>{% endif %}</article>{% empty %}<p>Nenhuma solicitação.</p>{% endfor %}

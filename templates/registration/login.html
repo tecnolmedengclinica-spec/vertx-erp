@@ -1,30 +1,85 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}
-{% block title %}Entrar{% endblock %}
+{% load static widget_tweaks %}
+{% block title %}Entrar · VERTYX ERP{% endblock %}
 {% block content %}
-<div class="row justify-content-center mt-5">
-  <div class="col-md-4">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h4 class="card-title mb-3 text-center">VERTYX</h4>
-        <form method="post">
+<canvas id="vx-ambient-canvas" class="vx-ambient-canvas" aria-hidden="true"></canvas>
+
+<div class="d-flex align-items-center justify-content-center py-4" style="min-height: calc(100vh - 120px); position: relative; z-index: 10;">
+  <div class="col-12 col-sm-10 col-md-7 col-lg-5 col-xl-4 px-2" style="max-width: 440px;">
+    <div class="card vx-login-card border-0 shadow-lg">
+      <div class="card-header text-center pt-4 pb-3 border-0 bg-transparent">
+        <a href="{% url 'commercial:home' %}" class="d-inline-block text-decoration-none" title="Página Inicial">
+          <img src="{% static 'img/vertyx-logo-white.png' %}" alt="VERTYX" height="40" class="mb-2 vx-logo-dark">
+          <img src="{% static 'img/vertyx-logo.png' %}" alt="VERTYX" height="40" class="mb-2 vx-logo-light">
+        </a>
+        <div class="small text-muted fw-medium">Acesso Corporativo Seguro · Multi-Tenant</div>
+      </div>
+      <div class="card-body px-4 py-3">
+        {% if form.errors %}
+          <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-octagon-fill text-danger fs-6 flex-shrink-0"></i>
+            <span>Usuário ou senha inválidos. Verifique suas credenciais.</span>
+          </div>
+        {% endif %}
+        <form method="post" novalidate>
           {% csrf_token %}
-          {% if form.errors %}
-            <div class="alert alert-danger">Usuário ou senha inválidos.</div>
-          {% endif %}
           <div class="mb-3">
-            <label class="form-label">E-mail ou usuário</label>
-            {{ form.username|add_class:"form-control" }}
+            <label for="id_username" class="form-label small fw-semibold text-muted mb-1">E-mail ou Usuário</label>
+            <div class="input-group">
+              <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-person"></i></span>
+              {{ form.username|add_class:"form-control form-control-lg fs-6 border-start-0 ps-0" }}
+            </div>
           </div>
           <div class="mb-3">
-            <label class="form-label">Senha</label>
-            {{ form.password|add_class:"form-control" }}
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label for="id_password" class="form-label small fw-semibold text-muted mb-0">Senha de Acesso</label>
+            </div>
+            <div class="input-group">
+              <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+              {{ form.password|add_class:"form-control form-control-lg fs-6 border-start-0 border-end-0 ps-0" }}
+              <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePasswordBtn" aria-label="Mostrar ou ocultar senha" onclick="togglePasswordVisibility()">
+                <i class="bi bi-eye text-muted" id="togglePasswordIcon"></i>
+              </button>
+            </div>
           </div>
-          <button type="submit" class="btn btn-primary w-100">Entrar</button>
+          <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-primary btn-lg fs-6 fw-semibold py-2 d-flex align-items-center justify-content-center gap-2">
+              <span>Entrar na Plataforma</span>
+              <i class="bi bi-arrow-right"></i>
+            </button>
+          </div>
           <input type="hidden" name="next" value="{{ next }}">
         </form>
+
+        <div class="text-center mt-4 pt-3 border-top border-secondary border-opacity-10">
+          <p class="small text-muted mb-2">Ainda não tem conta corporativa?</p>
+          <a href="{% url 'commercial:pricing' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold">
+            Conhecer planos e assinar
+          </a>
+        </div>
+      </div>
+      <div class="card-footer text-center py-3 border-0 small text-muted bg-transparent">
+        <i class="bi bi-shield-check text-success me-1"></i> Isolamento de Dados por Tenant · Vertyx Cloud
       </div>
     </div>
   </div>
 </div>
+
+<script src="{% static 'js/ambient-background.js' %}" defer></script>
+<script>
+  function togglePasswordVisibility() {
+    const pwdInput = document.getElementById('id_password');
+    const icon = document.getElementById('togglePasswordIcon');
+    if (!pwdInput) return;
+    if (pwdInput.type === 'password') {
+      pwdInput.type = 'text';
+      icon.classList.remove('bi-eye');
+      icon.classList.add('bi-eye-slash');
+    } else {
+      pwdInput.type = 'password';
+      icon.classList.remove('bi-eye-slash');
+      icon.classList.add('bi-eye');
+    }
+  }
+</script>
 {% endblock %}

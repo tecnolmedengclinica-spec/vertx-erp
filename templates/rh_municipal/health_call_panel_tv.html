@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Chamadas Hospitalares · VERTYX Saúde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=JetBrains+Mono:wght@700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #050811;
+      --bg-surface: #0b1120;
+      --bg-card: rgba(15, 23, 42, 0.85);
+      --border-subtle: rgba(56, 189, 248, 0.15);
+      --border-active: rgba(56, 189, 248, 0.6);
+      --glow-cyan: rgba(56, 189, 248, 0.35);
+
+      /* Manchester Triage Colors */
+      --m-red: #ef4444;
+      --m-orange: #f97316;
+      --m-yellow: #eab308;
+      --m-green: #22c55e;
+      --m-blue: #3b82f6;
+
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Fundo Tecnológico Clínico Suave */
+    body {
+      background: radial-gradient(circle at 50% 15%, #111d35 0%, var(--bg-void) 85%);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 1. HEADER INSTITUCIONAL */
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 3rem;
+      background: rgba(11, 17, 32, 0.9);
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(20px);
+    }
+
+    .header-entity {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .gov-coat {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #1e3a8a, #0284c7);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.4rem;
+      color: #fff;
+      box-shadow: 0 0 25px rgba(2, 132, 199, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .entity-titles h1 {
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .entity-titles h1 span {
+      font-size: 0.75rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .entity-titles p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .header-telemetry {
+      display: flex;
+      align-items: center;
+      gap: 2.5rem;
+    }
+
+    .telemetry-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .telemetry-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .telemetry-val {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .clock-display {
+      font-family: var(--font-mono);
+      font-size: 2.1rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .clock-date {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* 2. ÁREA CENTRAL DE EXIBIÇÃO */
+    main {
+      position: relative;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: 1.85fr 1fr;
+      gap: 2.25rem;
+      padding: 2.25rem 3rem;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* HERO CALL BOX (LADO ESQUERDO) */
+    .hero-call-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-subtle);
+      border-radius: 28px;
+      padding: 2.75rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      backdrop-filter: blur(25px);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    .hero-call-card.calling-pulse {
+      border-color: #38bdf8;
+      box-shadow: 0 0 80px rgba(56, 189, 248, 0.45);
+      animation: alertPulse 1.8s infinite alternate;
+    }
+
+    @keyframes alertPulse {
+      0% { box-shadow: 0 0 35px rgba(56, 189, 248, 0.3); border-color: rgba(56, 189, 248, 0.6); }
+      100% { box-shadow: 0 0 95px rgba(56, 189, 248, 0.7); border-color: #38bdf8; }
+    }
+
+    /* Banner Manchester */
+    .triage-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(234, 179, 8, 0.12);
+      border: 1px solid rgba(234, 179, 8, 0.35);
+      color: var(--m-yellow);
+      padding: 0.85rem 1.75rem;
+      border-radius: 16px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .triage-strip.red {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: var(--m-red);
+    }
+    .triage-strip.yellow {
+      background: rgba(234, 179, 8, 0.15);
+      border-color: rgba(234, 179, 8, 0.5);
+      color: var(--m-yellow);
+    }
+    .triage-strip.green {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: rgba(34, 197, 94, 0.5);
+      color: var(--m-green);
+    }
+    .triage-strip.blue {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.5);
+      color: var(--m-blue);
+    }
+
+    .triage-live-tag {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+    }
+
+    .live-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 12px currentColor;
+      animation: blinkDot 1s infinite alternate;
+    }
+    @keyframes blinkDot {
+      from { opacity: 0.4; }
+      to { opacity: 1; }
+    }
+
+    /* Bloco da Senha Monumental */
+    .ticket-center {
+      text-align: center;
+      padding: 1.5rem 0;
+    }
+
+    .ticket-label {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .ticket-number {
+      font-family: var(--font-mono);
+      font-size: 7.2rem;
+      font-weight: 900;
+      letter-spacing: -3px;
+      color: #fff;
+      line-height: 1;
+      text-shadow: 0 0 60px rgba(56, 189, 248, 0.4);
+    }
+
+    .patient-name-box {
+      margin-top: 1.25rem;
+      font-family: var(--font-display);
+      font-size: 2.6rem;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+    }
+
+    /* Detalhes de Destino (Consultório & Médico) */
+    .destination-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      background: rgba(11, 17, 32, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.75rem 2rem;
+      border-radius: 20px;
+    }
+
+    .dest-column h4 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 0.4rem;
+    }
+
+    .dest-column strong {
+      font-family: var(--font-display);
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: #fff;
+      display: block;
+      line-height: 1.1;
+    }
+
+    .dest-column span {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-top: 0.35rem;
+      display: block;
+    }
+
+    /* COLUNA LATERAL DIREITA: PRÓXIMOS E HISTÓRICO */
+    .side-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .side-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      min-height: 0;
+    }
+
+    .side-card.grow { flex: 1.3; }
+    .side-card.history { flex: 0.9; }
+
+    .side-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      margin-bottom: 1rem;
+    }
+
+    .side-header h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .badge-count {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      font-size: 0.8rem;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    /* Lista de Espera */
+    .queue-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      overflow-y: auto;
+    }
+
+    .queue-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 0.9rem 1.25rem;
+      transition: all 0.2s ease;
+    }
+
+    .queue-row:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .queue-info-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .queue-pill {
+      font-family: var(--font-mono);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .queue-name-block {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .queue-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+
+    .queue-type {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .queue-triage-tag {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tag-yellow { background: rgba(234, 179, 8, 0.2); color: #fbbf24; border: 1px solid rgba(234, 179, 8, 0.4); }
+    .tag-green { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .tag-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .tag-red { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    /* Histórico de Chamadas */
+    .history-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+
+    .history-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.88rem;
+    }
+
+    .history-row strong {
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      color: #94a3b8;
+    }
+
+    .history-row span {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .history-row small {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* 3. FOOTER / MARQUEE DE NOTÍCIAS E CAMPANHAS */
+    footer {
+      position: relative;
+      z-index: 10;
+      background: #020617;
+      border-top: 1px solid var(--border-subtle);
+      padding: 0.85rem 3rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      overflow: hidden;
+    }
+
+    .footer-badge {
+      background: #0284c7;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.35rem 0.85rem;
+      border-radius: 8px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .ticker-wrap {
+      flex: 1;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .ticker-content {
+      display: inline-block;
+      padding-left: 100%;
+      animation: ticker 42s linear infinite;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .ticker-content span {
+      margin-right: 4rem;
+    }
+    .ticker-content strong {
+      color: #38bdf8;
+    }
+
+    @keyframes ticker {
+      0% { transform: translate3d(0, 0, 0); }
+      100% { transform: translate3d(-100%, 0, 0); }
+    }
+
+    /* Onda Sonora Visual */
+    .sound-wave {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 24px;
+      margin-top: 10px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .hero-call-card.calling-pulse .sound-wave {
+      opacity: 1;
+    }
+    .sound-bar {
+      width: 4px;
+      height: 100%;
+      background: #38bdf8;
+      border-radius: 99px;
+      animation: soundWave 0.8s ease-in-out infinite alternate;
+    }
+    .sound-bar:nth-child(2) { animation-delay: 0.15s; }
+    .sound-bar:nth-child(3) { animation-delay: 0.3s; }
+    .sound-bar:nth-child(4) { animation-delay: 0.45s; }
+    .sound-bar:nth-child(5) { animation-delay: 0.2s; }
+
+    @keyframes soundWave {
+      0% { height: 4px; }
+      100% { height: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. HEADER DO PAINEL HOSPITALAR DINÂMICO -->
+  <header>
+    <div class="header-entity">
+      <div class="gov-coat" id="tv-coat" title="{{ branding.nome_institucional|default:'Prefeitura Municipal' }}">
+        {{ branding.uf|default:'BR' }}
+      </div>
+      <div class="entity-titles">
+        <h1 id="tv-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</h1>
+        <p id="tv-unit">{{ branding.orgao_gestor|default:'Secretaria Municipal de Saúde' }} · {{ branding.unidade_nome|default:'Unidade Básica de Saúde Central' }} · Painel Oficial de Chamadas</p>
+      </div>
+    </div>
+
+    <div class="header-telemetry">
+      <div class="telemetry-item">
+        <div class="clock-display" id="clock">10:24:00</div>
+        <div class="clock-date" id="clock-date">Terça-feira, 10 de Novembro de 2026</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. MAIN GRID (CHAMADA VIGENTE + FILA) -->
+  <main>
+    <!-- CARD GIGANTE DE CHAMADA ATUAL -->
+    <section class="hero-call-card" id="call-card">
+      <div class="triage-strip yellow" id="triage-banner">
+        <span id="triage-text">Classificação Manchester: Amarelo (Urgente)</span>
+        <div class="triage-live-tag">
+          <span class="live-dot"></span>
+          <span>Chamada Ativa</span>
+        </div>
+      </div>
+
+      <div class="ticket-center">
+        <div class="ticket-label">Senha de Atendimento</div>
+        <div class="ticket-number" id="ticket-num">PRE-042</div>
+        <div class="patient-name-box" id="patient-name">Maria Santos da Silva</div>
+
+        <div class="sound-wave">
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+          <div class="sound-bar"></div>
+        </div>
+      </div>
+
+      <div class="destination-row">
+        <div class="dest-column">
+          <h4>Destino / Encaminhamento</h4>
+          <strong id="dest-room">Consultório 03</strong>
+          <span id="dest-specialty">Clínica Médica Geral / APS</span>
+        </div>
+        <div class="dest-column">
+          <h4>Profissional Responsável</h4>
+          <strong id="dest-doctor">Dra. Beatriz Carvalho</strong>
+          <span>CRM/SE 4.821 · Equipe Saúde da Família 01</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLUNA LATERAL (PRÓXIMOS + HISTÓRICO) -->
+    <aside class="side-stack">
+      <!-- PRÓXIMOS NA FILA -->
+      <div class="side-card grow">
+        <div class="side-header">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Próximos na Fila
+          </h3>
+          <span class="badge-count" id="queue-count">4 aguardando</span>
+        </div>
+
+        <div class="queue-items" id="queue-list">
+          <div class="queue-row">
+            <div class="queue-info-left">
+              <span class="queue-pill">PRE-043</span>
+              <div class="queue-name-block">
+                <span class="queue-name">Geraldo Moreira Sobrinho</span>
+                <span class="queue-type">Idoso 80+ · Triagem Acolhimento</span>
+              </div>
+            </div>
+            <span class="queue-triage-tag tag-yellow">Amarelo</span>
+          </div>
+
+          <div class="queue-row">
+            <div class="queue-info-left">
+              <span class="queue-pill">G-015</span>
+              <div class="queue-name-block">
+                <span class="queue-name">Juliana Mendonça Lima</span>
+                <span class="queue-type">Gestante · Pré-Natal</span>
+              </div>
+            </div>
+            <span class="queue-triage-tag tag-yellow">Amarelo</span>
+          </div>
+
+          <div class="queue-row">
+            <div class="queue-info-left">
+              <span class="queue-pill">N-098</span>
+              <div class="queue-name-block">
+                <span class="queue-name">Lucas Albuquerque Pinto</span>
+                <span class="queue-type">Consulta Médica Geral</span>
+              </div>
+            </div>
+            <span class="queue-triage-tag tag-green">Verde</span>
+          </div>
+
+          <div class="queue-row">
+            <div class="queue-info-left">
+              <span class="queue-pill">N-099</span>
+              <div class="queue-name-block">
+                <span class="queue-name">Tereza Cristina Barbosa</span>
+                <span class="queue-type">Retorno de Exames</span>
+              </div>
+            </div>
+            <span class="queue-triage-tag tag-green">Verde</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO DE RECENTES -->
+      <div class="side-card history">
+        <div class="side-header">
+          <h3>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Chamadas Anteriores
+          </h3>
+          <span class="badge-count">Hoje</span>
+        </div>
+
+        <div class="history-items" id="history-list">
+          <div class="history-row">
+            <strong>PRE-041</strong>
+            <span>Roberto Carlos Alves</span>
+            <small>Consultório 03 · 10:14</small>
+          </div>
+          <div class="history-row">
+            <strong>N-097</strong>
+            <span>Fernando Diniz Rocha</span>
+            <small>Odontologia · 10:06</small>
+          </div>
+          <div class="history-row">
+            <strong>VAC-012</strong>
+            <span>Sofia Helena de Jesus</span>
+            <small>Sala de Vacinas · 09:58</small>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- 3. FOOTER MARQUEE INSTITUCIONAL -->
+  <footer>
+    <span class="footer-badge">Informativo</span>
+    <div class="ticker-wrap">
+      <div class="ticker-content">
+        <span>[CAMPANHA DE VACINAÇÃO] <strong>Imunização e Saúde Preventiva:</strong> Vacinas do calendário SUS disponíveis de segunda a sexta na Sala de Vacinação.</span>
+        <span>[PORTARIA GM/MS Nº 3.493/2024] <strong>Atenção Primária à Saúde:</strong> Mantenha seu cadastro e-SUS e dados atualizados junto à sua Equipe de Saúde da Família.</span>
+        <span>[SAÚDE DA MULHER] <strong>Pré-natal & Exames Preventivos:</strong> Acompanhamento gestacional e exames preventivos em horário regular na Unidade de Saúde.</span>
+        <span>[URGÊNCIA & EMERGÊNCIA] <strong>Em situações de urgência médica:</strong> Ligue 192 (SAMU) ou dirija-se à Unidade de Pronto Atendimento mais próxima.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // 1. RELÓGIO E DATA AO VIVO
+    function updateClock() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const dateStr = now.toLocaleDateString('pt-BR', options);
+      document.getElementById('clock-date').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 2. WEB AUDIO API - SÍNTESE POLIFÔNICA DO GONGO HOSPITALAR
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playHospitalChime() {
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+
+        // Acorde Hospitalar Suave (Fá maior: F4 - A4 - C5)
+        const notes = [349.23, 440.00, 523.25];
+
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + (idx * 0.12));
+
+          // Envelope suave com decaimento harmônico sem estalos
+          gain.gain.setValueAtTime(0.001, now + (idx * 0.12));
+          gain.gain.exponentialRampToValueAtTime(0.35, now + (idx * 0.12) + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + (idx * 0.12) + 1.8);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + (idx * 0.12));
+          osc.stop(now + (idx * 0.12) + 1.9);
+        });
+      } catch (err) {
+        console.warn("Audio Context bloqueado pelo browser antes de interação:", err);
+      }
+    }
+
+    // 3. SÍNTESE DE VOZ EM PORTUGUÊS (SPEECH SYNTHESIS)
+    function speakTicket(ticket, name, room, doctor) {
+      if (!('speechSynthesis' in window)) return;
+
+      window.speechSynthesis.cancel();
+
+      // Formata a senha soletrando letras e números se necessário
+      const formattedTicket = ticket.split('').join(' ');
+      const textToSpeak = `Atenção. Senha ${ticket}, ${name}. Favor dirigir-se ao ${room}. Com ${doctor}.`;
+
+      const utter = new SpeechSynthesisUtterance(textToSpeak);
+      utter.lang = 'pt-BR';
+      utter.rate = 0.92;
+      utter.pitch = 1.05;
+
+      // Seleciona voz brasileira natural se disponível
+      const voices = window.speechSynthesis.getVoices();
+      const ptVoice = voices.find(v => v.lang.includes('pt-BR') || v.lang.includes('pt'));
+      if (ptVoice) utter.voice = ptVoice;
+
+      setTimeout(() => {
+        window.speechSynthesis.speak(utter);
+      }, 700);
+    }
+
+    // 4. ATIVAÇÃO DE CHAMADA
+    function performCall(ticket, name, room, doctor, triageColor, triageLabel) {
+      // 1. Toca o acorde polifônico
+      playHospitalChime();
+
+      // 2. Atualiza elementos visuais do card principal
+      const card = document.getElementById('call-card');
+      const ticketEl = document.getElementById('ticket-num');
+      const nameEl = document.getElementById('patient-name');
+      const roomEl = document.getElementById('dest-room');
+      const doctorEl = document.getElementById('dest-doctor');
+      const bannerEl = document.getElementById('triage-banner');
+      const bannerTextEl = document.getElementById('triage-text');
+
+      ticketEl.textContent = ticket;
+      nameEl.textContent = name;
+      roomEl.textContent = room;
+      doctorEl.textContent = doctor;
+
+      bannerEl.className = `triage-strip ${triageColor}`;
+      bannerTextEl.textContent = triageLabel;
+
+      // Adiciona animação de pulso
+      card.classList.remove('calling-pulse');
+      void card.offsetWidth; // Trigger reflow
+      card.classList.add('calling-pulse');
+
+      // 3. Executa fala sintetizada
+      speakTicket(ticket, name, room, doctor);
+
+      // Desliga o pulso após 12 segundos
+      setTimeout(() => {
+        card.classList.remove('calling-pulse');
+      }, 12000);
+    }
+
+    // 5. FUNÇÕES DE INTERFACE OPERACIONAL
+    function addToHistory(ticket, name, room) {
+      const hist = document.getElementById('history-list');
+      const row = document.createElement('div');
+      row.className = 'history-row';
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      row.innerHTML = `<strong>${ticket}</strong><span>${name}</span><small>${room} · ${timeStr}</small>`;
+      hist.insertBefore(row, hist.firstChild);
+      if (hist.children.length > 4) hist.removeChild(hist.lastChild);
+    }
+
+    function updateQueueCount() {
+      const count = document.getElementById('queue-list').children.length;
+      document.getElementById('queue-count').textContent = `${count} aguardando`;
+    }
+
+    // 6. SINCRONISMO CROSS-TAB COM O TOTEM E CONSOLE DO MÉDICO
+    const queueChannel = new BroadcastChannel('vertyx_health_queue');
+
+    queueChannel.onmessage = (event) => {
+      const data = event.data;
+      if (!data) return;
+
+      if (data.type === 'CALL_TICKET') {
+        // Alguém chamou uma senha no Console do Médico!
+        addToHistory(
+          document.getElementById('ticket-num').textContent,
+          document.getElementById('patient-name').textContent,
+          document.getElementById('dest-room').textContent
+        );
+        performCall(
+          data.ticket,
+          data.patient || 'Paciente Chamado',
+          data.room || 'Consultório 03',
+          data.doctor || 'Dra. Beatriz Carvalho',
+          data.triageColor || 'yellow',
+          data.triageLabel || 'Classificação Manchester: Amarelo (Urgente)'
+        );
+      } else if (data.type === 'NEW_TICKET') {
+        // Alguém emitiu senha no Totem de entrada!
+        addNewTicketToQueueList(data);
+      } else if (data.type === 'NO_SHOW') {
+        const bannerTextEl = document.getElementById('triage-text');
+        bannerTextEl.textContent = `Atenção: Senha ${data.ticket} registrada como Não Compareceu`;
+        setTimeout(() => {
+          bannerTextEl.textContent = 'Aguardando próxima chamada de atendimento';
+        }, 6000);
+      }
+    };
+
+    function addNewTicketToQueueList(data) {
+      const list = document.getElementById('queue-list');
+      const row = document.createElement('div');
+      row.className = 'queue-row';
+      const tagClass = data.prefix === 'PRE' ? 'tag-yellow' : data.prefix === 'GER' ? 'tag-green' : 'tag-blue';
+      const tagLabel = data.prefix === 'PRE' ? 'Prioritário' : 'Normal';
+      row.innerHTML = `
+        <div class="queue-info-left">
+          <span class="queue-pill" style="border-color:#38bdf8; color:#38bdf8;">${data.ticket}</span>
+          <div class="queue-name-block">
+            <span class="queue-name">${data.service}</span>
+            <span class="queue-type">Emitido no Totem às ${data.time}</span>
+          </div>
+        </div>
+        <span class="queue-triage-tag ${tagClass}">${tagLabel}</span>
+      `;
+      list.appendChild(row);
+      updateQueueCount();
+    }
+
+    // Inicia vozes quando prontas no browser
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('tv-entity').textContent = b.nome_institucional;
+      if (b.unidade_nome) document.getElementById('tv-unit').textContent = `${b.orgao_gestor || 'Secretaria de Saúde'} · ${b.unidade_nome} · Painel Oficial de Chamadas`;
+      if (b.uf) document.getElementById('tv-coat').textContent = b.uf;
+      if (b.cor_primaria) document.getElementById('tv-coat').style.background = b.cor_primaria;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
+  </script>
+</body>
+</html>

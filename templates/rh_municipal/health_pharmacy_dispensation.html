@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farmácia Básica Municipal · Dispensação de Medicamentos Hórus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #080e1a;
+      --bg-sidebar: #0f192c;
+      --bg-card: #15243d;
+      --border-color: rgba(255, 255, 255, 0.12);
+
+      --pharm-emerald: #10b981;
+      --pharm-blue: #0284c7;
+      --pharm-amber: #f59e0b;
+
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+      --text-dim: #94a3b8;
+
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    /* 1. HEADER INSTITUCIONAL */
+    header {
+      background: #0c1527;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.85rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .coat-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #065f46;
+      border: 1.5px solid #10b981;
+      color: #fff;
+      font-weight: 900;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+    }
+
+    .brand-titles h1 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .brand-titles h1 span {
+      font-size: 0.72rem;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.15rem 0.55rem;
+      border-radius: 6px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .brand-titles p {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .pharm-user-info {
+      text-align: right;
+    }
+    .pharm-user-name {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .pharm-user-meta {
+      font-size: 0.75rem;
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    /* 2. MAIN LAYOUT: FILA DE SENHAS DA FARMÁCIA + BALCÃO DE DISPENSAÇÃO */
+    main {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* FILA LATERAL DA FARMÁCIA */
+    aside {
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .aside-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(11, 18, 32, 0.7);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .aside-header h3 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .queue-badge {
+      background: #059669;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.65rem;
+      border-radius: 9999px;
+    }
+
+    .btn-call-pharm {
+      margin: 1.25rem;
+      background: #059669;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 0.85rem;
+      border-radius: 10px;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 0.92rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
+      transition: all 0.2s;
+    }
+    .btn-call-pharm:hover {
+      background: #047857;
+      transform: translateY(-2px);
+    }
+
+    .pharm-queue-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 1.25rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .pharm-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .pharm-card:hover, .pharm-card.active {
+      border-color: #10b981;
+      background: #15332c;
+      transform: translateX(4px);
+    }
+
+    .pharm-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pharm-ticket {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 1rem;
+      color: #34d399;
+    }
+    .pharm-wait {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    .pharm-patient {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 0.25rem;
+    }
+    .pharm-desc {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    /* ÁREA DO BALCÃO CENTRAL DE DISPENSAÇÃO */
+    .dispense-workspace {
+      padding: 1.75rem 2.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* CARD DE BUSCA / PRESCRIÇÃO ATUAL */
+    .dispense-hero-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .hero-ticket-badge {
+      background: #059669;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 1.6rem;
+      font-weight: 900;
+      padding: 0.65rem 1.25rem;
+      border-radius: 12px;
+    }
+
+    .hero-patient-data h2 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .hero-patient-pills {
+      display: flex;
+      gap: 1.25rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* TABELA DE DISPENSAÇÃO POR LOTE (FEFO) */
+    .inventory-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 1.5rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .inventory-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.85rem;
+    }
+
+    .inventory-header h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .fefo-tag {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.25rem 0.65rem;
+      border-radius: 6px;
+    }
+
+    .dispense-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .dispense-table th {
+      background: #0b1424;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 0.85rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .dispense-table td {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.88rem;
+    }
+
+    .stock-badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+    }
+    .stock-ok { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    /* FOOTER DE DISPENSAÇÃO */
+    .dispense-action-bar {
+      margin-top: auto;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-confirm-dispense {
+      background: #10b981;
+      border: none;
+      color: #0b132b;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 900;
+      padding: 0.95rem 2rem;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+      transition: all 0.2s;
+    }
+    .btn-confirm-dispense:hover {
+      background: #34d399;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. HEADER INSTITUCIONAL DINÂMICO -->
+  <header>
+    <div class="brand-cluster">
+      <div class="coat-badge" id="pharm-coat" title="{{ branding.nome_institucional|default:'Prefeitura Municipal' }}">{{ branding.uf|default:'BR' }}</div>
+      <div class="brand-titles">
+        <h1>Farmácia Básica Municipal <span>Sistema Hórus / e-SUS AF</span></h1>
+        <p><span id="pharm-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</span> · <span id="pharm-orgao">{{ branding.orgao_gestor|default:'Secretaria de Saúde' }}</span> · <span id="pharm-unit">{{ branding.unidade_nome|default:'Unidade Básica de Saúde Central' }}</span></p>
+      </div>
+    </div>
+
+    <div class="pharm-user-info">
+      <div class="pharm-user-name">Farmacêutico(a) Responsável</div>
+      <div class="pharm-user-meta">Balcão de Dispensação de Medicamentos</div>
+    </div>
+  </header>
+
+  <!-- 2. MAIN WORKSPACE -->
+  <main>
+    <!-- FILA DE SENHAS DA FARMÁCIA -->
+    <aside>
+      <div class="aside-header">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+          Fila da Farmácia
+        </h3>
+        <span class="queue-badge" id="badge-pharm-count">3 Senhas</span>
+      </div>
+
+      <button class="btn-call-pharm" onclick="callNextForPharmacy()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+        CHAMAR PRÓXIMO NA TV (Espaço)
+      </button>
+
+      <div class="pharm-queue-list" id="pharm-queue-list">
+        <div class="pharm-card active" onclick="selectPharmCard(this, 'FAR-025', 'Maria Santos da Silva', '704.8910.3847.192', 'Dra. Beatriz Carvalho (CRM/SE 4.821)', 'RECEITA-2026/8941')">
+          <div class="pharm-card-top">
+            <span class="pharm-ticket">FAR-025</span>
+            <span class="pharm-wait">Espera: 5 min</span>
+          </div>
+          <div class="pharm-patient">Maria Santos da Silva</div>
+          <div class="pharm-desc">Receita: Losartana + Hidrocloro + Metformina</div>
+        </div>
+
+        <div class="pharm-card" onclick="selectPharmCard(this, 'FAR-026', 'José Geraldo Bezerra', '812.3456.7890.123', 'Dr. Marcos Vinícius (CRM/SE 5.120)', 'RECEITA-2026/8942')">
+          <div class="pharm-card-top">
+            <span class="pharm-ticket">FAR-026</span>
+            <span class="pharm-wait">Espera: 8 min</span>
+          </div>
+          <div class="pharm-patient">José Geraldo Bezerra</div>
+          <div class="pharm-desc">Receita: Amoxicilina 500mg + Ibuprofeno</div>
+        </div>
+
+        <div class="pharm-card" onclick="selectPharmCard(this, 'FAR-027', 'Helena Dias dos Santos', '690.4321.8765.432', 'Dra. Camila Nogueira (CRM/SE 6.304)', 'RECEITA-2026/8943')">
+          <div class="pharm-card-top">
+            <span class="pharm-ticket">FAR-027</span>
+            <span class="pharm-wait">Espera: 11 min</span>
+          </div>
+          <div class="pharm-patient">Helena Dias dos Santos</div>
+          <div class="pharm-desc">Receita: Paracetamol Gotas + Dipirona</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA DO BALCÃO DE DISPENSAÇÃO -->
+    <section class="dispense-workspace">
+      <!-- 1. IDENTIFICAÇÃO DO PACIENTE & RECEITA ATUAL -->
+      <div class="dispense-hero-card">
+        <div style="display: flex; align-items: center; gap: 1.25rem;">
+          <div class="hero-ticket-badge" id="pharm-cur-ticket">FAR-025</div>
+          <div class="hero-patient-data">
+            <h2 id="pharm-cur-name">Maria Santos da Silva</h2>
+            <div class="hero-patient-pills">
+              <span>CNS: <strong id="pharm-cur-cns">704.8910.3847.192</strong></span>
+              <span>Prescritor: <strong id="pharm-cur-doc">Dra. Beatriz Carvalho (CRM/SE 4.821)</strong></span>
+              <span>Protocolo: <strong id="pharm-cur-protocol" style="color: #34d399;">RECEITA-2026/8941</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <button class="btn-outline" onclick="repeatPharmCall()" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: #fff; padding: 0.6rem 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">
+            Rechamar Senha na TV
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. TABELA DE ITENS COM RASTREABILIDADE FEFO -->
+      <div class="inventory-card">
+        <div class="inventory-header">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            Itens da Prescrição Médica & Alocação por Lote FEFO
+          </h3>
+          <span class="fefo-tag">Critério FEFO Ativo (Primeiro que Vence, Primeiro que Sai)</span>
+        </div>
+
+        <table class="dispense-table">
+          <thead>
+            <tr>
+              <th>Medicamento (RENAME)</th>
+              <th>Posologia</th>
+              <th>Lote Alocado (FEFO)</th>
+              <th>Validade</th>
+              <th>Saldo na UBS</th>
+              <th>Qtd. a Entregar</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="dispense-tbody">
+            <tr>
+              <td><strong>Losartana Potássica 50mg</strong></td>
+              <td>1 comprimido pela manhã</td>
+              <td><span style="font-family: var(--font-mono); color: #38bdf8;">LOT-2026/A41</span></td>
+              <td>12/2027</td>
+              <td><span class="stock-badge stock-ok">1.450 comp</span></td>
+              <td><strong style="font-size: 1.1rem; color: #fff;">60 comp</strong></td>
+              <td><span style="color: #34d399; font-weight: 700;">✓ Disponível</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hidroclorotiazida 25mg</strong></td>
+              <td>1 comprimido associado pela manhã</td>
+              <td><span style="font-family: var(--font-mono); color: #38bdf8;">LOT-2025/H18</span></td>
+              <td>08/2027</td>
+              <td><span class="stock-badge stock-ok">820 comp</span></td>
+              <td><strong style="font-size: 1.1rem; color: #fff;">60 comp</strong></td>
+              <td><span style="color: #34d399; font-weight: 700;">✓ Disponível</span></td>
+            </tr>
+            <tr>
+              <td><strong>Metformina 850mg</strong></td>
+              <td>1 comprimido após almoço e jantar</td>
+              <td><span style="font-family: var(--font-mono); color: #38bdf8;">LOT-2026/M09</span></td>
+              <td>03/2028</td>
+              <td><span class="stock-badge stock-ok">2.100 comp</span></td>
+              <td><strong style="font-size: 1.1rem; color: #fff;">120 comp</strong></td>
+              <td><span style="color: #34d399; font-weight: 700;">✓ Disponível</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- BARRA DE AÇÃO DA DISPENSAÇÃO -->
+        <div class="dispense-action-bar">
+          <div style="font-size: 0.82rem; color: var(--text-dim);">
+            Ao confirmar a dispensação, a baixa automática é registrada na Rastreabilidade Municipal e sincronizada ao Cartão SUS do Cidadão.
+          </div>
+
+          <button class="btn-confirm-dispense" onclick="confirmDispensation()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            CONFIRMAR DISPENSAÇÃO & IMPRIMIR COMPROVANTE (Enter)
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const queueChannel = new BroadcastChannel('vertyx_health_queue');
+
+    function selectPharmCard(card, ticket, name, cns, doc, protocol) {
+      document.querySelectorAll('.pharm-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+
+      document.getElementById('pharm-cur-ticket').textContent = ticket;
+      document.getElementById('pharm-cur-name').textContent = name;
+      document.getElementById('pharm-cur-cns').textContent = cns;
+      document.getElementById('pharm-cur-doc').textContent = doc;
+      document.getElementById('pharm-cur-protocol').textContent = protocol;
+    }
+
+    function callNextForPharmacy() {
+      const first = document.querySelector('.pharm-card');
+      if (first) {
+        first.click();
+        const ticket = document.getElementById('pharm-cur-ticket').textContent;
+        const name = document.getElementById('pharm-cur-name').textContent;
+
+        queueChannel.postMessage({
+          type: 'DOCTOR_CALLED',
+          ticket: ticket,
+          patient: name,
+          room: 'Farmácia Básica · Balcão 01',
+          doctor: 'Farm. Rodrigo Maia',
+          specialty: 'Dispensação de Medicamentos',
+          triage: 'green',
+          timestamp: Date.now()
+        });
+
+        alert(`Chamando ${name} (${ticket}) para o Balcão da Farmácia Municipal 01.`);
+      }
+    }
+
+    function repeatPharmCall() {
+      const ticket = document.getElementById('pharm-cur-ticket').textContent;
+      const name = document.getElementById('pharm-cur-name').textContent;
+      queueChannel.postMessage({
+        type: 'DOCTOR_CALLED',
+        ticket: ticket,
+        patient: name,
+        room: 'Farmácia Básica · Balcão 01',
+        doctor: 'Farm. Rodrigo Maia',
+        specialty: 'Dispensação de Medicamentos',
+        triage: 'green',
+        timestamp: Date.now()
+      });
+      alert(`Rechamando senha ${ticket} no painel da SmartTV.`);
+    }
+
+    function confirmDispensation() {
+      const ticket = document.getElementById('pharm-cur-ticket').textContent;
+      const name = document.getElementById('pharm-cur-name').textContent;
+
+      alert(`Dispensação realizada com sucesso!\n\nPaciente: ${name}\nSenha: ${ticket}\nLotes baixados com sucesso pelo critério FEFO.\nComprovante impresso emitido com assinatura digital.`);
+
+      const activeCard = document.querySelector('.pharm-card.active');
+      if (activeCard) {
+        activeCard.remove();
+        const count = document.querySelectorAll('.pharm-card').length;
+        document.getElementById('badge-pharm-count').textContent = `${count} Senhas`;
+        if (count > 0) {
+          document.querySelector('.pharm-card').click();
+        } else {
+          document.getElementById('pharm-cur-ticket').textContent = '---';
+          document.getElementById('pharm-cur-name').textContent = 'Nenhuma senha pendente na farmácia';
+        }
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        callNextForPharmacy();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmDispensation();
+      }
+    });
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('pharm-entity').textContent = b.nome_institucional;
+      if (b.orgao_gestor) document.getElementById('pharm-orgao').textContent = b.orgao_gestor;
+      if (b.unidade_nome) document.getElementById('pharm-unit').textContent = b.unidade_nome;
+      if (b.uf) document.getElementById('pharm-coat').textContent = b.uf;
+      if (b.cor_primaria) document.getElementById('pharm-coat').style.background = b.cor_primaria;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
+  </script>
+</body>
+</html>

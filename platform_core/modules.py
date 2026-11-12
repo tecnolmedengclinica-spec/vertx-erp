@@ -116,45 +116,160 @@ CAPABILITIES = {
     'relatorios': ('', ('ADMIN', 'GESTOR', 'TECNICO', 'ESTOQUE', 'FINANCEIRO', 'CONTABILIDADE')),
 }
 
+MODULE_IMPLIED_BY = {
+    'estoque_basico': {'estoque_completo', 'estoque'},
+    'estoque_completo': {'estoque'},
+    'estoque': {'estoque_basico', 'estoque_completo'},
+    'financeiro_basico': {'financeiro_completo', 'financeiro'},
+    'financeiro_completo': {'financeiro'},
+    'financeiro': {'financeiro_basico', 'financeiro_completo'},
+    'rh_asst_basico': {'rh_asst_completo', 'rh', 'ponto'},
+    'rh_asst_completo': {'rh'},
+    'rh': {'rh_asst_basico', 'rh_asst_completo', 'ponto'},
+    'ponto': {'rh_asst_basico', 'rh_asst_completo'},
+    'documentos_basicos': {'documentos_completos', 'documentos'},
+    'documentos_completos': {'documentos'},
+    'documentos': {'documentos_basicos', 'documentos_completos'},
+    'relatorios_basicos': {'relatorios_completos'},
+}
+
+MODULE_EXPANSION_IMPLICATIONS = {
+    'estoque_completo': {'estoque_basico', 'estoque'},
+    'estoque_basico': {'estoque'},
+    'estoque': {'estoque_basico', 'estoque_completo'},
+    'financeiro_completo': {'financeiro_basico', 'financeiro'},
+    'financeiro_basico': {'financeiro'},
+    'financeiro': {'financeiro_basico', 'financeiro_completo'},
+    'rh_asst_completo': {'rh_asst_basico', 'rh', 'ponto'},
+    'rh_asst_basico': {'rh', 'ponto'},
+    'rh': {'rh_asst_basico', 'rh_asst_completo', 'ponto'},
+    'ponto': {'rh_asst_basico'},
+    'documentos_completos': {'documentos_basicos', 'documentos'},
+    'documentos_basicos': {'documentos'},
+    'documentos': {'documentos_basicos', 'documentos_completos'},
+    'relatorios_completos': {'relatorios_basicos'},
+}
+
+LEGACY_COMPAT_MODULE_CODES = frozenset({'estoque', 'financeiro', 'ponto', 'rh', 'documentos'})
+
+
+def platform_module_overrides(organization):
+    """Return {codigo: modo} manual platform adjustments for one organization."""
+    if organization is None:
+        return {}
+    from .saas_models import AjusteModuloSaaS
+    return dict(
+        AjusteModuloSaaS.objects.filter(organization=organization).values_list('codigo', 'modo')
+    )
+
+
+def platform_module_override(organization, code):
+    """Return manual platform override ('LIBERADO' / 'BLOQUEADO' / None) for one module."""
+    if organization is None or not code:
+        return None
+    from .saas_models import AjusteModuloSaaS
+    return (
+        AjusteModuloSaaS.objects.filter(organization=organization, codigo=code)
+        .values_list('modo', flat=True)
+        .first()
+    )
+
+
+def expand_declared_modules(codes):
+    """Expand plan/contract declarations into their implied module and legacy alias codes."""
+    expanded = set(codes or ())
+    for code in tuple(expanded):
+        expanded.update(MODULE_EXPANSION_IMPLICATIONS.get(code, ()))
+    return expanded
+
+
+def effective_legacy_plan_codes(organization, plan):
+    """Return plan + core codes adjusted by explicit VERTYX Admin client overrides."""
+    from .saas_models import AjusteModuloSaaS, CORE_SAAS_MODULES
+    overrides = platform_module_overrides(organization)
+    allows = {code for code, mode in overrides.items() if mode == AjusteModuloSaaS.Modo.ALLOW}
+    denies = {code for code, mode in overrides.items() if mode == AjusteModuloSaaS.Modo.DENY}
+    base = (set(plan.modulos or ()) | set(CORE_SAAS_MODULES)) if plan is not None else set(CORE_SAAS_MODULES)
+    return (base - denies) | allows
+
+
+def baseline_effective_modules(organization):
+    """Return modules granted by plan/contracts/legacy defaults before manual client overrides."""
+    if organization is None:
+        return set()
+    from .saas_models import AssinaturaSaaS, CORE_SAAS_MODULES
+
+    enabled = set()
+    active_erps = set(
+        OrganizationERP.objects.filter(
+            organization=organization, erp__active=True, enabled=True,
+        ).values_list('erp__code', flat=True)
+    )
+    contracted_erps = set(
+        ItemContratoSaaS.objects.filter(
+            contrato__organization=organization,
+            contrato__status__in=['ATIVO', 'SUSPENSO', 'ENCERRADO'],
+        ).values_list('erp__code', flat=True)
+    )
+    for erp_code in active_erps & contracted_erps:
+        active_lines = list(active_contract_items(organization, erp_code)[:2])
+        if len(active_lines) == 1:
+            enabled.update(active_lines[0].modulos_snapshot or ())
+
+    subscription = (
+        AssinaturaSaaS.objects.filter(organization=organization)
+        .select_related('plano', 'plano__erp')
+        .first()
+    )
+    if subscription is not None:
+        plan = subscription.plano
+        if plan.erp_id:
+            if plan.erp.code not in contracted_erps and plan.erp.code in active_erps:
+                enabled.update(plan.modulos_produto.values_list('modulo__code', flat=True))
+        else:
+            enabled.update(expand_declared_modules(set(plan.modulos or ()) | set(CORE_SAAS_MODULES)))
+    else:
+        if 'gestao-publica' in active_erps and 'gestao-publica' not in contracted_erps:
+            enabled.add('gestao_publica')
+        if 'assistencia' in active_erps and 'assistencia' not in contracted_erps:
+            assist_codes = set(
+                ERPProductModule.objects.filter(
+                    erp__code='assistencia', erp__active=True, active=True,
+                ).values_list('code', flat=True)
+            )
+            enabled.update(assist_codes | set(CORE_SAAS_MODULES))
+    return enabled
+
+
 def module_enabled(code):
     if not code:
         return True
     organization = current_organization()
     if organization is None:
         return False
-    from .saas_models import AssinaturaSaaS
+    from .saas_models import AjusteModuloSaaS, AssinaturaSaaS, CORE_SAAS_MODULES
+    overrides = platform_module_overrides(organization)
+    if overrides.get(code) == AjusteModuloSaaS.Modo.DENY:
+        return False
+    allows = {k for k, v in overrides.items() if v == AjusteModuloSaaS.Modo.ALLOW}
+    denies = {k for k, v in overrides.items() if v == AjusteModuloSaaS.Modo.DENY}
     subscription = AssinaturaSaaS.objects.filter(organization=organization).select_related('plano').first()
     if subscription is not None:
-        from .saas_models import CORE_SAAS_MODULES
-        core = set(CORE_SAAS_MODULES)
-        plan_codes = set(subscription.plano.modulos or ()) | core
-        implications = {
-            'estoque_basico': {'estoque_completo', 'estoque'},
-            'estoque_completo': {'estoque'},
-            'estoque': {'estoque_basico', 'estoque_completo'},
-            'financeiro_basico': {'financeiro_completo', 'financeiro'},
-            'financeiro_completo': {'financeiro'},
-            'financeiro': {'financeiro_basico', 'financeiro_completo'},
-            'rh_asst_basico': {'rh_asst_completo', 'rh', 'ponto'},
-            'rh_asst_completo': {'rh'},
-            'rh': {'rh_asst_basico', 'rh_asst_completo', 'ponto'},
-            'ponto': {'rh_asst_basico', 'rh_asst_completo'},
-            'documentos_basicos': {'documentos_completos', 'documentos'},
-            'documentos_completos': {'documentos'},
-            'documentos': {'documentos_basicos', 'documentos_completos'},
-            'relatorios_basicos': {'relatorios_completos'},
-        }
-        entitled = code in plan_codes or bool(implications.get(code, set()) & plan_codes)
+        core = set(CORE_SAAS_MODULES) - denies
+        plan_codes = effective_legacy_plan_codes(organization, subscription.plano)
+        entitled = code in plan_codes or bool(MODULE_IMPLIED_BY.get(code, set()) & plan_codes)
         if not entitled:
             return False
         # The tenant settings table may contain an old false row from before
         # the core policy. Plan-level core availability is no longer optional.
-        if code in core:
+        if code in core or code in allows:
             return True
         # Tenant-level module settings may restrict a contracted feature, but
         # can never grant a feature omitted from the subscription.
         row = ModuloOrganizacao.objects.filter(organization=organization, codigo=code).first()
         return row.habilitado if row else True
+    if overrides.get(code) == AjusteModuloSaaS.Modo.ALLOW or (MODULE_IMPLIED_BY.get(code, set()) & allows):
+        return True
     # No SaaS subscription and no disabled flag means legacy access, preserving
     # installations predating the commercial-plan entitlement model.
     return not ModuloOrganizacao.objects.filter(organization=organization, codigo=code, habilitado=False).exists()
@@ -186,6 +301,11 @@ def product_module_enabled(user, erp_code, module_code, organization=None):
     if module is None:
         return False
 
+    from .saas_models import AjusteModuloSaaS
+    override = platform_module_override(organization, module_code)
+    if override == AjusteModuloSaaS.Modo.DENY:
+        return False
+
     items = active_contract_items(organization, erp_code)
     active_items = list(items[:2])
     if len(active_items) > 1:
@@ -198,6 +318,8 @@ def product_module_enabled(user, erp_code, module_code, organization=None):
         contrato__status__in=['ATIVO', 'SUSPENSO', 'ENCERRADO'],
     ).exists():
         return False
+    if override == AjusteModuloSaaS.Modo.ALLOW:
+        return True
     if item:
         # A contract snapshot is authoritative, including an intentionally
         # empty list; later plan edits cannot silently expand that contract.

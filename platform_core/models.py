@@ -224,7 +224,7 @@ class ConfiguracaoEmpresa(ConfiguracaoTenant):
 
 class ModuloOrganizacao(ConfiguracaoTenant):
     from .saas_models import MODULE_LABELS
-    codigo = models.CharField(max_length=20, choices=sorted(MODULE_LABELS.items()))
+    codigo = models.CharField(max_length=40, choices=sorted(MODULE_LABELS.items()))
     habilitado = models.BooleanField(default=True)
 
     class Meta:
@@ -250,7 +250,7 @@ class PermissaoMembership(ConfiguracaoTenant):
 
 # SaaS administration is a platform capability, never a tenant membership role.
 from .saas_models import (
-    AdministradorPlataforma, PlanoSaaS, PlanoProdutoModulo, ContratoSaaS,
+    AdministradorPlataforma, AjusteModuloSaaS, PlanoSaaS, PlanoProdutoModulo, ContratoSaaS,
     ItemContratoSaaS, AssinaturaSaaS,
     HistoricoPlanoSaaS, PrimeiroAcessoSaaS, AuditoriaSaaS,
 )

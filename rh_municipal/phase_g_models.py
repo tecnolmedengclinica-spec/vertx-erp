@@ -370,6 +370,107 @@ class VeiculoSanitarioMunicipal(HealthRecord):
         constraints = [models.UniqueConstraint(fields=['organization', 'veiculo'], name='rhmun_saude_vehicle_org')]
 
 
+class ServicoFilaSaude(HealthRecord):
+    """Serviços de atendimento configurados na Unidade de Saúde (padrão Novo SGA)."""
+    unidade_saude = models.ForeignKey(UnidadeSaudeMunicipal, on_delete=models.PROTECT, related_name='servicos_fila')
+    codigo = models.CharField(max_length=8)
+    nome = models.CharField(max_length=120)
+    descricao = models.CharField(max_length=255, blank=True)
+    icone = models.CharField(max_length=60, default='activity')
+    ordem = models.PositiveIntegerField(default=1)
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['ordem', 'nome']
+
+
+class LocalAtendimentoSaude(HealthRecord):
+    """Guichês, consultórios e salas da Unidade de Saúde (padrão Novo SGA)."""
+    class Tipo(models.TextChoices):
+        CONSULTORIO = 'CONSULTORIO', 'Consultório Médico'
+        TRIAGEM = 'TRIAGEM', 'Sala de Triagem / Enfermagem'
+        GUICHE = 'GUICHE', 'Guichê de Atendimento / Recepção'
+        SALA_VACINA = 'SALA_VACINA', 'Sala de Vacinação'
+        ODONTOLOGIA = 'ODONTOLOGIA', 'Consultório Odontológico'
+        FARMACIA = 'FARMACIA', 'Farmácia Básica Municipal'
+    unidade_saude = models.ForeignKey(UnidadeSaudeMunicipal, on_delete=models.PROTECT, related_name='locais_atendimento')
+    tipo = models.CharField(max_length=30, choices=Tipo.choices, default=Tipo.CONSULTORIO)
+    numero = models.PositiveIntegerField(default=1)
+    nome = models.CharField(max_length=120)
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['tipo', 'numero']
+
+
+class SenhaFilaAtendimento(HealthRecord):
+    """Senhas emitidas no Totem, chamadas na SmartTV e atendidas no Console (padrão Novo SGA)."""
+    class Status(models.TextChoices):
+        EMITIDA = 'EMITIDA', 'Emitida (Aguardando)'
+        CHAMADA = 'CHAMADA', 'Chamada na SmartTV'
+        EM_ATENDIMENTO = 'EM_ATENDIMENTO', 'Em Atendimento'
+        ENCERRADA = 'ENCERRADA', 'Atendimento Encerrado'
+        NAO_COMPARECEU = 'NAO_COMPARECEU', 'Não Compareceu'
+        CANCELADA = 'CANCELADA', 'Cancelada'
+
+    class TipoPrioridade(models.TextChoices):
+        CONVENCIONAL = 'CONVENCIONAL', 'Convencional'
+        PRIORITARIA = 'PRIORITARIA', 'Prioritária (Lei 10.048/00)'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    unidade_saude = models.ForeignKey(UnidadeSaudeMunicipal, on_delete=models.PROTECT, related_name='senhas_fila')
+    servico = models.ForeignKey(ServicoFilaSaude, on_delete=models.PROTECT, related_name='senhas')
+    cidadao = models.ForeignKey(CidadaoSaudeMunicipal, null=True, blank=True, on_delete=models.SET_NULL, related_name='senhas_fila')
+    local_chamado = models.ForeignKey(LocalAtendimentoSaude, null=True, blank=True, on_delete=models.SET_NULL, related_name='senhas_atendidas')
+    profissional = models.ForeignKey(ProfissionalSaudeMunicipal, null=True, blank=True, on_delete=models.SET_NULL, related_name='senhas_atendidas')
+    numero_sequencial = models.PositiveIntegerField()
+    tipo_prioridade = models.CharField(max_length=20, choices=TipoPrioridade.choices, default=TipoPrioridade.CONVENCIONAL)
+    detalhe_prioridade = models.CharField(max_length=60, blank=True)
+    codigo_formatado = models.CharField(max_length=20)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.EMITIDA)
+    emitida_em = models.DateTimeField(default=timezone.now)
+    chamada_em = models.DateTimeField(null=True, blank=True)
+    iniciada_em = models.DateTimeField(null=True, blank=True)
+    encerrada_em = models.DateTimeField(null=True, blank=True)
+    atendimento_clinico = models.ForeignKey(AtendimentoSaudeMunicipal, null=True, blank=True, on_delete=models.SET_NULL, related_name='senhas_vinculadas')
+
+    class Meta:
+        ordering = ['-emitida_em']
+
+
+class ClassificacaoManchester(HealthRecord):
+    """Classificação de Risco e Triagem Manchester (Enfermagem e-SUS APS)."""
+    class Cor(models.TextChoices):
+        VERMELHO = 'VERMELHO', 'Vermelho - Emergência (0 min)'
+        LARANJA = 'LARANJA', 'Laranja - Muito Urgente (10 min)'
+        AMARELO = 'AMARELO', 'Amarelo - Urgente (60 min)'
+        VERDE = 'VERDE', 'Verde - Pouco Urgente (120 min)'
+        AZUL = 'AZUL', 'Azul - Não Urgente (240 min)'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    senha = models.OneToOneField(SenhaFilaAtendimento, null=True, blank=True, on_delete=models.CASCADE, related_name='triagem_manchester')
+    cidadao = models.ForeignKey(CidadaoSaudeMunicipal, on_delete=models.PROTECT, related_name='classificacoes_manchester')
+    enfermeiro = models.ForeignKey(ProfissionalSaudeMunicipal, on_delete=models.PROTECT, related_name='triagens_realizadas')
+    fluxograma = models.CharField(max_length=120)
+    discriminador = models.CharField(max_length=140)
+    cor = models.CharField(max_length=15, choices=Cor.choices, default=Cor.VERDE)
+    tempo_alvo_minutos = models.PositiveIntegerField(default=120)
+    pa_sistolica = models.PositiveIntegerField(null=True, blank=True)
+    pa_diastolica = models.PositiveIntegerField(null=True, blank=True)
+    frequencia_cardiaca = models.PositiveIntegerField(null=True, blank=True)
+    frequencia_respiratoria = models.PositiveIntegerField(null=True, blank=True)
+    temperatura = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
+    glicemia = models.PositiveIntegerField(null=True, blank=True)
+    saturacao_o2 = models.PositiveIntegerField(null=True, blank=True)
+    peso_kg = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    altura_cm = models.PositiveIntegerField(null=True, blank=True)
+    queixa_principal = models.CharField(max_length=255, blank=True)
+    avaliada_em = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-avaliada_em']
+
+
 class RegistroProducaoSUS(HealthRecord):
     class Tipo(models.TextChoices):
         PROCEDIMENTO = 'PROCEDIMENTO', 'Produção de procedimento'
@@ -387,4 +488,3 @@ class RegistroProducaoSUS(HealthRecord):
     criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     criado_em = models.DateTimeField(default=timezone.now, editable=False)
     status_transmissao = models.CharField(max_length=18, default='NAO_TRANSMITIDO')
-

@@ -1,6 +1,10 @@
 /* Pricing presentation only. ERP, technician PWA and public Home retain their styles. */
 .pricing-reference{--pricing-green:#087b40;--pricing-green-hover:#076535}
-.pricing-reference .site-header{background:#fff;backdrop-filter:none}
+:root:not([data-theme="dark"]) .pricing-reference .site-header,
+[data-theme="light"] .pricing-reference .site-header {
+  background: #fff;
+  backdrop-filter: none;
+}
 .pricing-reference .header-menu>a{font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.015em}
 .pricing-reference .header-actions{flex-direction:row-reverse}
 .pricing-reference .header-actions .button-primary{background:var(--pricing-green);box-shadow:none;text-transform:uppercase}
@@ -14,18 +18,93 @@
 .pricing-hero-description{font-size:17px;line-height:1.5;color:#edf1fc;margin-top:25px;max-width:495px}
 .pricing-action{background:var(--pricing-green);color:#fff;min-height:54px;padding:15px 30px;min-width:300px;font-size:16px;border-radius:7px;margin-top:31px;box-shadow:0 8px 22px #1019312b}
 .pricing-action:hover{background:var(--pricing-green-hover)}
-.pricing-product{padding:35px 17px 0;min-width:0}
-.pricing-product .laptop{margin:0;filter:drop-shadow(0 22px 20px #030c2038)}
-.pricing-product .laptop-screen{aspect-ratio:1.59;padding:7px;background:#121a29;border-color:#7b87a0;border-radius:11px 11px 3px 3px}
-.pricing-product .laptop-base{height:13px;margin:0 -16px}
-.pricing-product>p{font-size:10px;color:#d0d9ed;text-align:center;margin-top:19px;line-height:1.6}
-.pricing-reference .pricing-section{padding-top:67px;background:#f7f9fc}
+/* Sincronização dos mockups na página de planos */
+.preview-dark {
+  display: none !important;
+}
+.preview-light {
+  display: block !important;
+}
+[data-theme="dark"] .preview-dark {
+  display: block !important;
+}
+[data-theme="dark"] .preview-light {
+  display: none !important;
+}
+.pricing-product{position:relative;isolation:isolate;padding:25px 38px 45px 0;min-width:0}
+.pricing-product .laptop{width:100%;position:relative;margin:0;filter:drop-shadow(0 22px 20px #030c2038)}
+.pricing-product .laptop-screen{aspect-ratio:1.59;padding:7px;background:#121a29;border:1px solid #7b87a0;border-radius:11px 11px 3px 3px;overflow:hidden}
+.pricing-product .laptop-screen img{width:100%;height:100%;object-fit:cover;object-position:top}
+.pricing-product .laptop-base{height:13px;margin:0 -16px;background:linear-gradient(#e4e8f1,#bbc4d3);border-radius:1px 1px 25px 25px;position:relative}
+.pricing-product .laptop-base:after{content:"";position:absolute;width:70px;height:4px;background:#99a4b4;border-radius:0 0 8px 8px;left:calc(50% - 35px)}
+.pricing-product .phone-device{position:absolute;right:0;bottom:24px;width:130px;padding:6px;background:#192332;border:2px solid #41516b;border-radius:25px;box-shadow:0 22px 38px #1229473d;overflow:hidden;z-index:2}
+.pricing-product .phone-device:before{content:"";position:absolute;top:7px;left:34%;height:6px;width:32%;border-radius:0 0 8px 8px;background:#192332;z-index:1}
+.pricing-product .phone-device img{border-radius:17px;aspect-ratio:390/844;object-fit:cover;object-position:top;width:100%;height:100%}
+.pricing-product .visual-caption,.pricing-product>p{font-size:10px;color:#d0d9ed;text-align:center;margin-top:19px;line-height:1.6}
+.pricing-reference .pricing-section{padding-top:67px}
+:root:not([data-theme="dark"]) .pricing-reference .pricing-section,
+[data-theme="light"] .pricing-reference .pricing-section {
+  background: #f7f9fc;
+}
 .pricing-reference .pricing-section .section-heading h2{font-size:39px;max-width:710px;margin-inline:auto}
 .pricing-reference .pricing-section .section-heading>p{font-size:15px;margin-top:16px}
 .pricing-reference .billing-note{margin-bottom:30px}
 .pricing-reference .plans-grid{gap:22px}
-.pricing-reference .plan-card{border-radius:12px;padding:29px 24px;box-shadow:0 7px 22px #15244709}
-.pricing-reference .plan-card.featured{padding:28px 23px;border-color:var(--blue);background:#fff;box-shadow:0 12px 30px #245de620}
+.pricing-reference .plan-card{
+  border-radius:14px;
+  padding:29px 24px;
+  box-shadow:0 7px 22px #15244709;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease, background-color 0.25s ease;
+  will-change: transform, box-shadow;
+  outline: none;
+  position: relative;
+}
+.pricing-reference .plan-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 42px rgba(37, 99, 235, 0.16), 0 0 0 1.5px #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+.pricing-reference .plan-card:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 4px;
+}
+.pricing-reference .plan-card:active,
+.pricing-reference .plan-card.is-pressed {
+  transform: translateY(-2px) scale(0.985) !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12) !important;
+  transition: transform 0.08s ease, box-shadow 0.08s ease !important;
+}
+.pricing-reference .plan-card.featured{padding:28px 23px;border-color:var(--blue)}
+:root:not([data-theme="dark"]) .pricing-reference .plan-card.featured,
+[data-theme="light"] .pricing-reference .plan-card.featured {
+  background: #fff;
+  box-shadow: 0 12px 30px #245de620;
+}
+.pricing-reference .plan-card.featured:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 24px 50px rgba(37, 99, 235, 0.28), 0 0 0 2px #2563eb !important;
+}
+.pricing-reference .plan-card:hover .button {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+}
+.pricing-reference .plan-card .button svg {
+  transition: transform 0.2s ease;
+}
+.pricing-reference .plan-card:hover .button svg {
+  transform: translateX(4px);
+}
+.pricing-reference .plan-demo-link {
+  position: relative;
+  z-index: 2;
+  transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+.pricing-reference .plan-demo-link:hover {
+  text-decoration: underline;
+}
 .pricing-reference .popular-label{border-radius:10px 10px 0 0;font-size:10px}
 .pricing-reference .plan-top{min-height:112px}
 .pricing-reference .plan-top h3{font-size:22px}
@@ -49,6 +128,8 @@
   .pricing-hero-description{font-size:15px}
   .pricing-action{min-width:0;width:100%;max-width:330px;font-size:14px;padding-inline:20px}
   .pricing-reference .plans-grid{gap:38px 22px}
+  .pricing-product{padding-right:25px}
+  .pricing-product .phone-device{width:115px;bottom:26px}
 }
 @media(max-width:767px){
   .pricing-hero{padding:40px 0 34px}
@@ -56,7 +137,8 @@
   .pricing-hero-title{font-size:38px;line-height:1.12}
   .pricing-hero-description{font-size:15px;line-height:1.65;margin-top:20px}
   .pricing-action{margin-top:24px;max-width:none;min-height:52px}
-  .pricing-product{padding:0 15px}
+  .pricing-product{padding:10px 25px 30px 0;max-width:520px;margin:0 auto}
+  .pricing-product .phone-device{width:100px;bottom:18px}
   .pricing-product>p{font-size:9px;margin-top:16px}
   .pricing-reference .pricing-section{padding-top:48px}
   .pricing-reference .pricing-section .section-heading h2{font-size:31px}
@@ -64,4 +146,233 @@
   .pricing-reference .plan-top{min-height:0}
   .pricing-reference .plan-price .custom-price{font-size:32px}
 }
-@media(max-width:360px){.pricing-hero-title{font-size:33px}.pricing-hero-description{font-size:14px}}
+@media(max-width:360px){
+  .pricing-hero-title{font-size:33px}
+  .pricing-hero-description{font-size:14px}
+  .pricing-product .phone-device{width:82px;bottom:14px}
+}
+
+/* ==========================================================================
+   PRICING PAGE - DARK THEME OVERRIDES
+   ========================================================================== */
+[data-theme="dark"] .pricing-reference .site-header {
+  background: rgba(11, 17, 29, 0.95) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+[data-theme="dark"] .pricing-reference .brand {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .header-menu > a {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .pricing-reference .header-menu > a:hover,
+[data-theme="dark"] .pricing-reference .header-menu > a[aria-current=page] {
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .pricing-reference .pricing-section {
+  background: linear-gradient(180deg, #0b111d 0%, #0f172a 100%) !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pricing-reference .pricing-section .section-heading h1,
+[data-theme="dark"] .pricing-reference .pricing-section .section-heading h2 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .pricing-section .section-heading > p,
+[data-theme="dark"] .pricing-reference .billing-note,
+[data-theme="dark"] .pricing-reference .pricing-disclosure {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card {
+  background: #111c30 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card:hover {
+  transform: translateY(-8px);
+  background: #14223d !important;
+  border-color: rgba(96, 165, 250, 0.6) !important;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.55), 0 0 30px rgba(59, 130, 246, 0.3) !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card:active,
+[data-theme="dark"] .pricing-reference .plan-card.is-pressed {
+  transform: translateY(-2px) scale(0.985) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4) !important;
+  transition: transform 0.08s ease, box-shadow 0.08s ease !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .plan-top h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .plan-top p {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .plan-price strong,
+[data-theme="dark"] .pricing-reference .plan-card .plan-price .custom-price {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .plan-price .currency {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .plan-price .price-period {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .plan-price-note {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .plan-scope-title {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .plan-features li {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .plan-divider {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card.featured {
+  background: linear-gradient(180deg, #152747 0%, #111c30 100%) !important;
+  border: 2px solid #3b82f6 !important;
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.25) !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card.featured:hover {
+  transform: translateY(-10px);
+  background: linear-gradient(180deg, #1c3563 0%, #13223d 100%) !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 26px 55px rgba(0, 0, 0, 0.65), 0 0 40px rgba(59, 130, 246, 0.45) !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card.featured .popular-label {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .button-outline {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-card .button-outline:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .plan-demo-link {
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-heading h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-heading p {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-desktop {
+  background: #111c30 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-header {
+  background: #182740 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-row {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-row strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-row > span:not(:first-child) {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-mobile details {
+  background: #111c30 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-mobile summary {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-mobile dl > div {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .pricing-reference .comparison-mobile dd {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .pricing-reference .cta-section {
+  background: linear-gradient(115deg, #1e2e5c 0%, #111c30 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .pricing-reference .cta-section h2 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .pricing-reference .cta-section p {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .pricing-reference .cta-section .eyebrow {
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .section.compact {
+  background: #0b111d !important;
+}
+
+[data-theme="dark"] .faq-grid h2 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .faq-grid p {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .faq-item {
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .faq-item summary {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .faq-item summary:after {
+  color: #60a5fa !important;
+}
+
+[data-theme="dark"] .faq-item p {
+  color: #cbd5e1 !important;
+}

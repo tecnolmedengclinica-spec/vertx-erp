@@ -5,12 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}VERTYX{% endblock %} · VERTYX</title>
+    <link rel="icon" type="image/png" href="{% static 'img/vertyx-icon.png' %}">
     <link href="{% static 'vendor/bootstrap.min.css' %}" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script>
+      (function() {
+        try {
+          const theme = localStorage.getItem('vertyx_theme') || 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
     <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
-    <link rel="stylesheet" href="{% static 'css/vertyx.css' %}">
-<meta name="theme-color" content="#006f74"><link rel="manifest" href="{% if pdv_experience %}{% url 'operacao:pdv_manifest_scoped' %}{% elif seller_experience %}{% url 'operacao:seller_manifest' %}{% elif technician_experience %}{% url 'operacao:technician_manifest' %}{% else %}{% url 'operacao:manifest' %}{% endif %}">
+    <link rel="stylesheet" href="{% static 'css/vertyx.css' %}?v=20261110_ui3">
+<meta name="theme-color" content="#0b111d"><link rel="manifest" href="{% if pdv_experience %}{% url 'operacao:pdv_manifest_scoped' %}{% elif seller_experience %}{% url 'operacao:seller_manifest' %}{% elif technician_experience %}{% url 'operacao:technician_manifest' %}{% else %}{% url 'operacao:manifest' %}{% endif %}">
 {% if technician_experience %}<link rel="stylesheet" href="{% static 'css/technician.css' %}">{% endif %}
 {% if pdv_experience or seller_experience or request.resolver_match.url_name == 'seller_management' %}<link rel="stylesheet" href="{% static 'css/seller.css' %}?v=seller-console-6">{% endif %}
 </head>
@@ -20,60 +29,189 @@
 {% if user.is_authenticated %}
 <nav class="navbar navbar-expand-xl navbar-dark bg-dark vx-nav" aria-label="Navegação principal">
   <div class="container-fluid">
-    <a class="navbar-brand" href="{% if pdv_experience %}{% url 'operacao:pdv_home' %}{% elif seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}">VERTYX</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir ou recolher menu principal">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    {% if request.membership and not seller_experience and not pdv_experience and request.membership.role != 'TECNICO' and request.membership.role != 'CLIENTE' and request.membership.role != 'PAINEL' %}<a class="btn btn-outline-light btn-sm me-2" href="{% url 'operacao:pesquisa' %}">Pesquisa</a>{% endif %}
+
+    <!-- Sidebar Header (Brand & Toggles) -->
+    <div class="d-flex align-items-center justify-content-between w-100 pb-2 border-bottom border-secondary border-opacity-10 vx-navbar-header">
+      <a class="navbar-brand d-inline-flex align-items-center p-0 m-0" href="{% if pdv_experience %}{% url 'operacao:pdv_home' %}{% elif seller_experience %}{% url 'operacao:seller_home' %}{% elif request.membership and request.membership.role == 'TECNICO' %}{% url 'operacao:tecnico' %}{% else %}{% url 'platform_core:home' %}{% endif %}">
+        <img src="{% static 'img/vertyx-logo-white.png' %}" alt="VERTYX" height="26" class="vx-navbar-logo vx-logo-dark">
+        <img src="{% static 'img/vertyx-logo.png' %}" alt="VERTYX" height="26" class="vx-navbar-logo vx-logo-light">
+        <img src="{% static 'img/vertyx-icon.png' %}" alt="VERTYX" height="28" class="vx-navbar-mini-logo d-none">
+      </a>
+
+      <!-- Desktop Collapse Toggle Button -->
+      <button class="btn btn-sm btn-outline-secondary d-none d-xl-flex align-items-center justify-content-center p-1 px-2 vx-desktop-collapse-btn" type="button" data-sidebar-toggle aria-label="Recolher menu lateral" title="Recolher menu lateral" style="border-radius: 6px;">
+        <i class="bi bi-layout-sidebar-inset"></i>
+      </button>
+
+      <!-- Mobile Toggles -->
+      <div class="d-flex align-items-center gap-2 d-xl-none">
+        <button type="button" class="btn btn-outline-secondary btn-sm vx-theme-toggle-btn px-2 py-1" onclick="window.toggleVertyxTheme()" aria-label="Alternar tema">
+          <i class="bi bi-sun-fill text-warning vx-icon-sun"></i>
+          <i class="bi bi-moon-stars-fill text-info vx-icon-moon"></i>
+        </button>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir ou recolher menu principal">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Search Input Trigger -->
+    {% if request.membership and not seller_experience and not pdv_experience and request.membership.role != 'TECNICO' and request.membership.role != 'CLIENTE' and request.membership.role != 'PAINEL' %}
+    <a href="{% url 'operacao:pesquisa' %}" class="vx-sidebar-search" title="Pesquisa rápida no ERP (Atalho: /)">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-search text-secondary"></i>
+        <span class="vx-nav-label text-truncate">Buscar recurso ou OS...</span>
+      </div>
+      <span class="vx-search-badge">/</span>
+    </a>
+    {% endif %}
+
     <div class="collapse navbar-collapse" id="menuPrincipal">
-      <ul class="navbar-nav me-auto flex-wrap">
+      <ul class="navbar-nav me-auto flex-wrap w-100">
         {% if pdv_experience %}
-        <li class="vx-nav-group"><span>VERTYX PDV</span><ul>{% for link in pdv_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}">{{ link.label }}</a></li>{% endfor %}</ul></li>
+        <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-shop text-info me-2"></i>VERTYX PDV</span><ul>{% for link in pdv_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}">{{ link.label }}</a></li>{% endfor %}</ul></li>
         {% elif seller_experience %}
-        <li class="vx-nav-group"><span>VERTYX VENDEDOR</span><ul>{% for link in seller_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
-        {% elif request.membership.role == 'TECNICO' %}
-        <li class="vx-nav-group"><span>ASSISTÊNCIA EM CAMPO</span><ul>{% for link in technician_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
-        {% elif executive_navigation %}<li class="nav-item"><a class="nav-link" href="{% url 'platform_core:home' %}" title="Voltar para VERTYX"><i class="bi bi-arrow-left-circle" aria-hidden="true"></i><span class="vx-nav-label">Voltar para VERTYX</span></a></li><li class="nav-item"><button class="vx-sidebar-toggle" type="button" data-sidebar-toggle aria-label="Recolher menu lateral" aria-expanded="true"><i class="bi bi-layout-sidebar" aria-hidden="true"></i><span class="vx-nav-label">Recolher menu</span></button></li>{% for group in executive_navigation %}<li class="vx-nav-group">{% if administrative_navigation %}<details class="vx-module"><summary>{{ group.title }}</summary>{% else %}<span>{{ group.title }}</span>{% endif %}<ul>{% for link in group.links %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}" title="{{ link.label }}" aria-label="{{ link.label }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul>{% if administrative_navigation %}</details>{% endif %}</li>{% endfor %}{% else %}
+        <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-person-badge text-success me-2"></i>VERTYX VENDEDOR</span><ul>{% for link in seller_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
+        {% elif request.membership and request.membership.role == 'TECNICO' %}
+        <li class="vx-nav-group"><span class="vx-nav-group-title"><i class="bi bi-wrench-adjustable text-warning me-2"></i>ASSISTÊNCIA EM CAMPO</span><ul>{% for link in technician_navigation %}<li class="nav-item"><a class="nav-link" href="{{ link.url }}"><svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg><span class="vx-nav-label">{{ link.label }}</span></a></li>{% endfor %}</ul></li>
+        {% elif executive_navigation %}
+          <li class="nav-item mb-2">
+            <a class="nav-link vx-back-link" href="{% url 'platform_core:home' %}" title="Voltar para Área de Gestão VERTYX">
+              <i class="bi bi-arrow-left-circle text-primary" aria-hidden="true"></i>
+              <span class="vx-nav-label">Área de Organizações</span>
+            </a>
+          </li>
+
+          {% for group in executive_navigation %}
+            {% if group.links %}
+              <li class="vx-nav-group">
+                {% if administrative_navigation %}
+                  <details class="vx-module"{% if forloop.counter <= 2 or group.title == 'Operacional' or group.title == 'Vendas' %} open{% endif %}>
+                    <summary>
+                      <span>
+                        {% if group.title == 'Operacional' %}<i class="bi bi-activity text-primary me-2"></i>
+                        {% elif group.title == 'Vendas' %}<i class="bi bi-bag-check text-success me-2"></i>
+                        {% elif group.title == 'PDV' %}<i class="bi bi-shop text-info me-2"></i>
+                        {% elif group.title == 'Estoque' %}<i class="bi bi-boxes text-warning me-2"></i>
+                        {% elif group.title == 'Compras' %}<i class="bi bi-cart3 text-secondary me-2"></i>
+                        {% elif group.title == 'Financeiro' %}<i class="bi bi-cash-stack text-success me-2"></i>
+                        {% elif group.title == 'RH' %}<i class="bi bi-people text-info me-2"></i>
+                        {% elif group.title == 'Relatórios' %}<i class="bi bi-bar-chart-line text-warning me-2"></i>
+                        {% elif group.title == 'Configurações' %}<i class="bi bi-gear text-secondary me-2"></i>
+                        {% else %}<i class="bi bi-folder2 text-secondary me-2"></i>
+                        {% endif %}
+                        <span class="vx-nav-label">{{ group.title }}</span>
+                      </span>
+                    </summary>
+                {% else %}
+                  <span class="vx-nav-group-title">{{ group.title }}</span>
+                {% endif %}
+                <ul>
+                  {% for link in group.links %}
+                    <li class="nav-item">
+                      <a class="nav-link" href="{{ link.url }}" title="{{ link.label }}" aria-label="{{ link.label }}">
+                        <svg class="vx-menu-icon" aria-hidden="true"><use href="#vx-menu-{{ link.icon }}"></use></svg>
+                        <span class="vx-nav-label">{{ link.label }}</span>
+                      </a>
+                    </li>
+                  {% endfor %}
+                </ul>
+                {% if administrative_navigation %}</details>{% endif %}
+              </li>
+            {% endif %}
+          {% endfor %}
+        {% else %}
         <li class="nav-item"><a class="nav-link" href="{% url 'platform_core:home' %}">Voltar para VERTYX</a></li>
-        {% if request.membership.role == 'CLIENTE' %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:portal' %}">Portal do cliente</a></li>{% elif request.resolver_match.app_name != 'platform_core' %}
+        {% if request.membership and request.membership.role == 'CLIENTE' %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:portal' %}">Portal do cliente</a></li>{% elif request.resolver_match.app_name != 'platform_core' %}
         <li class="nav-item"><a class="nav-link" href="{% url 'core:painel' %}">Painel</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'ordens:lista' %}">Ordens de Serviço</a></li>
         {% if can_operational_panel %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:operational_panel' %}">Painel operacional</a></li>{% endif %}
         {% modulo_permitido 'planejamento' as planejamento_permitido %}
-        <li class="nav-item">{% if planejamento_permitido %}<a class="nav-link" href="{% url 'operacao:calendario' %}">Planejamento</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Planejamento</span>{% endif %}</li>
+        {% if planejamento_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:calendario' %}">Planejamento</a></li>{% endif %}
         <li class="nav-item"><a class="nav-link" href="{% url 'clientes:cliente_list' %}">Clientes e Unidades</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'equipamentos:equipamento_list' %}">Equipamentos</a></li>
         {% if user.is_administrador or user.is_gestor %}<li class="nav-item"><a class="nav-link" href="{% url 'contas:tecnico_list' %}">Técnicos</a></li>{% endif %}
         {% modulo_permitido 'estoque' as estoque_permitido %}{% modulo_permitido 'orcamentos' as orcamentos_permitido %}{% modulo_permitido 'contratos' as contratos_permitido %}{% modulo_permitido 'financeiro' as financeiro_permitido %}{% modulo_permitido 'relatorios' as relatorios_permitido %}
-        <li class="nav-item">{% if estoque_permitido %}<a class="nav-link" href="{% url 'gestao:peca_lista' %}">Peças e Estoque</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Peças e Estoque</span>{% endif %}</li>
-        <li class="nav-item">{% if orcamentos_permitido %}<a class="nav-link" href="{% url 'gestao:orcamento_lista' %}">Orçamentos</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Orçamentos</span>{% endif %}</li>
-        <li class="nav-item">{% if contratos_permitido %}<a class="nav-link" href="{% url 'gestao:contrato_lista' %}">Contratos</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Contratos</span>{% endif %}</li>
-        <li class="nav-item">{% if financeiro_permitido %}<a class="nav-link" href="{% url 'gestao:financeiro' %}">Financeiro</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Financeiro</span>{% endif %}</li>
-        <li class="nav-item">{% if relatorios_permitido %}<a class="nav-link" href="{% url 'gestao:relatorios' %}">Relatórios</a>{% else %}<span class="nav-link disabled" aria-disabled="true" title="Sem permissão">Relatórios</span>{% endif %}</li>
+        {% if estoque_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:peca_lista' %}">Peças e Estoque</a></li>{% endif %}
+        {% if orcamentos_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:orcamento_lista' %}">Orçamentos</a></li>{% endif %}
+        {% if contratos_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:contrato_lista' %}">Contratos</a></li>{% endif %}
+        {% if financeiro_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:financeiro' %}">Financeiro</a></li>{% endif %}
+        {% if relatorios_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'gestao:relatorios' %}">Relatórios</a></li>{% endif %}
         {% if user.is_administrador %}
         <li class="nav-item"><a class="nav-link" href="{% url 'contas:usuario_list' %}">Usuários</a></li>
         {% endif %}
-{% if planejamento_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:conhecimento_lista' %}">Conhecimento técnico</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:tecnico' %}">Meu atendimento</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:chamado_lista' %}">Chamados</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:plano_lista' %}">Preventivas</a></li>{% endif %}
-{% modulo_permitido 'estoque_escrever' as estoque_escrever %}{% if estoque_escrever %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:compra_lista' %}">Compras</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:deposito_lista' %}">Depósitos</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:sugestoes' %}">Reposição sugerida</a></li>{% endif %}
-{% if contratos_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:venda_lista' %}">Vendas e loja</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:portal_acesso_lista' %}">Acessos ao portal</a></li>{% endif %}
-{% if financeiro_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:banco_lista' %}">Bancos e caixa</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:fiscal_lista' %}">Fiscal</a></li>{% endif %}
-<li class="nav-item"><a class="nav-link" href="{% url 'operacao:documento_lista' %}">Documentos</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:notificacoes' %}">Notificações</a></li>
-{% modulo_permitido 'pdv' as pdv_ok %}{% if pdv_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:pdv_home' %}">PDV</a></li>{% endif %}{% modulo_permitido 'ponto' as ponto_ok %}{% if ponto_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:ponto_home' %}">Meu ponto</a></li>{% endif %}{% modulo_permitido 'rh' as rh_ok %}{% if rh_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:rh_list' 'funcionarios' %}">RH</a></li>{% endif %}{% modulo_permitido 'executivo' as exec_ok %}{% if exec_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:executive' %}">Gestão executiva</a></li>{% endif %}{% if estoque_escrever %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:inventory_list' %}">Inventário</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:transfer_list' %}">Transferências</a></li>{% endif %}{% if user.is_administrador %}<li class="nav-item"><a class="nav-link" href="{% url 'platform_core:empresa' %}">Empresa e módulos</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:configuracao' %}">Configurações</a></li>{% endif %}
+        {% if planejamento_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:conhecimento_lista' %}">Conhecimento técnico</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:tecnico' %}">Meu atendimento</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:chamado_lista' %}">Chamados</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:plano_lista' %}">Preventivas</a></li>{% endif %}
+        {% modulo_permitido 'estoque_escrever' as estoque_escrever %}{% if estoque_escrever %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:compra_lista' %}">Compras</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:deposito_lista' %}">Depósitos</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:sugestoes' %}">Reposição sugerida</a></li>{% endif %}
+        {% if contratos_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:venda_lista' %}">Vendas e loja</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:portal_acesso_lista' %}">Acessos ao portal</a></li>{% endif %}
+        {% if financeiro_permitido %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:banco_lista' %}">Bancos e caixa</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:fiscal_lista' %}">Fiscal</a></li>{% endif %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'operacao:documento_lista' %}">Documentos</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:notificacoes' %}">Notificações</a></li>
+        {% modulo_permitido 'pdv' as pdv_ok %}{% if pdv_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:pdv_home' %}">PDV</a></li>{% endif %}{% modulo_permitido 'ponto' as ponto_ok %}{% if ponto_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:ponto_home' %}">Meu ponto</a></li>{% endif %}{% modulo_permitido 'rh' as rh_ok %}{% if rh_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:rh_list' 'funcionarios' %}">RH</a></li>{% endif %}{% modulo_permitido 'executivo' as exec_ok %}{% if exec_ok %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:executive' %}">Gestão executiva</a></li>{% endif %}{% if estoque_escrever %}<li class="nav-item"><a class="nav-link" href="{% url 'operacao:inventory_list' %}">Inventário</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:transfer_list' %}">Transferências</a></li>{% endif %}{% if user.is_administrador %}<li class="nav-item"><a class="nav-link" href="{% url 'platform_core:empresa' %}">Empresa</a></li><li class="nav-item"><a class="nav-link" href="{% url 'platform_core:meu_plano' %}">Minha Assinatura</a></li><li class="nav-item"><a class="nav-link" href="{% url 'operacao:configuracao' %}">Configurações</a></li>{% endif %}
         {% endif %}
-        {% endif %}</ul>
-      <span class="navbar-text text-light me-3">{{ request.organization.display_name }} · {{ user.get_full_name|default:user.username }} ({{ request.membership.get_role_display }})</span>
-      <form method="post" action="{% url 'contas:logout' %}">
-        {% csrf_token %}
-        <button class="btn btn-outline-light btn-sm">Sair</button>
-      </form>
+        {% endif %}
+      </ul>
+
+      <!-- User Profile Footer Card -->
+      <div class="mt-auto pt-3 border-top border-secondary border-opacity-10 w-100 vx-sidebar-footer">
+
+        <!-- Theme Toggle Button -->
+        <button type="button" class="btn btn-sm w-100 mb-2 vx-theme-toggle-btn d-none d-xl-flex align-items-center justify-content-between px-3 py-2" onclick="window.toggleVertyxTheme()" title="Alternar entre modo escuro e claro" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 8px;">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-sun-fill text-warning vx-icon-sun"></i>
+            <i class="bi bi-moon-stars-fill text-info vx-icon-moon"></i>
+            <span class="vx-theme-label small fw-semibold" style="color: var(--vx-ink);">Modo Claro</span>
+          </div>
+          <span class="badge bg-secondary bg-opacity-25 text-secondary small" style="font-size: 0.65rem;">Tema</span>
+        </button>
+
+        <!-- User Profile Card -->
+        <div class="p-2 rounded-3 d-flex align-items-center justify-content-between" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border);">
+          <div class="d-flex align-items-center gap-2 overflow-hidden" style="min-width: 0;">
+            <!-- Avatar with initials -->
+            <div class="position-relative flex-shrink-0" style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold;">
+              {{ user.username|slice:":2"|upper }}
+              <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-dark rounded-circle" style="width: 8px; height: 8px;"></span>
+            </div>
+
+            <!-- User and Tenant Info -->
+            <div class="vx-sidebar-footer-info" style="min-width: 0;">
+              <div class="small fw-bold text-truncate" style="color: var(--vx-ink); font-size: 0.82rem;" title="{{ user.get_full_name|default:user.username }}">
+                {{ user.get_full_name|default:user.username }}
+              </div>
+              <div class="text-secondary text-truncate" style="font-size: 0.72rem;" title="{{ request.organization.display_name }}">
+                {{ request.organization.display_name }} · <span class="badge bg-primary-subtle text-primary p-0 px-1" style="font-size: 0.65rem;">{% if request.membership %}{{ request.membership.get_role_display|default:request.membership.role }}{% else %}Membro{% endif %}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Logout Button -->
+          <form method="post" action="{% url 'contas:logout' %}" class="m-0 flex-shrink-0">
+            {% csrf_token %}
+            <button class="btn btn-outline-danger btn-sm p-1 px-2" title="Sair do Sistema" style="border-radius: 6px; font-size: 0.8rem;">
+              <i class="bi bi-box-arrow-right"></i>
+            </button>
+          </form>
+        </div>
+
+      </div>
+
     </div>
   </div>
 </nav>
 {% endif %}
 
+{% if not user.is_authenticated %}
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+  <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 shadow-sm vx-theme-toggle-btn d-flex align-items-center gap-2" onclick="window.toggleVertyxTheme()" aria-label="Alternar tema">
+    <i class="bi bi-sun-fill text-warning vx-icon-sun"></i>
+    <i class="bi bi-moon-stars-fill text-info vx-icon-moon"></i>
+    <span class="vx-theme-label small">Modo Claro</span>
+  </button>
+</div>
+{% endif %}
+
 <div class="vx-main" id="conteudo">
   {% if user.is_authenticated and contingencia_jornada_contratual %}<div class="alert alert-warning" role="status">Modo de contingência: Jornada Contratual suspensa. Histórico preservado; atendimentos continuam pelo fluxo da OS.</div>{% endif %}
-  {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if pdv_experience %}<a href="{% url 'operacao:pdv_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:pdv_home' %}">PDV</a>{% elif seller_experience %}<a href="{% url 'operacao:seller_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Minha rotina</a>{% elif request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
+  {% if user.is_authenticated %}<nav class="vx-breadcrumb" aria-label="Localização">{% if pdv_experience %}<a href="{% url 'operacao:pdv_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:pdv_home' %}">PDV</a>{% elif seller_experience %}<a href="{% url 'operacao:seller_home' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:seller_home' %}">Minha rotina</a>{% elif request.membership and request.membership.role == 'TECNICO' %}<a href="{% url 'operacao:tecnico' %}">VERTYX</a><span>›</span><a href="{% url 'operacao:tecnico' %}">Meus atendimentos</a>{% else %}<a href="{% url 'platform_core:home' %}">VERTYX</a>{% if request.resolver_match.app_name != 'platform_core' %}<span>›</span><a href="{% url 'core:painel' %}">Assistência</a>{% endif %}{% endif %}<span>›</span><span>{{ request.organization.display_name }}</span></nav>{% endif %}
   {% if uploads_disabled %}<div class="alert alert-info" role="status">Homologação sem armazenamento de arquivos: fotos, documentos e logos estão desativados. Cadastros e operações sem anexos continuam disponíveis.</div>{% endif %}
   {% for message in messages %}
     <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
@@ -87,7 +225,7 @@
   {% if pdv_experience or seller_experience %}<p class="sv-connection" data-connection-status role="status" aria-live="polite">As operações exigem conexão e são confirmadas ao salvar.</p>{% endif %}
 </div>
 
-{% if request.membership.role == 'TECNICO' %}<nav class="vx-bottom" aria-label="Atalhos do técnico">{% for link in technician_navigation %}{% if link.url == '/tecnico/' %}<a href="{{ link.url }}">Atender</a>{% elif link.url == '/planejamento/' %}<a href="{{ link.url }}">Agenda</a>{% elif link.url == '/ordens/' %}<a href="{{ link.url }}">OS</a>{% elif link.url == '/notificacoes/' %}<a href="{{ link.url }}">Alertas</a>{% endif %}{% endfor %}</nav>{% endif %}
+{% if request.membership and request.membership.role == 'TECNICO' %}<nav class="vx-bottom" aria-label="Atalhos do técnico">{% for link in technician_navigation %}{% if link.url == '/tecnico/' %}<a href="{{ link.url }}">Atender</a>{% elif link.url == '/planejamento/' %}<a href="{{ link.url }}">Agenda</a>{% elif link.url == '/ordens/' %}<a href="{{ link.url }}">OS</a>{% elif link.url == '/notificacoes/' %}<a href="{{ link.url }}">Alertas</a>{% endif %}{% endfor %}</nav>{% endif %}
 <script src="{% static 'vendor/bootstrap.bundle.min.js' %}"></script>
 {% if seller_experience %}<nav class="sv-bottom" aria-label="Atalhos do vendedor">{% for link in seller_navigation %}{% if link.url == '/vendedor/' %}<a href="{{ link.url }}">Rotina</a>{% elif link.url == '/vendedor/vendas/' %}<a href="{{ link.url }}">Vendas</a>{% elif link.url == '/vendedor/meta/' %}<a href="{{ link.url }}">Meta</a>{% elif link.url == '/vendedor/ponto/' %}<a href="{{ link.url }}">Ponto</a>{% elif link.url == '/vendedor/alertas/' %}<a href="{{ link.url }}">Alertas</a>{% endif %}{% endfor %}</nav>{% endif %}
 <script src="{% static 'js/pdv-outbox.js' %}" defer></script>

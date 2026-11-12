@@ -104,3 +104,49 @@ def reconciliar(request, pk):
     except ValidationError as exc:
         return HttpResponseBadRequest('; '.join(exc.messages))
     return redirect('operacao:fiscal_simulacao_detalhe', pk=req.documento_id)
+
+@login_required
+@never_cache
+def danfse(request, pk):
+    s.permissao(request.user, 'fiscal_consultar')
+    doc = get_object_or_404(m.DocumentoFiscal, pk=pk, tipo='NFSE')
+    from django.http import HttpResponse
+    from fiscal.motors.nfse_adn import MotorNFSeADN
+    from fiscal.nfse.danfse import gerar_danfse_pdf
+
+    motor = MotorNFSeADN()
+    dados_dps = motor.converter_para_dados_dps(doc)
+    danfse_dados = {
+        'chave_acesso': doc.chave or f"352611{dados_dps.prestador.cnpj[:14]}55001{doc.numero or 1:0>10}",
+        'numero_nfse': str(doc.numero or 1),
+        'data_emissao': doc.criado_em.strftime('%d/%m/%Y %H:%M') if doc.criado_em else '',
+        'competencia': dados_dps.data_competencia,
+        'prestador': {
+            'razao_social': dados_dps.prestador.razao_social,
+            'cnpj': dados_dps.prestador.cnpj,
+            'municipio': dados_dps.servico.municipio_prestacao_ibge,
+            'im': dados_dps.prestador.inscricao_municipal or '-'
+        },
+        'tomador': {
+            'razao_social_nome': dados_dps.tomador.razao_social_nome,
+            'cnpj_cpf': dados_dps.tomador.cnpj_cpf,
+            'endereco': f"{dados_dps.tomador.endereco.logradouro}, {dados_dps.tomador.endereco.numero}" if dados_dps.tomador.endereco else '-',
+            'email': dados_dps.tomador.email or '-'
+        },
+        'servico': {
+            'discriminacao': dados_dps.servico.discriminacao,
+            'codigo_tributacao': dados_dps.servico.codigo_tributacao_nacional
+        },
+        'valores': {
+            'valor_servicos': f"{dados_dps.valores.valor_servicos:.2f}",
+            'valor_deducoes': "0,00",
+            'base_calculo': f"{dados_dps.valores.base_calculo_iss:.2f}",
+            'aliquota': f"{dados_dps.servico.aliquota_iss:.2f}",
+            'valor_iss': f"{dados_dps.valores.calcular_iss(dados_dps.servico.aliquota_iss):.2f}",
+            'valor_liquido': f"{dados_dps.valores.valor_servicos:.2f}"
+        }
+    }
+    pdf_bytes = gerar_danfse_pdf(danfse_dados)
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="DANFSE_{doc.numero or doc.pk}.pdf"'
+    return response

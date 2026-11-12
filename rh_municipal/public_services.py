@@ -716,6 +716,12 @@ SCOPE_PATHS['acaoplanoacaointerno'] = {
 }
 
 
+def _filter_scope(queryset, query):
+    # IN removes duplicate scope matches without adding DISTINCT to the
+    # outer query, which may need SELECT FOR UPDATE on PostgreSQL.
+    return queryset.filter(pk__in=queryset.model.objects.filter(query).values('pk'))
+
+
 def scoped_queryset(user, queryset, *, capability=None):
     accesses = list(accesses_for(user))
     if capability is not None:
@@ -742,7 +748,7 @@ def scoped_queryset(user, queryset, *, capability=None):
             for relation in ('justificativa__servidor__', 'solicitacao_hora_extra__servidor__'):
                 server_field = field.replace('_id', '_id')
                 query |= Q(**{relation + server_field: value})
-        return queryset.filter(query).distinct()
+        return _filter_scope(queryset, query)
     if queryset.model._meta.model_name == 'atribuicaojornadamunicipal':
         query = Q(pk__in=[])
         for access in accesses:
@@ -756,7 +762,7 @@ def scoped_queryset(user, queryset, *, capability=None):
             if value:
                 for relation in ('servidor__', 'grupo__'):
                     query |= Q(**{relation + field: value})
-        return queryset.filter(query).distinct()
+        return _filter_scope(queryset, query)
     paths = SCOPE_PATHS.get(queryset.model._meta.model_name)
     if not paths:
         return queryset.none()
@@ -773,7 +779,7 @@ def scoped_queryset(user, queryset, *, capability=None):
         value = getattr(access, f'{field}_id', None) if field else None
         if path and value:
             query |= Q(**{path: value})
-    return queryset.filter(query).distinct()
+    return _filter_scope(queryset, query)
 
 
 def audit_public(user, action, record, changes):

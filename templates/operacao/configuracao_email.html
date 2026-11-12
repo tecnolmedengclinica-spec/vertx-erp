@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configurações de E-mail · VERTYX{% endblock %}
+
+{% block content %}
+<main class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3 border-bottom border-secondary border-opacity-20">
+    <div>
+      <span class="badge" style="background: rgba(37, 99, 235, 0.18); color: #60a5fa; border: 1px solid rgba(37, 99, 235, 0.3); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 8px;">
+        Comunicação Transacional
+      </span>
+      <h1 class="h2 font-bold text-white mt-2 mb-1">Configurações de E-mail & Notificações</h1>
+      <p class="text-secondary small mb-0" style="color: #94a3b8 !important;">
+        Parâmetros de disparo SMTP para envio automático de laudos de OS, alertas de manutenção preventiva e faturas.
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'operacao:configuracao' %}">
+        <i class="bi bi-gear me-1"></i> Configurações Gerais
+      </a>
+      <a class="btn btn-outline-info" href="{% url 'operacao:notificacoes' %}">
+        <i class="bi bi-bell me-1"></i> Central de Notificações
+      </a>
+    </div>
+  </div>
+
+  <div class="alert alert-dark d-flex align-items-center gap-2 mb-4" style="background: #111827; border: 1px solid #1f293d; color: #cbd5e1;">
+    <i class="bi bi-info-circle text-primary fs-5"></i>
+    <div class="small">
+      Campos identificados com <strong class="text-danger">*</strong> são <strong>obrigatórios</strong> para viabilizar a entrega técnica dos e-mails aos clientes.
+    </div>
+  </div>
+
+  <form method="post" id="email-config-form">
+    {% csrf_token %}
+
+    <div class="row g-4">
+      <!-- Coluna Esquerda: Servidor & Remetente -->
+      <div class="col-12 col-lg-7">
+        <!-- Servidor SMTP -->
+        <div class="card p-4 mb-4 shadow-sm" style="background: #111827; border: 1px solid #1f293d; border-radius: 12px;">
+          <h2 class="h5 text-white mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-hdd-network text-primary"></i> Servidor de Envio (SMTP)
+          </h2>
+          <div class="row g-3">
+            <div class="col-12 col-md-8">
+              <label for="{{ form.servidor_smtp.id_for_label }}" class="form-label">
+                Servidor SMTP (Host) <span class="vx-required-badge">Obrigatório</span>
+              </label>
+              {{ form.servidor_smtp }}
+              {% if form.servidor_smtp.errors %}<div class="text-danger small mt-1">{{ form.servidor_smtp.errors }}</div>{% endif %}
+              <small class="text-muted d-block mt-1">Ex: smtp.gmail.com, smtp.office365.com, email-smtp.amazonaws.com</small>
+            </div>
+            <div class="col-12 col-md-4">
+              <label for="{{ form.porta_smtp.id_for_label }}" class="form-label">
+                Porta <span class="vx-required-badge">Obrigatório</span>
+              </label>
+              {{ form.porta_smtp }}
+              {% if form.porta_smtp.errors %}<div class="text-danger small mt-1">{{ form.porta_smtp.errors }}</div>{% endif %}
+              <small class="text-muted d-block mt-1">587 (TLS) ou 465 (SSL)</small>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label for="{{ form.usuario_smtp.id_for_label }}" class="form-label">Usuário SMTP</label>
+              {{ form.usuario_smtp }}
+              {% if form.usuario_smtp.errors %}<div class="text-danger small mt-1">{{ form.usuario_smtp.errors }}</div>{% endif %}
+              <small class="text-muted d-block mt-1">Geralmente o mesmo que o e-mail de envio.</small>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <label for="{{ form.senha_smtp.id_for_label }}" class="form-label">Senha / App Password</label>
+              {{ form.senha_smtp }}
+              {% if form.senha_smtp.errors %}<div class="text-danger small mt-1">{{ form.senha_smtp.errors }}</div>{% endif %}
+              <small class="text-muted d-block mt-1">Senha de aplicativo ou token do provedor.</small>
+            </div>
+
+            <div class="col-12 pt-2">
+              <label class="form-label d-block mb-2">Protocolo de Criptografia</label>
+              <div class="d-flex gap-4">
+                <div class="form-check">
+                  {{ form.usar_tls }}
+                  <label class="form-check-label text-secondary" for="{{ form.usar_tls.id_for_label }}">
+                    TLS / STARTTLS (Recomendado - porta 587)
+                  </label>
+                </div>
+                <div class="form-check">
+                  {{ form.usar_ssl }}
+                  <label class="form-check-label text-secondary" for="{{ form.usar_ssl.id_for_label }}">
+                    SSL Direto (porta 465)
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Remetente Oficial -->
+        <div class="card p-4 shadow-sm" style="background: #111827; border: 1px solid #1f293d; border-radius: 12px;">
+          <h2 class="h5 text-white mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-person-badge text-primary"></i> Identidade do Remetente
+          </h2>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label for="{{ form.nome_remetente.id_for_label }}" class="form-label">
+                Nome de Exibição <span class="vx-required-badge">Obrigatório</span>
+              </label>
+              {{ form.nome_remetente }}
+              {% if form.nome_remetente.errors %}<div class="text-danger small mt-1">{{ form.nome_remetente.errors }}</div>{% endif %}
+              <small class="text-muted d-block mt-1">Ex: VERTYX Atendimento Hospitalar</small>
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="{{ form.email_remetente.id_for_label }}" class="form-label">
+                E-mail do Remetente <span class="vx-required-badge">Obrigatório</span>
+              </label>
+              {{ form.email_remetente }}
+              {% if form.email_remetente.errors %}<div class="text-danger small mt-1">{{ form.email_remetente.errors }}</div>{% endif %}
+              <small class="text-muted d-block mt-1">Ex: notificacoes@suaempresa.com.br</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna Direita: Gatilhos & Teste -->
+      <div class="col-12 col-lg-5">
+        <!-- Gatilhos de Disparo -->
+        <div class="card p-4 mb-4 shadow-sm" style="background: #111827; border: 1px solid #1f293d; border-radius: 12px;">
+          <h2 class="h5 text-white mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-send-check text-success"></i> Regras de Disparo Automático
+          </h2>
+
+          <div class="form-check form-switch mb-3 pb-2 border-bottom border-secondary border-opacity-10">
+            {{ form.ativo }}
+            <label class="form-check-label fw-bold text-white" for="{{ form.ativo.id_for_label }}">
+              Habilitar Disparos de E-mail
+            </label>
+          </div>
+
+          <div class="d-flex flex-column gap-3">
+            <div class="form-check">
+              {{ form.notificar_conclusao_os }}
+              <label class="form-check-label text-secondary small" for="{{ form.notificar_conclusao_os.id_for_label }}">
+                Enviar e-mail automático ao finalizar <strong>Ordem de Serviço</strong> (com link do laudo e DANFSE).
+              </label>
+            </div>
+
+            <div class="form-check">
+              {{ form.notificar_preventiva }}
+              <label class="form-check-label text-secondary small" for="{{ form.notificar_preventiva.id_for_label }}">
+                Avisar cliente sobre <strong>manutenção preventiva programada</strong> próxima do vencimento.
+              </label>
+            </div>
+
+            <div class="ps-4">
+              <label for="{{ form.dias_antecedencia_preventiva.id_for_label }}" class="form-label small text-muted">
+                Dias de antecedência:
+              </label>
+              <div style="max-width: 120px;">
+                {{ form.dias_antecedencia_preventiva }}
+              </div>
+            </div>
+
+            <div class="form-check">
+              {{ form.notificar_cobranca }}
+              <label class="form-check-label text-secondary small" for="{{ form.notificar_cobranca.id_for_label }}">
+                Enviar notificação de <strong>fatura / cobrança financeira</strong> gerada.
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card de Teste -->
+        <div class="card p-4 shadow-sm" style="background: #121a29; border: 1px dashed #2563eb; border-radius: 12px;">
+          <h2 class="h5 text-white mb-2 d-flex align-items-center gap-2">
+            <i class="bi bi-lightning-charge text-warning"></i> Testar Conectividade
+          </h2>
+          <p class="text-secondary small mb-3">
+            Dispare um e-mail de prova para validar se suas credenciais e porta estão autorizadas pelo provedor.
+          </p>
+
+          <div class="mb-3">
+            <label for="{{ form.email_teste.id_for_label }}" class="form-label small">
+              E-mail de Destino para Teste
+            </label>
+            {{ form.email_teste }}
+            <small class="text-muted d-block mt-1">Informe onde você deseja receber a mensagem de teste.</small>
+          </div>
+
+          {% if config.ultimo_teste_em %}
+          <div class="small mb-3 p-2 rounded" style="background: #0b111d; border: 1px solid #1f293d;">
+            <span class="text-muted">Último teste:</span> {{ config.ultimo_teste_em|date:'d/m/Y H:i:s' }}<br>
+            <span class="text-muted">Status:</span>
+            {% if 'OK' in config.ultimo_teste_status or 'SUCESSO' in config.ultimo_teste_status %}
+            <span class="text-success font-bold">{{ config.ultimo_teste_status }}</span>
+            {% else %}
+            <span class="text-danger font-bold">{{ config.ultimo_teste_status }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <button type="submit" name="action" value="testar" class="btn btn-outline-primary w-100 py-2">
+            <i class="bi bi-send me-1"></i> Enviar E-mail de Teste
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Ação Inferior -->
+    <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top border-secondary border-opacity-20">
+      <a class="btn btn-outline-secondary px-4 py-2" href="{% url 'operacao:configuracao' %}">
+        Cancelar
+      </a>
+      <button type="submit" name="action" value="salvar" class="btn btn-primary px-5 py-2">
+        <i class="bi bi-check-lg me-1"></i> Salvar Configurações
+      </button>
+    </div>
+  </form>
+</main>
+{% endblock %}

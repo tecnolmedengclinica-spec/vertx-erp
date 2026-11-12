@@ -1,0 +1,211 @@
+<section class="panel" id="modulos-cliente">
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">ENTITLEMENTS · EDIÇÃO POR CLIENTE</p>
+      <h2>Módulos e produtos liberados</h2>
+    </div>
+    <div class="module-summary-pills">
+      <span class="pill pill-green">{{ module_catalog.enabled_count }} ativo(s)</span>
+      {% if module_catalog.manual_allow_count %}
+        <span class="pill pill-blue">+{{ module_catalog.manual_allow_count }} liberado(s) manualmente</span>
+      {% endif %}
+      {% if module_catalog.manual_deny_count %}
+        <span class="pill pill-red">-{{ module_catalog.manual_deny_count }} removido(s) manualmente</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <p class="module-help-text">
+    Adicione ou remova módulos especificamente para este cliente, mesmo fora do plano padrão.
+    Permissões individuais por usuário (<code>MembershipERP</code> e <code>PermissaoMembership</code>) permanecem separadas.
+  </p>
+
+  <form method="post" action="{% url 'platform_core:saas_client_modules' organization.public_id %}" id="client-modules-form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_target|default:'detail' }}">
+    <input type="hidden" name="sync_erps" value="1">
+
+    <div class="erp-strip">
+      <span class="erp-strip-label">Produtos ERP da organização</span>
+      <div class="erp-pill-list">
+        {% for entry in module_catalog.erps %}
+          <label class="erp-toggle-pill {% if entry.enabled %}is-on{% endif %}">
+            <input type="checkbox" name="erps" value="{{ entry.erp.code }}" {% if entry.enabled %}checked{% endif %}>
+            <span>{{ entry.erp.name }}</span>
+            <small>{{ entry.erp.code }}{% if not entry.erp.operational %} · catálogo{% endif %}</small>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="module-toolbar">
+      <input
+        type="search"
+        class="module-search-input"
+        placeholder="Filtrar módulos pelo nome ou código..."
+        autocomplete="off"
+        data-module-search
+      >
+      <div class="module-filter-tabs" role="group" aria-label="Filtrar módulos">
+        <button type="button" class="btn-filter is-active" data-module-filter="all">Todos</button>
+        <button type="button" class="btn-filter" data-module-filter="enabled">Somente ativos</button>
+        <button type="button" class="btn-filter" data-module-filter="manual">Ajustes manuais</button>
+      </div>
+    </div>
+
+    <div class="module-groups-stack">
+      {% for group in module_catalog.groups %}
+        <details class="module-group-box" {% if group.open_by_default %}open{% endif %} data-module-group="{{ group.key }}">
+          <summary>
+            <span class="module-group-title">
+              <strong>{{ group.title }}</strong>
+              <small data-group-counter>{{ group.enabled_count }} / {{ group.total_count }} ativos</small>
+            </span>
+            <span class="module-group-actions">
+              <button type="button" class="btn-mini" data-group-select="all" data-group="{{ group.key }}">Marcar todos</button>
+              <button type="button" class="btn-mini" data-group-select="none" data-group="{{ group.key }}">Limpar</button>
+            </span>
+          </summary>
+          <div class="module-toggle-grid">
+            {% for item in group.items %}
+              <label
+                class="module-toggle-card is-{{ item.source }}{% if item.enabled %} is-checked{% endif %}"
+                data-module-card
+                data-search="{{ item.label|lower }} {{ item.code|lower }}"
+                data-enabled="{% if item.enabled %}1{% else %}0{% endif %}"
+                data-manual="{% if item.source == 'manual_allow' or item.source == 'manual_deny' %}1{% else %}0{% endif %}"
+              >
+                <input
+                  type="checkbox"
+                  name="modulos"
+                  value="{{ item.code }}"
+                  {% if item.enabled %}checked{% endif %}
+                >
+                <span class="module-card-body">
+                  <span class="module-card-name">{{ item.label }}</span>
+                  <span class="module-card-meta">
+                    <code>{{ item.code }}</code>
+                    <span class="module-source-badge badge-{{ item.source }}">{{ item.source_label }}</span>
+                  </span>
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+        </details>
+      {% endfor %}
+    </div>
+
+    <div class="module-save-bar">
+      <div class="field module-reason-field">
+        <label for="id_motivo_modulos">Motivo / observação (opcional)</label>
+        <input
+          id="id_motivo_modulos"
+          type="text"
+          name="motivo"
+          maxlength="255"
+          placeholder="Ex.: Liberação negociada em contrato ou remoção de módulo não contratado"
+        >
+      </div>
+      <div class="module-save-buttons">
+        <button class="btn-primary" type="submit" name="acao" value="salvar">Salvar módulos do cliente</button>
+        {% if module_catalog.has_overrides %}
+          <button
+            class="btn-secondary"
+            type="submit"
+            name="acao"
+            value="restaurar"
+            onclick="return confirm('Remover todos os ajustes manuais e restaurar apenas os módulos do plano/contrato?')"
+          >
+            Restaurar padrão do plano
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+</section>
+
+<script>
+(() => {
+  const form = document.getElementById('client-modules-form');
+  if (!form) return;
+  const searchInput = form.querySelector('[data-module-search]');
+  const filterButtons = Array.from(form.querySelectorAll('[data-module-filter]'));
+  const groups = Array.from(form.querySelectorAll('[data-module-group]'));
+  let activeFilter = 'all';
+
+  const updateCounters = () => {
+    groups.forEach((group) => {
+      const cards = Array.from(group.querySelectorAll('[data-module-card]'));
+      const checkedCount = cards.filter((card) => card.querySelector('input[type="checkbox"]')?.checked).length;
+      const counter = group.querySelector('[data-group-counter]');
+      if (counter) counter.textContent = `${checkedCount} / ${cards.length} ativos`;
+    });
+  };
+
+  const applyFilters = () => {
+    const query = (searchInput?.value || '').trim().toLowerCase();
+    groups.forEach((group) => {
+      const cards = Array.from(group.querySelectorAll('[data-module-card]'));
+      let visibleCount = 0;
+      cards.forEach((card) => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        const matchesText = !query || (card.dataset.search || '').includes(query);
+        const isEnabled = checkbox ? checkbox.checked : card.dataset.enabled === '1';
+        const isManual = card.dataset.manual === '1';
+        const matchesFilter =
+          activeFilter === 'all' ||
+          (activeFilter === 'enabled' && isEnabled) ||
+          (activeFilter === 'manual' && isManual);
+        const visible = matchesText && matchesFilter;
+        card.hidden = !visible;
+        if (visible) visibleCount += 1;
+      });
+      if ((query || activeFilter !== 'all') && visibleCount > 0) {
+        group.open = true;
+      }
+      group.hidden = (query || activeFilter !== 'all') && visibleCount === 0;
+    });
+  };
+
+  form.addEventListener('change', (event) => {
+    const target = event.target;
+    if (target instanceof HTMLInputElement && target.name === 'modulos') {
+      target.closest('[data-module-card]')?.classList.toggle('is-checked', target.checked);
+      updateCounters();
+      if (activeFilter === 'enabled') applyFilters();
+    } else if (target instanceof HTMLInputElement && target.name === 'erps') {
+      target.closest('.erp-toggle-pill')?.classList.toggle('is-on', target.checked);
+    }
+  });
+
+  form.querySelectorAll('[data-group-select]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const groupKey = button.dataset.group;
+      const selectAll = button.dataset.groupSelect === 'all';
+      const group = form.querySelector(`[data-module-group="${groupKey}"]`);
+      if (!group) return;
+      group.open = true;
+      group.querySelectorAll('[data-module-card]').forEach((card) => {
+        if (card.hidden) return;
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+          checkbox.checked = selectAll;
+          card.classList.toggle('is-checked', selectAll);
+        }
+      });
+      updateCounters();
+    });
+  });
+
+  searchInput?.addEventListener('input', applyFilters);
+  filterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      activeFilter = button.dataset.moduleFilter || 'all';
+      filterButtons.forEach((btn) => btn.classList.toggle('is-active', btn === button));
+      applyFilters();
+    });
+  });
+})();
+</script>

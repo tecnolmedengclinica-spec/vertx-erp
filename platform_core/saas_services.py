@@ -15,10 +15,13 @@ from .models import (
     Organization, OrganizationERP, OrganizationMembership, MembershipERP,
     ERPCatalog, ModuloOrganizacao, ConfiguracaoEmpresa,
 )
-from .modules import active_contract_items
+from .modules import (
+    LEGACY_COMPAT_MODULE_CODES, MODULE_EXPANSION_IMPLICATIONS, active_contract_items,
+    baseline_effective_modules, expand_declared_modules, platform_module_overrides,
+)
 from .saas_models import (
-    AssinaturaSaaS, AuditoriaSaaS, ContratoSaaS, HistoricoPlanoSaaS, ItemContratoSaaS,
-    PlanoSaaS, PrimeiroAcessoSaaS,
+    AjusteModuloSaaS, AssinaturaSaaS, AuditoriaSaaS, CORE_SAAS_MODULES, ContratoSaaS,
+    HistoricoPlanoSaaS, ItemContratoSaaS, MODULE_LABELS, PlanoSaaS, PrimeiroAcessoSaaS,
 )
 
 
@@ -438,42 +441,320 @@ def reemitir_convite_avaliador(*, actor, organization, user_id):
     return {'user':user, 'membership':membership, 'token':raw, 'token_id':token.pk}
 
 
+CLIENT_MODULE_GROUP_SPECS = (
+    (
+        'assistencia',
+        'Operação, Comércio & Serviços (Empresarial / Assistência)',
+        (
+            'clientes', 'produtos', 'assistencia', 'contratos', 'pdv', 'compras',
+            'estoque_basico', 'estoque_completo', 'financeiro_basico', 'financeiro_completo',
+            'fiscal', 'portal', 'pwa_tecnico', 'pwa_vendedor',
+            'rh_asst_basico', 'rh_asst_completo',
+            'documentos_basicos', 'documentos_completos',
+            'relatorios_basicos', 'relatorios_completos',
+        ),
+    ),
+    (
+        'gestao_publica',
+        'Gestão Pública Municipal & Saúde',
+        (
+            'gestao_publica', 'estrutura_municipal', 'usuarios_municipais',
+            'acessos_municipais', 'convites_municipais', 'saude_sus', 'educacao_municipal',
+            'tributos_municipais', 'gestao_territorial', 'nfse_municipal',
+            'planejamento_publico', 'orcamento_publico', 'contabilidade_pub', 'tesouraria_publica',
+            'compras_publicas', 'licitacoes_publicas', 'registro_precos', 'contratos_publicos',
+            'rh_municipal', 'ponto_digital', 'patrimonio', 'almoxarifado', 'frotas',
+            'processo_digital', 'transparencia', 'ouvidoria', 'esic', 'controle_interno',
+        ),
+    ),
+)
+
+
+def canonical_client_module_codes():
+    """Ordered tuple of editable module codes (excluding legacy compatibility aliases)."""
+    ordered = []
+    seen = set()
+    for _key, _title, codes in CLIENT_MODULE_GROUP_SPECS:
+        for code in codes:
+            if code in MODULE_LABELS and code not in LEGACY_COMPAT_MODULE_CODES and code not in seen:
+                ordered.append(code)
+                seen.add(code)
+    for code in sorted(MODULE_LABELS):
+        if code not in LEGACY_COMPAT_MODULE_CODES and code not in seen:
+            ordered.append(code)
+            seen.add(code)
+    return tuple(ordered)
+
+
+def _expand_with_legacy_compat(canonical_enabled, overrides=None):
+    enabled = set(canonical_enabled)
+    if 'estoque_basico' in enabled or 'estoque_completo' in enabled:
+        enabled.add('estoque')
+    if 'financeiro_basico' in enabled or 'financeiro_completo' in enabled:
+        enabled.add('financeiro')
+    if 'rh_asst_basico' in enabled or 'rh_asst_completo' in enabled:
+        enabled.update({'rh', 'ponto'})
+    if 'documentos_basicos' in enabled or 'documentos_completos' in enabled:
+        enabled.add('documentos')
+    for code, mode in (overrides or {}).items():
+        if mode == AjusteModuloSaaS.Modo.ALLOW:
+            enabled.add(code)
+            enabled.update(MODULE_EXPANSION_IMPLICATIONS.get(code, ()))
+    for code, mode in (overrides or {}).items():
+        if mode == AjusteModuloSaaS.Modo.DENY:
+            enabled.discard(code)
+    return enabled
+
+
+def _sync_modulo_organizacao(organization, enabled_codes):
+    choices = {value for value, _label in ModuloOrganizacao._meta.get_field('codigo').choices}
+    with tenant_context(organization):
+        for code in choices:
+            target = code in enabled_codes
+            row = ModuloOrganizacao.objects.filter(organization=organization, codigo=code).first()
+            if row is None:
+                ModuloOrganizacao.objects.create(organization=organization, codigo=code, habilitado=target)
+            elif row.habilitado != target:
+                row.habilitado = target
+                row.save(update_fields=['habilitado'])
+
+
 def aplicar_modulos(organization, plan):
-    from .saas_models import CORE_SAAS_MODULES
-    enabled = set(plan.modulos) | set(CORE_SAAS_MODULES)
-    # Expand each plan-declared module once. Some legacy aliases are emitted
-    # for compatibility (for example financeiro_basico -> financeiro); they
-    # must not be recursively interpreted as a grant of the complete tier.
-    implications = {
-        'estoque_completo': {'estoque_basico', 'estoque'},
-        'estoque_basico': {'estoque'},
-        'estoque': {'estoque_basico', 'estoque_completo'},
-        'financeiro_completo': {'financeiro_basico', 'financeiro'},
-        'financeiro_basico': {'financeiro'},
-        'financeiro': {'financeiro_basico', 'financeiro_completo'},
-        'rh_asst_completo': {'rh_asst_basico', 'rh', 'ponto'},
-        'rh_asst_basico': {'rh', 'ponto'},
-        'rh': {'rh_asst_basico', 'rh_asst_completo', 'ponto'},
-        'ponto': {'rh_asst_basico'},
-        'documentos_completos': {'documentos_basicos', 'documentos'},
-        'documentos_basicos': {'documentos'},
-        'documentos': {'documentos_basicos', 'documentos_completos'},
-        'relatorios_completos': {'relatorios_basicos'},
-    }
     declared = set(plan.modulos) | set(CORE_SAAS_MODULES)
-    for code in declared:
-        enabled.update(implications.get(code, ()))
+    enabled = expand_declared_modules(declared)
     choices = {value for value, _label in ModuloOrganizacao._meta.get_field('codigo').choices}
     if enabled - choices:
         raise ValidationError('O plano possui módulo que não existe no catálogo operacional.')
-    with tenant_context(organization):
-        for code in choices:
-            row = ModuloOrganizacao.objects.filter(organization=organization, codigo=code).first()
-            if row is None:
-                ModuloOrganizacao.objects.create(organization=organization, codigo=code, habilitado=code in enabled)
-            elif row.habilitado != (code in enabled):
-                row.habilitado = code in enabled
-                row.save(update_fields=['habilitado'])
+    overrides = platform_module_overrides(organization)
+    for code, mode in overrides.items():
+        if mode == AjusteModuloSaaS.Modo.ALLOW:
+            enabled.add(code)
+            enabled.update(MODULE_EXPANSION_IMPLICATIONS.get(code, ()))
+    for code, mode in overrides.items():
+        if mode == AjusteModuloSaaS.Modo.DENY:
+            enabled.discard(code)
+    _sync_modulo_organizacao(organization, enabled)
+
+
+def client_module_catalog_context(organization):
+    """Build grouped module + ERP product state for VERTYX SaaS Admin client editing."""
+    baseline = baseline_effective_modules(organization)
+    overrides = platform_module_overrides(organization)
+    subscription = (
+        AssinaturaSaaS.objects.filter(organization=organization)
+        .select_related('plano')
+        .first()
+    )
+    plan_declared = set(subscription.plano.modulos or ()) if subscription and subscription.plano else set()
+    legacy_disabled = (
+        set()
+        if subscription is not None
+        else set(
+            ModuloOrganizacao.all_objects.filter(
+                organization=organization, habilitado=False,
+            ).values_list('codigo', flat=True)
+        )
+    )
+    active_erps = set(
+        OrganizationERP.objects.filter(
+            organization=organization, enabled=True,
+        ).values_list('erp__code', flat=True)
+    )
+    erps = [
+        {'erp': erp, 'enabled': erp.code in active_erps}
+        for erp in ERPCatalog.objects.filter(active=True).order_by('-operational', 'name')
+    ]
+
+    canonical = canonical_client_module_codes()
+    grouped_specs = list(CLIENT_MODULE_GROUP_SPECS)
+    listed = {code for _k, _t, codes in grouped_specs for code in codes}
+    extra = tuple(code for code in canonical if code not in listed)
+    if extra:
+        grouped_specs.append(('outros', 'Outros módulos do catálogo', extra))
+
+    groups = []
+    total_enabled = 0
+    manual_allow_count = 0
+    manual_deny_count = 0
+    for key, title, codes in grouped_specs:
+        items = []
+        group_enabled = 0
+        has_manual = False
+        for code in codes:
+            if code not in MODULE_LABELS or code in LEGACY_COMPAT_MODULE_CODES:
+                continue
+            override = overrides.get(code)
+            in_baseline = code in baseline
+            if override == AjusteModuloSaaS.Modo.ALLOW:
+                enabled = True
+                source = 'manual_allow'
+                source_label = 'Adicionado manualmente'
+                manual_allow_count += 1
+                has_manual = True
+            elif override == AjusteModuloSaaS.Modo.DENY:
+                enabled = False
+                source = 'manual_deny'
+                source_label = 'Removido manualmente'
+                manual_deny_count += 1
+                has_manual = True
+            elif in_baseline and (subscription is not None or code not in legacy_disabled):
+                enabled = True
+                is_core = subscription is not None and code in CORE_SAAS_MODULES and code not in plan_declared
+                source = 'core' if is_core else 'plan'
+                source_label = 'Core incluído' if is_core else 'Do plano/contrato'
+            else:
+                enabled = False
+                source = 'off'
+                source_label = 'Não incluído'
+            if enabled:
+                group_enabled += 1
+                total_enabled += 1
+            items.append({
+                'code': code,
+                'label': MODULE_LABELS[code],
+                'enabled': enabled,
+                'in_baseline': in_baseline,
+                'source': source,
+                'source_label': source_label,
+                'is_core': code in CORE_SAAS_MODULES,
+            })
+        if items:
+            if key == 'gestao_publica':
+                open_by_default = ('gestao-publica' in active_erps) or group_enabled > 0 or has_manual
+            elif key == 'assistencia':
+                open_by_default = ('assistencia' in active_erps) or (subscription is not None) or group_enabled > 0 or ('gestao-publica' not in active_erps)
+            else:
+                open_by_default = group_enabled > 0 or has_manual
+            groups.append({
+                'key': key,
+                'title': title,
+                'items': items,
+                'enabled_count': group_enabled,
+                'total_count': len(items),
+                'open_by_default': open_by_default,
+            })
+
+    return {
+        'groups': groups,
+        'erps': erps,
+        'enabled_count': total_enabled,
+        'manual_allow_count': manual_allow_count,
+        'manual_deny_count': manual_deny_count,
+        'has_overrides': bool(overrides),
+    }
+
+
+@transaction.atomic
+def atualizar_modulos_cliente(*, actor, organization, selected_modules, reason='', selected_erp_codes=None):
+    locked = Organization.objects.select_for_update().get(pk=organization.pk)
+    selected_set = set(selected_modules or ())
+    invalid = selected_set - set(MODULE_LABELS)
+    if invalid:
+        raise ValidationError(f"Módulo desconhecido: {', '.join(sorted(invalid))}.")
+
+    active_catalog_erps = list(ERPCatalog.objects.filter(active=True).order_by('pk'))
+    active_erp_code_set = {erp.code for erp in active_catalog_erps}
+    erps_before = sorted(
+        OrganizationERP.objects.filter(organization=locked, enabled=True).values_list('erp__code', flat=True)
+    )
+    if selected_erp_codes is not None:
+        selected_erp_set = set(selected_erp_codes)
+        invalid_erps = selected_erp_set - active_erp_code_set
+        if invalid_erps:
+            raise ValidationError(f"Produto ERP desconhecido: {', '.join(sorted(invalid_erps))}.")
+        for erp in active_catalog_erps:
+            OrganizationERP.objects.update_or_create(
+                organization=locked, erp=erp, defaults={'enabled': erp.code in selected_erp_set},
+            )
+    erps_after = sorted(
+        OrganizationERP.objects.filter(organization=locked, enabled=True).values_list('erp__code', flat=True)
+    )
+
+    canonical_codes = set(canonical_client_module_codes())
+    before_enabled = sorted(
+        ModuloOrganizacao.all_objects.filter(
+            organization=locked, codigo__in=canonical_codes, habilitado=True,
+        ).values_list('codigo', flat=True)
+    )
+    baseline = baseline_effective_modules(locked)
+    desired_canonical = selected_set & canonical_codes
+    clean_reason = (reason or '').strip()[:255]
+
+    added_manual = []
+    removed_manual = []
+    for code in sorted(canonical_codes):
+        want_on = code in desired_canonical
+        in_base = code in baseline
+        if want_on and not in_base:
+            AjusteModuloSaaS.objects.update_or_create(
+                organization=locked, codigo=code,
+                defaults={'modo': AjusteModuloSaaS.Modo.ALLOW, 'motivo': clean_reason, 'atualizado_por': actor},
+            )
+            added_manual.append(code)
+        elif not want_on and in_base:
+            AjusteModuloSaaS.objects.update_or_create(
+                organization=locked, codigo=code,
+                defaults={'modo': AjusteModuloSaaS.Modo.DENY, 'motivo': clean_reason, 'atualizado_por': actor},
+            )
+            removed_manual.append(code)
+        else:
+            AjusteModuloSaaS.objects.filter(organization=locked, codigo=code).delete()
+
+    # Keep any programmatic non-canonical override consistent if explicitly passed
+    for code in (selected_set & LEGACY_COMPAT_MODULE_CODES):
+        AjusteModuloSaaS.objects.update_or_create(
+            organization=locked, codigo=code,
+            defaults={'modo': AjusteModuloSaaS.Modo.ALLOW, 'motivo': clean_reason, 'atualizado_por': actor},
+        )
+
+    effective_all = _expand_with_legacy_compat(desired_canonical, platform_module_overrides(locked))
+    _sync_modulo_organizacao(locked, effective_all)
+    after_enabled = sorted(desired_canonical)
+
+    registrar(
+        actor,
+        'CLIENTE_MODULOS_ATUALIZADOS',
+        f'organization:{locked.pk}',
+        organization=locked,
+        details={
+            'antes': before_enabled,
+            'depois': after_enabled,
+            'adicionados_manualmente': added_manual,
+            'removidos_manualmente': removed_manual,
+            'erps_antes': erps_before,
+            'erps_depois': erps_after,
+            'motivo': clean_reason,
+        },
+    )
+    return {
+        'enabled': after_enabled,
+        'added_manual': added_manual,
+        'removed_manual': removed_manual,
+        'erps_before': erps_before,
+        'erps_after': erps_after,
+    }
+
+
+@transaction.atomic
+def restaurar_modulos_cliente(*, actor, organization, reason=''):
+    locked = Organization.objects.select_for_update().get(pk=organization.pk)
+    previous = dict(AjusteModuloSaaS.objects.filter(organization=locked).values_list('codigo', 'modo'))
+    AjusteModuloSaaS.objects.filter(organization=locked).delete()
+    subscription = AssinaturaSaaS.objects.filter(organization=locked).select_related('plano').first()
+    if subscription:
+        aplicar_modulos(locked, subscription.plano)
+    else:
+        baseline = baseline_effective_modules(locked)
+        canonical_codes = set(canonical_client_module_codes())
+        _sync_modulo_organizacao(locked, _expand_with_legacy_compat(baseline & canonical_codes))
+    registrar(
+        actor,
+        'CLIENTE_MODULOS_RESTAURADOS',
+        f'organization:{locked.pk}',
+        organization=locked,
+        details={'ajustes_removidos': previous, 'motivo': (reason or '').strip()[:255]},
+    )
+    return locked
 
 
 def _username_for(email):

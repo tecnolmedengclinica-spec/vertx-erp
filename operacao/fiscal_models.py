@@ -141,7 +141,17 @@ class ConfiguracaoFiscal(CadastroFiscal):
     tipo = models.CharField(max_length=5, choices=TIPOS)
     ambiente = models.CharField(max_length=12, choices=AMBIENTES, default='SIMULACAO')
     versao = models.PositiveIntegerField(default=1)
-    motor = models.CharField(max_length=20, choices=[('SIMULADOR', 'Simulador local sem emissão'), ('NFCE_SVRS_HOM', 'NFC-e SVRS — somente homologação')], default='SIMULADOR')
+    motor = models.CharField(
+        max_length=25,
+        choices=[
+            ('SIMULADOR', 'Simulador local sem emissão'),
+            ('NFCE_SVRS_HOM', 'NFC-e SVRS — somente homologação'),
+            ('NFSE_ADN_HOM', 'NFS-e ADN Nacional — homologação'),
+            ('NFSE_RPS_CONTINGENCIA', 'NFS-e Contingência RPS Offline'),
+            ('NFE_SEFAZ_HOM', 'NF-e SEFAZ v4.00 — homologação'),
+        ],
+        default='SIMULADOR',
+    )
     habilitada = models.BooleanField(default=False)
     proposta_documental = models.JSONField(default=dict, blank=True, validators=[proposta_documental_publica])
     preparacao_fiscal = models.JSONField(default=dict, blank=True, validators=[preparacao_fiscal_publica])
@@ -164,6 +174,12 @@ class ConfiguracaoFiscal(CadastroFiscal):
             raise ValidationError('Proposta documental pendente não pode habilitar emissão nem outro ambiente.')
         if self.motor == 'NFCE_SVRS_HOM' and (self.tipo != 'NFCE' or self.ambiente != 'HOMOLOGACAO'):
             raise ValidationError('Motor SVRS restrito à NFC-e em homologação.')
+        if self.motor == 'NFSE_ADN_HOM' and (self.tipo != 'NFSE' or self.ambiente != 'HOMOLOGACAO'):
+            raise ValidationError('Motor ADN restrito à NFS-e em homologação.')
+        if self.motor == 'NFE_SEFAZ_HOM' and (self.tipo != 'NFE' or self.ambiente != 'HOMOLOGACAO'):
+            raise ValidationError('Motor NF-e SEFAZ restrito à NF-e em homologação.')
+        if self.motor == 'NFSE_RPS_CONTINGENCIA' and (self.tipo != 'NFSE' or self.ambiente == 'PRODUCAO'):
+            raise ValidationError('Contingência RPS é permitida apenas para NFS-e em simulação ou homologação.')
 
 class VinculoCredencialFiscal(CadastroFiscal):
     configuracao = models.ForeignKey(ConfiguracaoFiscal, on_delete=models.PROTECT, related_name='vinculos')
@@ -222,16 +238,41 @@ class DetalhesNFSe(DetalheFiscal):
     codigo_servico = models.CharField(max_length=30, blank=True)
     municipio_incidencia = models.CharField(max_length=7)
     identificador_dps_rps = models.CharField(max_length=80, blank=True)
+    modo_emissao = models.CharField(
+        max_length=20,
+        choices=[('NORMAL', 'Normal ADN'), ('CONTINGENCIA_RPS', 'Contingência offline (RPS/DPS)')],
+        default='NORMAL',
+    )
+    motivo_contingencia = models.CharField(max_length=200, blank=True)
+    numero_rps_contingencia = models.CharField(max_length=40, blank=True)
+    sincronizada_em = models.DateTimeField(null=True, blank=True)
+    tentativas_sincronizacao = models.PositiveIntegerField(default=0)
+    ultimo_erro_sincronizacao = models.CharField(max_length=250, blank=True)
+    nota_json = models.JSONField(default=dict, blank=True)
 
 class DetalhesNFe(DetalheFiscal):
     tipo_fiscal = 'NFE'
     finalidade = models.CharField(max_length=20, default='NORMAL')
     itens_snapshot = models.JSONField(default=list, editable=False)
+    modo_emissao = models.CharField(
+        max_length=15,
+        choices=[('NORMAL', 'Normal'), ('SVC_AN', 'Contingência SVC-AN'), ('SVC_RS', 'Contingência SVC-RS'), ('FS_DA', 'Contingência FS-DA'), ('EPEC', 'Contingência EPEC')],
+        default='NORMAL',
+    )
+    motivo_contingencia = models.CharField(max_length=200, blank=True)
+    nota_json = models.JSONField(default=dict, blank=True)
 
 class DetalhesNFCe(DetalheFiscal):
     tipo_fiscal = 'NFCE'
     pagamentos_snapshot = models.JSONField(default=list, editable=False)
-    modo_emissao = models.CharField(max_length=10, choices=[('NORMAL', 'Normal; sem contingência fiscal')], default='NORMAL')
+    modo_emissao = models.CharField(
+        max_length=25,
+        choices=[('NORMAL', 'Normal; sem contingência fiscal'), ('CONTINGENCIA_OFFLINE', 'Contingência Offline PDV (tpEmis=9)')],
+        default='NORMAL',
+    )
+    contingencia_justificativa = models.CharField(max_length=200, blank=True)
+    contingencia_ativada_em = models.DateTimeField(null=True, blank=True)
+    nota_json = models.JSONField(default=dict, blank=True)
 
 class SolicitacaoFiscal(Validado):
     objects = TenantManager.from_queryset(SemExclusao)()

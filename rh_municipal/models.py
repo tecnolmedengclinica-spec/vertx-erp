@@ -755,6 +755,7 @@ from .phase_g_models import (  # noqa: E402,F401
     ProfissionalSaudeMunicipal, RegistroProducaoSUS, SolicitacaoRegulacaoSaude,
     TFDMunicipal, UnidadeSaudeMunicipal, VeiculoSanitarioMunicipal,
     VagaRegulacaoSaude, VisitaTerritorialSaude, VinculoFamiliaSaude,
+    ServicoFilaSaude, LocalAtendimentoSaude, SenhaFilaAtendimento, ClassificacaoManchester,
 )
 
 # Phase H: municipal education uses the shared citizen, employee, unit,

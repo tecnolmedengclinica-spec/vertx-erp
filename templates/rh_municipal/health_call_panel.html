@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estação de Trabalho do Médico · Console Clínico UBS · VERTYX Saúde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0f1d;
+      --bg-panel: #111827;
+      --bg-card: #1f2937;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-focus: #0284c7;
+      --cyan: #38bdf8;
+      --blue: #2563eb;
+      --m-red: #ef4444;
+      --m-orange: #f97316;
+      --m-yellow: #eab308;
+      --m-green: #22c55e;
+      --m-blue: #3b82f6;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: #f8fafc;
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* BARRA SUPERIOR DO MÉDICO */
+    .top-bar {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #fff;
+      font-size: 1.25rem;
+    }
+
+    .brand-text h2 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .brand-text p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    .doctor-profile {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .doc-info {
+      text-align: right;
+    }
+    .doc-name {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+    .doc-spec {
+      font-size: 0.78rem;
+      color: #38bdf8;
+    }
+
+    .btn-open-tv {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-open-tv:hover {
+      background: #38bdf8;
+      color: #000;
+    }
+
+    /* GRID OPERACIONAL */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1.7fr;
+      gap: 2rem;
+      padding: 2rem;
+      flex: 1;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* PAINEL DE CONTROLE (ESQUERDA) */
+    .control-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+    }
+
+    .current-call-display {
+      background: #0f172a;
+      border: 2px solid rgba(56, 189, 248, 0.3);
+      border-radius: 16px;
+      padding: 1.75rem;
+      text-align: center;
+    }
+
+    .current-call-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .current-call-ticket {
+      font-family: var(--font-mono);
+      font-size: 4rem;
+      font-weight: 900;
+      color: #38bdf8;
+      line-height: 1.1;
+      margin: 0.5rem 0;
+    }
+
+    .current-call-name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .current-call-details {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .action-button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    /* STATUS BADGE NOVO SGA */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .status-idle { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+    .status-calling { background: rgba(234, 179, 8, 0.18); color: #fbbf24; border: 1px solid rgba(234, 179, 8, 0.45); animation: pulseStatus 1.5s infinite alternate; }
+    .status-inservice { background: rgba(34, 197, 94, 0.18); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.45); }
+    @keyframes pulseStatus {
+      from { box-shadow: 0 0 4px rgba(234, 179, 8, 0.2); }
+      to { box-shadow: 0 0 16px rgba(234, 179, 8, 0.6); }
+    }
+
+    .btn-action-start {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+      border: none;
+      padding: 1.1rem;
+      border-radius: 14px;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-action-start:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+    .btn-action-finish {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      border: none;
+      padding: 1.1rem;
+      border-radius: 14px;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-action-finish:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+    .btn-danger-sub {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      padding: 0.85rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-danger-sub:hover { background: #ef4444; color: #fff; }
+
+    .btn-sub-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+
+    .btn-sub {
+      background: #1f2937;
+      border: 1px solid var(--border-color);
+      color: #e5e7eb;
+      padding: 0.85rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-sub:hover {
+      background: #374151;
+      border-color: #38bdf8;
+    }
+
+    .keyboard-legend {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-around;
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    .kbd-key {
+      background: #374151;
+      color: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* FILA DE ATENDIMENTO (DIREITA) */
+    .queue-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .queue-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: #0f172a;
+      padding: 0.4rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .queue-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 0.65rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .queue-tab.active {
+      background: #1f2937;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .queue-table {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .queue-card {
+      background: #1f2937;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 1.1rem 1.4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+
+    .queue-card:hover {
+      border-color: #38bdf8;
+      background: #253347;
+    }
+
+    .patient-col {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .ticket-badge {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      background: #111827;
+      padding: 0.5rem 0.85rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .patient-details h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .patient-meta {
+      display: flex;
+      gap: 0.85rem;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-top: 0.25rem;
+    }
+
+    .triage-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 8px;
+    }
+    .triage-indicator.yellow { background: rgba(234, 179, 8, 0.15); color: #fbbf24; border: 1px solid rgba(234, 179, 8, 0.4); }
+    .triage-indicator.green { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .triage-indicator.red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
+    .btn-row-call {
+      background: #0284c7;
+      border: none;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+    .btn-row-call:hover {
+      background: #0369a1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="brand-group">
+      <div class="brand-mark" id="call-mark">{{ branding.uf|default:'BR' }}</div>
+      <div class="brand-text">
+        <h2 id="call-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</h2>
+        <p id="call-unit">{{ branding.orgao_gestor|default:'Secretaria Municipal de Saúde' }} · Console e-SUS APS (Novo SGA)</p>
+      </div>
+    </div>
+
+    <div class="doctor-profile">
+      <div class="doc-info">
+        <div class="doc-name">Dr. Médico de Plantão</div>
+        <div class="doc-spec">Consultório 01 · Equipe Saúde da Família</div>
+      </div>
+      <a href="/gestao-publica/saude/personalizacao/" class="btn-open-tv" style="background: rgba(14,165,233,0.15); border-color: rgba(14,165,233,0.3); color: #38bdf8;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Personalizar Sistema
+      </a>
+      <a href="/gestao-publica/saude/triagem/" class="btn-open-tv" style="background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.3); color: #fca5a5;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+        Triagem Manchester
+      </a>
+      <a href="/gestao-publica/saude/pec/" class="btn-open-tv" style="background: rgba(2,132,199,0.15); border-color: rgba(2,132,199,0.3); color: #38bdf8;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>
+        Prontuário PEC
+      </a>
+      <a href="/gestao-publica/saude/farmacia-dispensacao/" class="btn-open-tv" style="background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: #34d399;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+        Farmácia Básica
+      </a>
+      <a href="/gestao-publica/saude/profissionais/" class="btn-open-tv" style="background: rgba(255,255,255,0.08); border-color: var(--border-color); color: #cbd5e1;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Corpo Clínico
+      </a>
+      <a href="/gestao-publica/saude/painel-chamadas/tv/" target="_blank" class="btn-open-tv">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+        SmartTV
+      </a>
+    </div>
+  </header>
+
+  <!-- OPERATIONAL GRID NOVO SGA -->
+  <main class="workspace-grid">
+    <!-- CONTROLES DO MÉDICO / NOVO SGA ATTENDANCE -->
+    <div class="control-card">
+      <div class="section-title">
+        <span>Atendimento Clínico · Novo SGA</span>
+        <span class="status-pill status-idle" id="desk-status-pill">● Consultório Livre</span>
+      </div>
+
+      <!-- VISUALIZADOR DA SENHA ATUAL -->
+      <div class="current-call-display">
+        <div class="current-call-label" id="doc-status-text">Nenhum Paciente em Atendimento</div>
+        <div class="current-call-ticket" id="doc-ticket">---</div>
+        <div class="current-call-name" id="doc-name">Aguardando chamada de senha...</div>
+        <div class="current-call-details">
+          <span>Manchester: <strong id="doc-triage-label">---</strong></span>
+          <span>Tempo decorrido: <strong id="elapsed-time">00:00</strong></span>
+          <span>Local: <strong>Consultório 03</strong></span>
+        </div>
+      </div>
+
+      <!-- BOTÕES DE AÇÃO DINÂMICOS CONFORME ESTADO DO NOVO SGA -->
+      <div class="action-button-group" id="action-buttons-container">
+        <!-- ESTADO 1: IDLE -->
+        <div id="group-idle" style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <button class="btn-action-start" onclick="doctorCallNext()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+            CHAMAR PRÓXIMO PACIENTE (Espaço)
+          </button>
+          <div class="btn-sub-row">
+            <button class="btn-sub" onclick="doctorCallPriority()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              Chamar Prioritário (P)
+            </button>
+            <button class="btn-sub" onclick="alert('Selecione uma senha diretamente na fila ao lado para chamada manual.')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              Chamada Manual
+            </button>
+          </div>
+        </div>
+
+        <!-- ESTADO 2: CALLED (CHAMANDO NA TV) -->
+        <div id="group-called" style="display: none; flex-direction: column; gap: 0.85rem;">
+          <button class="btn-action-start" onclick="startAttendance()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            INICIAR ATENDIMENTO (I)
+          </button>
+          <div class="btn-sub-row">
+            <button class="btn-sub" onclick="doctorRepeat()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Rechamar no Painel (R)
+            </button>
+            <button class="btn-danger-sub" onclick="markNoShow()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Não Compareceu (N)
+            </button>
+          </div>
+        </div>
+
+        <!-- ESTADO 3: IN_SERVICE (EM CONSULTA) -->
+        <div id="group-inservice" style="display: none; flex-direction: column; gap: 0.85rem;">
+          <a href="/gestao-publica/saude/pec/" class="btn-action-start" style="text-decoration: none; background: #0284c7; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/></svg>
+            ABRIR PRONTUÁRIO ELETRÔNICO PEC (SOAP)
+          </a>
+          <button class="btn-action-finish" onclick="finishAndCallNext()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/><line x1="23" x2="23" y1="4" y2="20"/></svg>
+            ENCERRAR E CHAMAR PRÓXIMO (Enter)
+          </button>
+          <div class="btn-sub-row">
+            <button class="btn-sub" onclick="finishAttendance()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Encerrar Consulta (E)
+            </button>
+            <button class="btn-sub" onclick="transferPatient()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18 6-6-6-6"/><path d="M3 12h18"/></svg>
+              Encaminhar Setor (T)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEGENDA DE ATALHOS NOVO SGA -->
+      <div class="keyboard-legend">
+        <span><span class="kbd-key">Espaço</span> Chamar</span>
+        <span><span class="kbd-key">I</span> Iniciar</span>
+        <span><span class="kbd-key">R</span> Rechamar</span>
+        <span><span class="kbd-key">E</span> Encerrar</span>
+        <span><span class="kbd-key">Enter</span> Encerrar+Próx</span>
+      </div>
+    </div>
+
+    <!-- FILA DE ESPERA -->
+    <div class="queue-panel">
+      <div class="section-title">
+        <span>Fila de Atendimento · Consultório 03</span>
+        <span class="badge-count" style="background:#0284c7; color:#fff; font-size:0.8rem; padding:0.25rem 0.75rem; border-radius:99px;" id="queue-total">4 Pacientes</span>
+      </div>
+
+      <div class="queue-table" id="doc-queue" style="margin-top: 1.25rem;">
+        <div class="queue-card">
+          <div class="patient-col">
+            <span class="ticket-badge">PRE-043</span>
+            <div class="patient-details">
+              <h4>Geraldo Moreira Sobrinho</h4>
+              <div class="patient-meta">
+                <span>Idoso 80+</span>
+                <span>Espera: 12 min</span>
+                <span>Queixa: Picos hipertensivos</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap: 1rem;">
+            <span class="triage-indicator yellow">Amarelo</span>
+            <button class="btn-row-call" onclick="callSpecific(this, 'PRE-043', 'Geraldo Moreira Sobrinho', 'yellow')">Chamar</button>
+          </div>
+        </div>
+
+        <div class="queue-card">
+          <div class="patient-col">
+            <span class="ticket-badge">G-015</span>
+            <div class="patient-details">
+              <h4>Juliana Mendonça Lima</h4>
+              <div class="patient-meta">
+                <span>Gestante (28 semanas)</span>
+                <span>Espera: 8 min</span>
+                <span>Queixa: Consulta Pré-natal habitual</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap: 1rem;">
+            <span class="triage-indicator yellow">Amarelo</span>
+            <button class="btn-row-call" onclick="callSpecific(this, 'G-015', 'Juliana Mendonça Lima', 'yellow')">Chamar</button>
+          </div>
+        </div>
+
+        <div class="queue-card">
+          <div class="patient-col">
+            <span class="ticket-badge">N-098</span>
+            <div class="patient-details">
+              <h4>Lucas Albuquerque Pinto</h4>
+              <div class="patient-meta">
+                <span>Geral</span>
+                <span>Espera: 15 min</span>
+                <span>Queixa: Avaliação de exames laboratoriais</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap: 1rem;">
+            <span class="triage-indicator green">Verde</span>
+            <button class="btn-row-call" onclick="callSpecific(this, 'N-098', 'Lucas Albuquerque Pinto', 'green')">Chamar</button>
+          </div>
+        </div>
+
+        <div class="queue-card">
+          <div class="patient-col">
+            <span class="ticket-badge">N-099</span>
+            <div class="patient-details">
+              <h4>Tereza Cristina Barbosa</h4>
+              <div class="patient-meta">
+                <span>Geral</span>
+                <span>Espera: 18 min</span>
+                <span>Queixa: Renovação de receita contínua</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap: 1rem;">
+            <span class="triage-indicator green">Verde</span>
+            <button class="btn-row-call" onclick="callSpecific(this, 'N-099', 'Tereza Cristina Barbosa', 'green')">Chamar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // =========================================================
+    // MOTOR DE ATENDIMENTO NOVO SGA (FLUXO REAL DE 3 ESTADOS)
+    // IDLE -> CALLED -> IN_SERVICE -> FINISH
+    // =========================================================
+
+    const queueChannel = new BroadcastChannel('vertyx_health_queue');
+
+    let currentTicket = null;
+    let currentPatient = null;
+    let currentTriage = null;
+    let attendanceState = 'IDLE'; // 'IDLE' | 'CALLED' | 'IN_SERVICE'
+    let timerInterval = null;
+    let elapsedSeconds = 0;
+
+    function setAttendanceState(state) {
+      attendanceState = state;
+      const pill = document.getElementById('desk-status-pill');
+      const statusText = document.getElementById('doc-status-text');
+      const gIdle = document.getElementById('group-idle');
+      const gCalled = document.getElementById('group-called');
+      const gInService = document.getElementById('group-inservice');
+
+      if (state === 'IDLE') {
+        pill.className = 'status-pill status-idle';
+        pill.textContent = '● Consultório Livre';
+        statusText.textContent = 'Nenhum Paciente em Atendimento';
+        document.getElementById('doc-ticket').textContent = '---';
+        document.getElementById('doc-name').textContent = 'Aguardando chamada de senha...';
+        document.getElementById('doc-triage-label').textContent = '---';
+        document.getElementById('elapsed-time').textContent = '00:00';
+
+        gIdle.style.display = 'flex';
+        gCalled.style.display = 'none';
+        gInService.style.display = 'none';
+
+        clearInterval(timerInterval);
+        elapsedSeconds = 0;
+        currentTicket = null;
+        currentPatient = null;
+      } else if (state === 'CALLED') {
+        pill.className = 'status-pill status-calling';
+        pill.textContent = '🔔 Chamando na TV...';
+        statusText.textContent = 'Paciente Chamado · Aguardando Entrada no Consultório';
+
+        gIdle.style.display = 'none';
+        gCalled.style.display = 'flex';
+        gInService.style.display = 'none';
+
+        clearInterval(timerInterval);
+        elapsedSeconds = 0;
+        document.getElementById('elapsed-time').textContent = '00:00';
+      } else if (state === 'IN_SERVICE') {
+        pill.className = 'status-pill status-inservice';
+        pill.textContent = '⏱ Em Consulta Médica';
+        statusText.textContent = 'Paciente em Atendimento no Consultório 03';
+
+        gIdle.style.display = 'none';
+        gCalled.style.display = 'none';
+        gInService.style.display = 'flex';
+
+        clearInterval(timerInterval);
+        elapsedSeconds = 0;
+        timerInterval = setInterval(() => {
+          elapsedSeconds++;
+          const m = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+          const s = String(elapsedSeconds % 60).padStart(2, '0');
+          document.getElementById('elapsed-time').textContent = `${m}:${s}`;
+        }, 1000);
+      }
+    }
+
+    // 1. CHAMAR PRÓXIMO DA FILA (ESTADO: CALLED)
+    function doctorCallNext() {
+      const queue = document.getElementById('doc-queue');
+      const first = queue.firstElementChild;
+      if (!first) {
+        alert('Não há pacientes aguardando na fila deste consultório.');
+        return;
+      }
+
+      const ticket = first.querySelector('.ticket-badge').textContent;
+      const name = first.querySelector('.patient-details h4').textContent;
+      const triageEl = first.querySelector('.triage-indicator');
+      const color = triageEl.classList.contains('yellow') ? 'yellow' : triageEl.classList.contains('red') ? 'red' : 'green';
+
+      currentTicket = ticket;
+      currentPatient = name;
+      currentTriage = color;
+
+      document.getElementById('doc-ticket').textContent = ticket;
+      document.getElementById('doc-name').textContent = name;
+      document.getElementById('doc-triage-label').textContent = triageEl.textContent;
+
+      first.remove();
+      updateQueueTotal();
+
+      setAttendanceState('CALLED');
+      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, `Classificação Manchester: ${triageEl.textContent}`);
+    }
+
+    // 2. INICIAR ATENDIMENTO (ESTADO: IN_SERVICE)
+    function startAttendance() {
+      if (!currentTicket) return;
+      setAttendanceState('IN_SERVICE');
+    }
+
+    // 3. RECHAMAR NO PAINEL
+    function doctorRepeat() {
+      if (!currentTicket) return;
+      dispatchCallEvent(currentTicket, currentPatient, "Consultório 03", "Dra. Beatriz Carvalho", currentTriage, "Rechamada de Atendimento");
+    }
+
+    // 4. NÃO COMPARECEU (RETORNA A IDLE)
+    function markNoShow() {
+      if (!currentTicket) return;
+      if (confirm(`Confirmar ausência do paciente ${currentPatient} (${currentTicket})? A senha será registrada como Não Compareceu.`)) {
+        queueChannel.postMessage({
+          type: 'NO_SHOW',
+          ticket: currentTicket,
+          room: "Consultório 03"
+        });
+        setAttendanceState('IDLE');
+      }
+    }
+
+    // 5. ENCERRAR ATENDIMENTO
+    function finishAttendance() {
+      if (!currentTicket) return;
+      alert(`Consulta do paciente ${currentPatient} (${currentTicket}) encerrada com sucesso no e-SUS APS! Tempo de atendimento: ${document.getElementById('elapsed-time').textContent}`);
+      setAttendanceState('IDLE');
+    }
+
+    // 6. ENCERRAR E CHAMAR PRÓXIMO (O PODEROSO ATALHO DO NOVO SGA)
+    function finishAndCallNext() {
+      if (!currentTicket) {
+        doctorCallNext();
+        return;
+      }
+      finishAttendance();
+      setTimeout(doctorCallNext, 300);
+    }
+
+    // 7. ENCAMINHAR / TRANSFERIR SETOR
+    function transferPatient() {
+      if (!currentTicket) return;
+      const dest = prompt("Selecione o setor de destino para transferir a senha:\n1 - Sala de Vacinas\n2 - Farmácia Básica\n3 - Coleta e Exames\n4 - Regulação / Marcação", "2");
+      if (dest) {
+        const sectors = { "1": "Sala de Vacinas", "2": "Farmácia Básica", "3": "Coleta e Exames", "4": "Regulação e Exames" };
+        const target = sectors[dest] || "Farmácia Básica";
+        alert(`Paciente ${currentPatient} transferido(a) com sucesso para a fila da ${target}!`);
+        setAttendanceState('IDLE');
+      }
+    }
+
+    // 8. CHAMAR PRIORITÁRIO
+    function doctorCallPriority() {
+      const queue = document.getElementById('doc-queue');
+      const priorityCard = Array.from(queue.children).find(card => card.querySelector('.triage-indicator.yellow') || card.querySelector('.ticket-badge').textContent.startsWith('PRE'));
+      if (priorityCard) {
+        const btn = priorityCard.querySelector('.btn-row-call');
+        btn.click();
+      } else {
+        doctorCallNext();
+      }
+    }
+
+    function callSpecific(btn, ticket, name, triage) {
+      currentTicket = ticket;
+      currentPatient = name;
+      currentTriage = triage;
+
+      document.getElementById('doc-ticket').textContent = ticket;
+      document.getElementById('doc-name').textContent = name;
+      document.getElementById('doc-triage-label').textContent = triage.toUpperCase();
+
+      const card = btn.closest('.queue-card');
+      if (card) card.remove();
+      updateQueueTotal();
+
+      setAttendanceState('CALLED');
+      const color = triage === 'red' ? 'red' : triage === 'yellow' ? 'yellow' : 'green';
+      const label = `Classificação Manchester: ${triage.toUpperCase()}`;
+      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, label);
+    }
+
+    function dispatchCallEvent(ticket, name, room, doctor, color, label) {
+      queueChannel.postMessage({
+        type: 'CALL_TICKET',
+        ticket: ticket,
+        patient: name,
+        room: room,
+        doctor: doctor,
+        triageColor: color,
+        triageLabel: label
+      });
+    }
+
+    function addNewTicketToDoctorQueue(data) {
+      const queue = document.getElementById('doc-queue');
+      const card = document.createElement('div');
+      card.className = 'queue-card';
+      card.style.borderColor = '#38bdf8';
+      card.style.boxShadow = '0 0 15px rgba(56, 189, 248, 0.3)';
+
+      const isPriority = data.prefix === 'PRE';
+      const triageClass = isPriority ? 'yellow' : 'green';
+      const triageText = isPriority ? 'Amarelo' : 'Verde';
+
+      card.innerHTML = `
+        <div class="patient-col">
+          <span class="ticket-badge" style="color:#38bdf8; border-color:#38bdf8;">${data.ticket}</span>
+          <div class="patient-details">
+            <h4>${data.service}</h4>
+            <div class="patient-meta">
+              <span>Emitido no Totem</span>
+              <span>Horário: ${data.time}</span>
+              <span>Aguardando Chamada</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap: 1rem;">
+          <span class="triage-indicator ${triageClass}">${triageText}</span>
+          <button class="btn-row-call" onclick="callSpecific(this, '${data.ticket}', '${data.service}', '${triageClass}')">Chamar</button>
+        </div>
+      `;
+
+      if (isPriority) {
+        queue.insertBefore(card, queue.firstChild);
+      } else {
+        queue.appendChild(card);
+      }
+      updateQueueTotal();
+    }
+
+    queueChannel.onmessage = (event) => {
+      const data = event.data;
+      if (!data) return;
+      if (data.type === 'NEW_TICKET') {
+        addNewTicketToDoctorQueue(data);
+      }
+    };
+
+    function updateQueueTotal() {
+      const count = document.getElementById('doc-queue').children.length;
+      document.getElementById('queue-total').textContent = `${count} Pacientes`;
+    }
+
+    // ATALHOS DE TECLADO NOVO SGA
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (attendanceState === 'IDLE') {
+          doctorCallNext();
+        } else if (attendanceState === 'CALLED') {
+          startAttendance();
+        }
+      } else if (e.key.toLowerCase() === 'i') {
+        if (attendanceState === 'CALLED') startAttendance();
+      } else if (e.key.toLowerCase() === 'r') {
+        doctorRepeat();
+      } else if (e.key.toLowerCase() === 'e') {
+        if (attendanceState === 'IN_SERVICE') finishAttendance();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (attendanceState === 'IN_SERVICE') finishAndCallNext();
+      } else if (e.key.toLowerCase() === 'p') {
+        if (attendanceState === 'IDLE') doctorCallPriority();
+      } else if (e.key.toLowerCase() === 'n') {
+        if (attendanceState === 'CALLED') markNoShow();
+      }
+    });
+
+    // Inicia em estado IDLE padrão
+    setAttendanceState('IDLE');
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('call-entity').textContent = b.nome_institucional;
+      if (b.orgao_gestor) document.getElementById('call-unit').textContent = `${b.orgao_gestor} · Console e-SUS APS (Novo SGA)`;
+      if (b.uf) document.getElementById('call-mark').textContent = b.uf;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
+  </script>
+</body>
+</html>

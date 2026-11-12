@@ -19,3 +19,4 @@ audit_baseline.sqlite3
 /VALIDACAO_*.json
 *.log
 *.tmp
+scratch/

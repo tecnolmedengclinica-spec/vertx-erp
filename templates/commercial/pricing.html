@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Planos e preços — VERTYX{% endblock %}
 {% block body_class %}pricing-reference{% endblock %}
-{% block page_styles %}<link rel="stylesheet" href="{% static 'css/commercial-pricing.css' %}">{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'css/commercial-pricing.css' %}?v=20261110_ui6">{% endblock %}
 {% block content %}
 <section class="pricing-hero" aria-labelledby="pricing-hero-title">
   <div class="container pricing-hero-grid">
@@ -14,10 +14,17 @@
     </div>
     <div class="pricing-product">
       <div class="laptop">
-        <div class="laptop-screen"><img src="{% static 'commercial/erp-preview.jpg' %}" width="1365" height="860" alt="Dashboard do VERTYX em uma demonstração com dados sintéticos"></div>
+        <div class="laptop-screen">
+          <img class="preview-light" src="{% static 'commercial/erp-preview-light.jpg' %}?v=20261110_ui6" width="1365" height="860" alt="Dashboard Gestão do VERTYX no modo claro" fetchpriority="high">
+          <img class="preview-dark" src="{% static 'commercial/erp-preview-dark.jpg' %}?v=20261110_ui6" width="1365" height="860" alt="Dashboard Gestão do VERTYX no modo escuro" fetchpriority="high">
+        </div>
         <div class="laptop-base" aria-hidden="true"></div>
       </div>
-      <p>O VERTYX na prática · captura com dados de demonstração.</p>
+      <div class="phone-device">
+        <img class="preview-light" src="{% static 'commercial/technician-preview-light.jpg' %}?v=20261110_ui6" width="390" height="844" alt="Home operacional no VERTYX no modo claro" loading="eager">
+        <img class="preview-dark" src="{% static 'commercial/technician-preview-dark.jpg' %}?v=20261110_ui6" width="390" height="844" alt="Home operacional no VERTYX no modo escuro" loading="eager">
+      </div>
+      <p class="visual-caption">VERTYX no escritório e em campo · capturas com dados de demonstração.</p>
     </div>
   </div>
 </section>

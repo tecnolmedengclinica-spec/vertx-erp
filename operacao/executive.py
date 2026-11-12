@@ -12,10 +12,10 @@ from .reporting import financial_dashboard
 from .stock import metrics
 
 class PeriodForm(forms.Form):
-    periodo=forms.ChoiceField(required=False,choices=[('HOJE','Hoje'),('SEMANA','Esta semana'),('MES','Este mês'),('PERSONALIZADO','Personalizado')])
-    inicio=forms.DateField(required=False,widget=forms.DateInput(attrs={'type':'date','class':'form-control'},format='%Y-%m-%d'))
-    fim=forms.DateField(required=False,widget=forms.DateInput(attrs={'type':'date','class':'form-control'},format='%Y-%m-%d'))
-    grafico=forms.ChoiceField(required=False,choices=[('7','7 dias'),('30','30 dias'),('3M','3 meses'),('6M','6 meses'),('12M','12 meses')])
+    periodo=forms.ChoiceField(required=False,choices=[('HOJE','Hoje'),('SEMANA','Esta semana'),('MES','Este mês'),('PERSONALIZADO','Personalizado')], widget=forms.Select(attrs={'class':'form-select form-select-sm'}))
+    inicio=forms.DateField(required=False,widget=forms.DateInput(attrs={'type':'date','class':'form-control form-control-sm'},format='%Y-%m-%d'))
+    fim=forms.DateField(required=False,widget=forms.DateInput(attrs={'type':'date','class':'form-control form-control-sm'},format='%Y-%m-%d'))
+    grafico=forms.ChoiceField(required=False,choices=[('7','7 dias'),('30','30 dias'),('3M','3 meses'),('6M','6 meses'),('12M','12 meses')], widget=forms.Select(attrs={'class':'form-select form-select-sm'}))
     def __init__(self, *args, analytics_level='COMPLETO', **kwargs):
         self.analytics_level = analytics_level or 'BASICO'
         super().__init__(*args, **kwargs)

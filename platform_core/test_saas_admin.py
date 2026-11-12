@@ -9,14 +9,18 @@ from django.utils import timezone
 
 from .context import tenant_context
 from .models import (
-    ConfiguracaoEmpresa, ModuloOrganizacao, Organization,
-    OrganizationMembership, PermissaoMembership,
+    ConfiguracaoEmpresa, ERPCatalog, MembershipERP, ModuloOrganizacao, Organization,
+    OrganizationERP, OrganizationMembership, PermissaoMembership,
 )
+from .modules import module_enabled, product_module_enabled
 from .saas_models import (
-    CORE_SAAS_MODULES, AdministradorPlataforma, AssinaturaSaaS, AuditoriaSaaS,
-    HistoricoPlanoSaaS, PlanoSaaS, PrimeiroAcessoSaaS,
+    CORE_SAAS_MODULES, AdministradorPlataforma, AjusteModuloSaaS, AssinaturaSaaS,
+    AuditoriaSaaS, HistoricoPlanoSaaS, PlanoSaaS, PrimeiroAcessoSaaS,
 )
-from .saas_services import alterar_plano, alterar_status_cliente, criar_cliente, metricas_uso, reemitir_primeiro_acesso, verificar_limite
+from .saas_services import (
+    alterar_plano, alterar_status_cliente, criar_cliente, criar_prefeitura_homologacao,
+    metricas_uso, reemitir_primeiro_acesso, verificar_limite,
+)
 
 
 class SaaSAdminTests(TestCase):
@@ -445,3 +449,153 @@ class SaaSAdminTests(TestCase):
         OrganizationMembership.objects.create(user=tenant_admin, organization=org, role='ADMIN')
         self.client.force_login(tenant_admin)
         self.assertEqual(self.client.get(reverse('platform_core:saas_home')).status_code, 403)
+
+    def test_admin_pode_adicionar_modulo_fora_do_plano_e_remover_modulo_do_cliente(self):
+        result = self.make_tenant()
+        org = result['organization']
+        tenant_admin = result['user']
+        tenant_admin.set_password('Tenant!9876')
+        tenant_admin.save()
+        alterar_status_cliente(actor=self.platform, organization=org, activate=True)
+
+        # Estado inicial: PDV (core) ativo; Compras (fora do plano) bloqueado.
+        self.client.force_login(tenant_admin)
+        self.assertEqual(self.client.get('/pdv/').status_code, 200)
+        self.assertEqual(self.client.get('/compras/').status_code, 403)
+        with tenant_context(org):
+            self.assertTrue(module_enabled('pdv'))
+            self.assertFalse(module_enabled('compras'))
+
+        # Admin visualiza o editor na ficha do cliente e na tela Editar.
+        self.client.force_login(self.platform)
+        detail_url = reverse('platform_core:saas_client_detail', args=[org.public_id])
+        edit_url = reverse('platform_core:saas_client_edit', args=[org.public_id])
+        modules_url = reverse('platform_core:saas_client_modules', args=[org.public_id])
+        self.assertContains(self.client.get(detail_url), 'Módulos e produtos liberados')
+        self.assertContains(self.client.get(edit_url), 'Salvar dados cadastrais')
+        self.assertContains(self.client.get(edit_url), 'Salvar módulos do cliente')
+
+        # Adiciona 'compras' (fora do plano) e remove 'pdv' (core) especificamente para este cliente.
+        desired = (set(CORE_SAAS_MODULES) - {'pdv'}) | {'compras', 'estoque_completo'}
+        resp = self.client.post(modules_url, {
+            'modulos': sorted(desired),
+            'sync_erps': '1',
+            'erps': ['assistencia'],
+            'motivo': 'Pacote personalizado com Compras e sem PDV',
+            'acao': 'salvar',
+        })
+        self.assertRedirects(resp, detail_url)
+        self.assertEqual(AjusteModuloSaaS.objects.get(organization=org, codigo='compras').modo, AjusteModuloSaaS.Modo.ALLOW)
+        self.assertEqual(AjusteModuloSaaS.objects.get(organization=org, codigo='pdv').modo, AjusteModuloSaaS.Modo.DENY)
+        self.assertTrue(AuditoriaSaaS.objects.filter(organization=org, action='CLIENTE_MODULOS_ATUALIZADOS').exists())
+
+        # Tenant passa a acessar Compras (rota, policy e menu lateral) e perde acesso ao PDV.
+        self.client.force_login(tenant_admin)
+        compras_resp = self.client.get('/compras/')
+        self.assertEqual(compras_resp.status_code, 200)
+        self.assertEqual(self.client.get('/pdv/').status_code, 403)
+        with tenant_context(org):
+            self.assertTrue(module_enabled('compras'))
+            self.assertFalse(module_enabled('pdv'))
+            nav_urls = [
+                link['url']
+                for group in compras_resp.context['executive_navigation']
+                for link in group['links']
+            ]
+            self.assertIn('/compras/', nav_urls)
+            self.assertNotIn('/pdv/', nav_urls)
+
+        # Edição cadastral via EditarClienteForm preserva ajustes manuais de módulos.
+        self.client.force_login(self.platform)
+        edit_resp = self.client.post(edit_url, {
+            'razao_social': org.razao_social,
+            'nome_fantasia': 'Cliente Editado Com Módulos',
+            'cnpj': org.cnpj,
+            'email': org.email,
+            'telefone': org.telefone,
+            'endereco': org.endereco,
+            'cidade': 'Aracaju',
+            'uf': 'SE',
+        })
+        self.assertRedirects(edit_resp, detail_url)
+        self.assertTrue(AjusteModuloSaaS.objects.filter(organization=org, codigo='compras', modo=AjusteModuloSaaS.Modo.ALLOW).exists())
+
+        # Restaura para o padrão do plano.
+        restore_resp = self.client.post(modules_url, {'acao': 'restaurar', 'motivo': 'Voltar ao plano padrão'})
+        self.assertRedirects(restore_resp, detail_url)
+        self.assertFalse(AjusteModuloSaaS.objects.filter(organization=org).exists())
+        self.assertTrue(AuditoriaSaaS.objects.filter(organization=org, action='CLIENTE_MODULOS_RESTAURADOS').exists())
+        with tenant_context(org):
+            self.assertFalse(module_enabled('compras'))
+            self.assertTrue(module_enabled('pdv'))
+
+    def test_admin_pode_editar_modulos_em_prefeitura_sem_plano_e_erp_toggle(self):
+        from rh_municipal.phase_e_services import public_module_available
+
+        created = criar_prefeitura_homologacao(
+            actor=self.platform,
+            razao_social='Prefeitura Editável de Homologação',
+            nome_fantasia='Prefeitura Editável',
+            administrador_nome='Gestor Municipal',
+            administrador_email='gestor-mun-edit@example.test',
+        )
+        org = created['organization']
+        mun_admin = created['user']
+        mun_admin.set_password('MunPass!234')
+        mun_admin.save()
+
+        self.assertTrue(product_module_enabled(mun_admin, 'gestao-publica', 'gestao_publica', org))
+        self.assertFalse(product_module_enabled(mun_admin, 'gestao-publica', 'saude_sus', org))
+        self.assertFalse(public_module_available(org, 'ouvidoria'))
+
+        self.client.force_login(self.platform)
+        modules_url = reverse('platform_core:saas_client_modules', args=[org.public_id])
+        resp = self.client.post(modules_url, {
+            'modulos': ['gestao_publica', 'saude_sus', 'ouvidoria'],
+            'sync_erps': '1',
+            'erps': ['gestao-publica'],
+            'motivo': 'Liberação Saúde SUS e Ouvidoria',
+            'next': 'edit',
+        })
+        self.assertRedirects(resp, reverse('platform_core:saas_client_edit', args=[org.public_id]))
+        self.assertTrue(product_module_enabled(mun_admin, 'gestao-publica', 'saude_sus', org))
+        self.assertTrue(public_module_available(org, 'ouvidoria'))
+
+        # Remoção manual bloqueia imediatamente mesmo em organização sem AssinaturaSaaS.
+        self.client.post(modules_url, {
+            'modulos': ['saude_sus'],
+            'sync_erps': '1',
+            'erps': ['gestao-publica'],
+            'motivo': 'Desabilitar base e ouvidoria',
+        })
+        self.assertFalse(product_module_enabled(mun_admin, 'gestao-publica', 'gestao_publica', org))
+        self.assertFalse(public_module_available(org, 'ouvidoria'))
+
+    def test_admin_tenant_nao_pode_alterar_modulos_saas_nem_enviar_codigo_invalido(self):
+        result = self.make_tenant()
+        org = result['organization']
+        tenant_admin = result['user']
+        modules_url = reverse('platform_core:saas_client_modules', args=[org.public_id])
+
+        self.client.force_login(tenant_admin)
+        self.assertEqual(self.client.post(modules_url, {'modulos': ['compras']}).status_code, 403)
+        self.assertFalse(AjusteModuloSaaS.objects.filter(organization=org).exists())
+
+        self.client.force_login(self.platform)
+        self.assertEqual(self.client.post(modules_url, {'modulos': ['codigo_que_nao_existe']}).status_code, 400)
+
+    def test_saas_admin_suporta_alternancia_para_modo_claro_com_logo_adaptativa(self):
+        from django.contrib.staticfiles import finders
+
+        self.client.force_login(self.platform)
+        response = self.client.get(reverse('platform_core:saas_home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-theme-toggle')
+        self.assertContains(response, "localStorage.getItem('vertyx_theme')")
+        self.assertContains(response, 'vertyx-logo-white.png')
+        self.assertContains(response, 'vertyx-logo.png')
+
+        css = open(finders.find('css/saas-admin.css'), encoding='utf-8').read()
+        self.assertIn('[data-theme="light"]', css)
+        self.assertIn('.vx-logo-light', css)
+        self.assertIn('[data-theme="light"] .module-toggle-card', css)

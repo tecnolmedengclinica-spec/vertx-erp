@@ -1,0 +1,79 @@
+name: CI / CD - Vertyx ERP Pipeline
+
+on:
+  push:
+    branches: [ main, master, 'feature/**', 'fix/**' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Django Test Suite & Checks
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tecnolmed_test
+          POSTGRES_USER: tecnolmed
+          POSTGRES_PASSWORD: secretpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpq-dev gcc curl
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+      - name: Run Django System Check
+        run: |
+          python manage.py check --settings=tecnolmed.test_settings
+
+      - name: Verify Collectstatic (Static Assets)
+        run: |
+          python manage.py collectstatic --noinput --settings=tecnolmed.test_settings
+
+      - name: Run Test Suite
+        run: |
+          python manage.py test --settings=tecnolmed.test_settings
+
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: vertyx-erp:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

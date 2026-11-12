@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corpo Clínico & Cadastro de Médicos · VERTYX Saúde Pública</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gov-navy: #0b1727;
+      --gov-surface: #112240;
+      --gov-card: #1b2d4b;
+      --gov-border: rgba(255, 255, 255, 0.12);
+      --gov-blue: #0284c7;
+      --gov-blue-hover: #0369a1;
+      --gov-emerald: #10b981;
+      --gov-amber: #f59e0b;
+      --gov-rose: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--gov-navy);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER INSTITUCIONAL */
+    header {
+      background: var(--gov-surface);
+      border-bottom: 1px solid var(--gov-border);
+      padding: 1.25rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .gov-coat {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1e3a8a, #0284c7);
+      color: #fff;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .brand-info h1 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .brand-info h1 span {
+      font-size: 0.72rem;
+      background: rgba(2, 132, 199, 0.2);
+      border: 1px solid rgba(2, 132, 199, 0.4);
+      color: #38bdf8;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .brand-info p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn-action-outline {
+      background: transparent;
+      border: 1px solid var(--gov-border);
+      color: #cbd5e1;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .btn-action-outline:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: #38bdf8;
+    }
+
+    /* CORPO PRINCIPAL EM GRID */
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 2.25rem;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.15fr 1.85fr;
+      gap: 2.25rem;
+      flex: 1;
+    }
+    @media (max-width: 1100px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    /* CARD DE CADASTRO */
+    .form-card {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border);
+      border-radius: 18px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      height: fit-content;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      border-bottom: 1px solid var(--gov-border);
+      padding-bottom: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .field-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .field-group label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .field-group input, .field-group select {
+      background: #0b1727;
+      border: 1px solid var(--gov-border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: #fff;
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .field-group input:focus, .field-group select:focus {
+      border-color: var(--gov-blue);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--gov-border);
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .checkbox-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--gov-blue);
+    }
+    .checkbox-row span {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #f1f5f9;
+    }
+
+    .btn-submit-doctor {
+      background: var(--gov-blue);
+      color: #fff;
+      border: none;
+      padding: 0.95rem;
+      border-radius: 10px;
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
+    }
+    .btn-submit-doctor:hover {
+      background: var(--gov-blue-hover);
+      transform: translateY(-2px);
+    }
+
+    /* TABELA DE MÉDICOS CADASTRADOS */
+    .table-panel {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border);
+      border-radius: 18px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .roster-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      background: rgba(11, 23, 39, 0.6);
+      padding: 1.25rem;
+      border-radius: 12px;
+      border: 1px solid var(--gov-border);
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .summary-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .summary-val {
+      font-family: var(--font-mono);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-top: 2px;
+    }
+
+    .doctors-table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    th {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 0.85rem 1rem;
+      border-bottom: 2px solid var(--gov-border);
+    }
+
+    td {
+      padding: 1.15rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .doc-name-cell {
+      display: flex;
+      flex-direction: column;
+    }
+    .doc-name-cell strong {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .doc-name-cell span {
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    .crm-badge {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(2, 132, 199, 0.35);
+      color: #38bdf8;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .room-badge {
+      font-weight: 700;
+      color: #f1f5f9;
+      background: #1b2d4b;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .badge-active { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .badge-pause { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+
+    .btn-table-action {
+      background: #1b2d4b;
+      border: 1px solid var(--gov-border);
+      color: #cbd5e1;
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-table-action:hover {
+      background: var(--gov-blue);
+      color: #fff;
+      border-color: var(--gov-blue);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER INSTITUCIONAL DINÂMICO -->
+  <header>
+    <div class="brand-wrap">
+      <div class="gov-coat" id="prof-coat">{{ branding.uf|default:'BR' }}</div>
+      <div class="brand-info">
+        <h1 id="prof-entity">{{ branding.nome_institucional|default:'Prefeitura Municipal' }}</h1>
+        <p><span id="prof-orgao">{{ branding.orgao_gestor|default:'Secretaria Municipal de Saúde' }}</span> · Gestão do Corpo Clínico, Consultórios & Médicos e-SUS</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <a href="/gestao-publica/saude/painel-chamadas/" class="btn-action-outline">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Ir para Console do Médico
+      </a>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL (FORMULÁRIO + TABELA) -->
+  <main>
+    <!-- FORMULÁRIO DE CADASTRO -->
+    <section class="form-card">
+      <div class="card-title">
+        <span>Cadastrar Novo Médico / Profissional</span>
+        <span style="font-size:0.75rem; color:#38bdf8; font-weight:700;">Habilitação e-SUS APS</span>
+      </div>
+
+      <form id="doctor-form" onsubmit="handleSaveDoctor(event)">
+        <div class="form-grid">
+          <div class="field-group">
+            <label>Nome Completo do Profissional</label>
+            <input type="text" id="doc-fullname" placeholder="Ex: Dr. Roberto Alencar Fontes" required>
+          </div>
+
+          <div class="field-row-2">
+            <div class="field-group">
+              <label>CPF (Normalizado)</label>
+              <input type="text" id="doc-cpf" placeholder="000.000.000-00" required>
+            </div>
+            <div class="field-group">
+              <label>Conselho & Número / UF</label>
+              <input type="text" id="doc-crm" placeholder="CRM/SE 5.482" required>
+            </div>
+          </div>
+
+          <div class="field-row-2">
+            <div class="field-group">
+              <label>Especialidade Médica</label>
+              <select id="doc-specialty" required>
+                <option value="Clínica Médica Geral / APS">Clínica Médica Geral / APS</option>
+                <option value="Medicina de Família e Comunidade">Medicina de Família e Comunidade</option>
+                <option value="Pediatria">Pediatria</option>
+                <option value="Ginecologia e Obstetrícia">Ginecologia e Obstetrícia</option>
+                <option value="Odontologia e Saúde Bucal">Odontologia e Saúde Bucal</option>
+                <option value="Enfermagem e Acolhimento">Enfermagem e Acolhimento</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label>Consultório / Sala Designada</label>
+              <select id="doc-room" required>
+                <option value="Consultório 01">Consultório 01 · Térreo</option>
+                <option value="Consultório 02">Consultório 02 · Pediatria</option>
+                <option value="Consultório 03" selected>Consultório 03 · 1º Andar</option>
+                <option value="Consultório 04">Consultório 04 · Especialidades</option>
+                <option value="Sala de Odontologia">Sala de Odontologia</option>
+                <option value="Sala de Triagem / Manchester">Sala de Triagem / Manchester</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row-2">
+            <div class="field-group">
+              <label>Unidade Básica de Lotação</label>
+              <select id="doc-unit">
+                <option value="Unidade Básica de Saúde Central">Unidade Básica de Saúde Central (Sede)</option>
+                <option value="Unidade Básica de Saúde Sul">Unidade Básica de Saúde Sul</option>
+                <option value="Centro de Especialidades Médicas">Centro de Especialidades Médicas</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label>Carga Horária Semanal</label>
+              <select id="doc-hours">
+                <option value="40h - Dedicação Exclusiva">40h · Dedicação Exclusiva</option>
+                <option value="30h - Atendimento Diário">30h · Atendimento Diário</option>
+                <option value="20h - Turnos Específicos">20h · Turnos Específicos</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="doc-active" checked>
+            <span>Habilitar imediatamente para chamadas na SmartTV da sala de espera</span>
+          </label>
+
+          <button type="submit" class="btn-submit-doctor">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Salvar e Ativar Profissional na Fila
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- PAINEL DA TABELA DE MÉDICOS ATIVOS -->
+    <section class="table-panel">
+      <div class="card-title">
+        <span>Corpo Clínico Alocado · Unidade Municipal de Saúde</span>
+        <span class="crm-badge" id="total-doctors-badge">5 Profissionais Ativos</span>
+      </div>
+
+      <div class="roster-summary">
+        <div class="summary-item">
+          <span class="summary-label">Médicos em Atendimento</span>
+          <span class="summary-val" id="active-count">4</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Consultórios Ocupados</span>
+          <span class="summary-val">4 de 6</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Pacientes em Espera</span>
+          <span class="summary-val" style="color:#fbbf24;">12</span>
+        </div>
+      </div>
+
+      <div class="doctors-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Profissional</th>
+              <th>Registro Conselho</th>
+              <th>Especialidade</th>
+              <th>Consultório</th>
+              <th>Status</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody id="doctors-tbody">
+            <!-- MÉDICO 1 -->
+            <tr>
+              <td>
+                <div class="doc-name-cell">
+                  <strong>Dra. Beatriz Carvalho</strong>
+                  <span>ESF 01 · 40h Semanais</span>
+                </div>
+              </td>
+              <td><span class="crm-badge">CRM/SE 4.821</span></td>
+              <td>Clínica Médica Geral / APS</td>
+              <td><span class="room-badge">Consultório 03</span></td>
+              <td><span class="status-badge badge-active">● Ativo na Fila</span></td>
+              <td>
+                <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
+              </td>
+            </tr>
+
+            <!-- MÉDICO 2 -->
+            <tr>
+              <td>
+                <div class="doc-name-cell">
+                  <strong>Dr. Marcos Vinícius Melo</strong>
+                  <span>ESF 02 · 40h Semanais</span>
+                </div>
+              </td>
+              <td><span class="crm-badge">CRM/SE 5.120</span></td>
+              <td>Medicina de Família</td>
+              <td><span class="room-badge">Consultório 01</span></td>
+              <td><span class="status-badge badge-active">● Ativo na Fila</span></td>
+              <td>
+                <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
+              </td>
+            </tr>
+
+            <!-- MÉDICO 3 -->
+            <tr>
+              <td>
+                <div class="doc-name-cell">
+                  <strong>Dra. Camila Nogueira Ramos</strong>
+                  <span>Especialidades · 20h</span>
+                </div>
+              </td>
+              <td><span class="crm-badge">CRM/SE 6.304</span></td>
+              <td>Pediatria</td>
+              <td><span class="room-badge">Consultório 02</span></td>
+              <td><span class="status-badge badge-pause">⏸ Em Pausa</span></td>
+              <td>
+                <button class="btn-table-action" onclick="toggleDoctorStatus(this)">Ativar</button>
+              </td>
+            </tr>
+
+            <!-- DENTISTA -->
+            <tr>
+              <td>
+                <div class="doc-name-cell">
+                  <strong>Dr. Fernando Diniz Rocha</strong>
+                  <span>Saúde Bucal · 40h</span>
+                </div>
+              </td>
+              <td><span class="crm-badge">CRO/SE 2.891</span></td>
+              <td>Odontologia Geral</td>
+              <td><span class="room-badge">Sala Odonto</span></td>
+              <td><span class="status-badge badge-active">● Ativo na Fila</span></td>
+              <td>
+                <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
+              </td>
+            </tr>
+
+            <!-- ENFERMEIRA -->
+            <tr>
+              <td>
+                <div class="doc-name-cell">
+                  <strong>Enfª. Mariana Alcântara</strong>
+                  <span>Triagem & Acolhimento</span>
+                </div>
+              </td>
+              <td><span class="crm-badge">COREN/SE 142.890</span></td>
+              <td>Enfermagem / Manchester</td>
+              <td><span class="room-badge">Sala de Triagem</span></td>
+              <td><span class="status-badge badge-active">● Ativo na Fila</span></td>
+              <td>
+                <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function handleSaveDoctor(e) {
+      e.preventDefault();
+      const name = document.getElementById('doc-fullname').value;
+      const crm = document.getElementById('doc-crm').value;
+      const specialty = document.getElementById('doc-specialty').value;
+      const room = document.getElementById('doc-room').value;
+      const hours = document.getElementById('doc-hours').value;
+      const isActive = document.getElementById('doc-active').checked;
+
+      const tbody = document.getElementById('doctors-tbody');
+      const tr = document.createElement('tr');
+      tr.style.background = 'rgba(56, 189, 248, 0.08)';
+
+      tr.innerHTML = `
+        <td>
+          <div class="doc-name-cell">
+            <strong>${name}</strong>
+            <span>${hours}</span>
+          </div>
+        </td>
+        <td><span class="crm-badge">${crm}</span></td>
+        <td>${specialty}</td>
+        <td><span class="room-badge">${room}</span></td>
+        <td><span class="status-badge ${isActive ? 'badge-active' : 'badge-pause'}">${isActive ? '● Ativo na Fila' : '⏸ Em Pausa'}</span></td>
+        <td>
+          <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
+        </td>
+      `;
+
+      tbody.insertBefore(tr, tbody.firstChild);
+
+      // Salva no localStorage para sincronia com o Console do Médico
+      try {
+        const doctors = JSON.parse(localStorage.getItem('vertyx_registered_doctors') || '[]');
+        doctors.push({ name, crm, specialty, room, hours, active: isActive });
+        localStorage.setItem('vertyx_registered_doctors', JSON.stringify(doctors));
+      } catch(err) {}
+
+      alert(`Profissional cadastrado com sucesso no Fundo Municipal de Saúde!\n${name} (${crm}) alocado(a) no ${room}.\nO médico já pode realizar chamadas que ecoarão na SmartTV.`);
+      document.getElementById('doctor-form').reset();
+    }
+
+    function toggleDoctorStatus(btn) {
+      const tr = btn.closest('tr');
+      const statusBadge = tr.querySelector('.status-badge');
+      if (statusBadge.classList.contains('badge-pause')) {
+        statusBadge.className = 'status-badge badge-active';
+        statusBadge.textContent = '● Ativo na Fila';
+        btn.textContent = 'Pausar';
+      } else {
+        statusBadge.className = 'status-badge badge-pause';
+        statusBadge.textContent = '⏸ Em Pausa';
+        btn.textContent = 'Ativar';
+      }
+    }
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('prof-entity').textContent = b.nome_institucional;
+      if (b.orgao_gestor) document.getElementById('prof-orgao').textContent = b.orgao_gestor;
+      if (b.uf) document.getElementById('prof-coat').textContent = b.uf;
+      if (b.cor_primaria) document.getElementById('prof-coat').style.background = b.cor_primaria;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
+  </script>
+</body>
+</html>

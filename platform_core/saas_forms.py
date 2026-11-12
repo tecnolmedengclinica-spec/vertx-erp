@@ -397,6 +397,33 @@ class EditarClienteForm(forms.ModelForm):
         fields = ['razao_social', 'nome_fantasia', 'cnpj', 'email', 'telefone', 'endereco', 'cidade', 'uf']
 
 
+class EditarModulosClienteForm(forms.Form):
+    modulos = forms.MultipleChoiceField(
+        label='Módulos habilitados para este cliente',
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    erps = forms.MultipleChoiceField(
+        label='Produtos ERP habilitados para a organização',
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    motivo = forms.CharField(
+        label='Observação / motivo do ajuste (opcional)',
+        required=False,
+        max_length=255,
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .saas_models import MODULE_LABELS
+        self.fields['modulos'].choices = sorted(MODULE_LABELS.items())
+        self.fields['erps'].choices = [
+            (erp.code, erp.name)
+            for erp in ERPCatalog.objects.filter(active=True).order_by('-operational', 'name')
+        ]
+
+
 class AlterarPlanoForm(forms.Form):
     plano = forms.ModelChoiceField(label='Novo plano', queryset=PlanoSaaS.objects.none())
     motivo = forms.CharField(label='Motivo (opcional)', required=False, max_length=300, widget=forms.Textarea(attrs={'rows': 2}))

@@ -857,3 +857,183 @@ def health_worker(request):
     response['Service-Worker-Allowed'] = '/gestao-publica/saude/'
     response['Cache-Control'] = 'no-store'
     return response
+
+
+def get_tenant_branding(request=None):
+    """Retorna dados dinâmicos de personalização (nome do município, UBS, brasão e cores), eliminando nomes estáticos."""
+    org = current_organization()
+    session_branding = request.session.get('vertyx_branding') if request and hasattr(request, 'session') else None
+    session_org = request.session.get('vertyx_branding_org') if request and hasattr(request, 'session') else None
+    if org and session_org == org.pk and session_branding and isinstance(session_branding, dict):
+        return session_branding
+
+    from .models import PerfilPrefeitura, UnidadeSaudeMunicipal
+
+    profile = PerfilPrefeitura.objects.filter(organization=org).first() if org else None
+    units = UnidadeSaudeMunicipal.objects.filter(organization=org) if org else UnidadeSaudeMunicipal.objects.none()
+    ubs = scoped_queryset(request.user, units).select_related('unidade').first() if request and org else None
+
+    nome_inst = profile.nome_institucional if profile and profile.nome_institucional else (org.display_name if org else 'Prefeitura Municipal')
+    unidade_nome = ubs.unidade.nome if ubs and ubs.unidade else 'Unidade Básica de Saúde Central'
+    cidade = org.cidade if org and org.cidade else 'Município'
+    uf = org.uf if org and org.uf else 'BR'
+
+    return {
+        'nome_institucional': nome_inst,
+        'orgao_gestor': 'Secretaria Municipal de Saúde',
+        'unidade_nome': unidade_nome,
+        'municipio': cidade,
+        'uf': uf,
+        'municipio_uf': f"{cidade} - {uf}" if cidade and uf else nome_inst,
+        'cnpj': org.cnpj if org else '',
+        'codigo_ibge': profile.codigo_ibge if profile else '',
+        'cor_primaria': '#0284c7',
+        'cor_secundaria': '#10b981',
+        'slogan': 'Sistema Integrado de Gestão Pública e Saúde da Família',
+    }
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def health_system_customization(request):
+    """Tela e API de personalização dinâmica de identidade visual, nome da prefeitura e unidades."""
+    import json
+    from django.http import JsonResponse
+    from .models import PerfilPrefeitura, UnidadeSaudeMunicipal
+    from .public_services import require_municipal_permission
+
+    svc._require(request.user, 'saude.units.manage')
+    require_municipal_permission(request.user, 'profile.manage')
+    if not accesses_for(request.user).filter(papel='ADMIN_PREFEITURA', escopo='PREFEITURA').exists():
+        raise PermissionDenied('Personalização exige administração com escopo de Prefeitura.')
+
+    if request.method == 'POST':
+        from django.db import transaction
+        from .phase_g_forms import HealthBrandingForm
+        from .public_services import audit_public
+        try:
+            data = json.loads(request.body.decode('utf-8')) if request.content_type == 'application/json' else request.POST
+        except (ValueError, UnicodeDecodeError):
+            return JsonResponse({'status': 'error', 'message': 'Dados de personalização inválidos.'}, status=400)
+        if not isinstance(data, dict) and not hasattr(data, 'getlist'):
+            return JsonResponse({'status': 'error', 'message': 'Dados de personalização inválidos.'}, status=400)
+        form = HealthBrandingForm(data)
+        if not form.is_valid():
+            return JsonResponse({'status': 'error', 'message': 'Dados de personalização inválidos.', 'fields': list(form.errors)}, status=400)
+        branding_dict = form.cleaned_data
+        branding_dict['municipio_uf'] = f"{branding_dict['municipio']} - {branding_dict['uf']}"
+        org = current_organization()
+        with transaction.atomic():
+            org.nome_fantasia = branding_dict['nome_institucional']
+            org.cidade = branding_dict['municipio']
+            org.uf = branding_dict['uf']
+            org.save(update_fields=['nome_fantasia', 'cidade', 'uf'])
+            perfil = PerfilPrefeitura.objects.filter(organization=org).first()
+            if perfil:
+                perfil.nome_institucional = branding_dict['nome_institucional']
+                perfil.codigo_ibge = branding_dict['codigo_ibge']
+                perfil.save(update_fields=['nome_institucional', 'codigo_ibge'])
+            ubs = UnidadeSaudeMunicipal.objects.filter(organization=org).select_related('unidade').first()
+            if ubs:
+                ubs.unidade.nome = branding_dict['unidade_nome']
+                ubs.unidade.save(update_fields=['nome'])
+            audit_public(request.user, 'SAUDE_IDENTIDADE_ATUALIZADA', org, {'campos': sorted(form.cleaned_data)})
+        request.session['vertyx_branding'] = branding_dict
+        request.session['vertyx_branding_org'] = org.pk
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', '') or request.content_type == 'application/json':
+            return JsonResponse({'status': 'ok', 'branding': branding_dict})
+        return render(request, 'rh_municipal/health_system_customization.html', {'branding': branding_dict, 'saved': True})
+
+    branding = get_tenant_branding(request)
+    return render(request, 'rh_municipal/health_system_customization.html', {'branding': branding})
+
+
+@login_required
+@require_GET
+def health_call_panel_tv(request):
+    """Tela Fullscreen para SmartTV de sala de espera com sintetizador de voz nativo e branding dinâmico."""
+    svc._require(request.user, 'saude.appointments.view')
+    branding = get_tenant_branding(request)
+    return render(request, 'rh_municipal/health_call_panel_tv.html', {'branding': branding})
+
+
+@login_required
+@require_GET
+def health_totem(request):
+    """Totem Touchscreen de Autoatendimento para emissão de senhas de pacientes com branding dinâmico."""
+    svc._require(request.user, 'saude.appointments.view')
+    branding = get_tenant_branding(request)
+    return render(request, 'rh_municipal/health_totem.html', {'branding': branding})
+
+
+@login_required
+@require_GET
+def health_professionals_screen(request):
+    """Tela Institucional de Gestão e Cadastro de Médicos e Profissionais de Saúde com branding dinâmico."""
+    svc._require(request.user, 'saude.professionals.view')
+    branding = get_tenant_branding(request)
+    return render(request, 'rh_municipal/health_professionals.html', {'branding': branding})
+
+
+@login_required
+@require_GET
+def health_call_panel(request):
+    """Console de Operação do Médico e Recepção da UBS (Fila em Tempo Real) com branding dinâmico."""
+    svc._require(request.user, 'saude.appointments.view')
+    branding = get_tenant_branding(request)
+    context = _context(
+        request,
+        can_health_dashboard=True,
+    ) if request.user.is_authenticated else {}
+    context.update({
+        'title': 'Console de Chamadas UBS',
+        'subtitle': 'Gerenciamento de fila e sincronização com SmartTV',
+        'branding': branding,
+    })
+    return render(request, 'rh_municipal/health_call_panel.html', context)
+
+
+@login_required
+@require_GET
+def health_acs_map(request):
+    """Georreferenciamento territorial e visitas dos ACS com Leaflet.js e branding dinâmico."""
+    svc._require(request.user, 'saude.field.view')
+    branding = get_tenant_branding(request)
+    context = _context(
+        request,
+        can_health_dashboard=True,
+        can_health_field=True,
+    ) if request.user.is_authenticated else {}
+    context.update({
+        'title': 'Georreferenciamento ACS',
+        'subtitle': 'Monitoramento territorial de visitas domiciliares da Atenção Primária',
+        'branding': branding,
+    })
+    return render(request, 'rh_municipal/health_acs_map.html', context)
+
+
+@login_required
+@require_GET
+def health_triage_manchester(request):
+    """Estação de Triagem e Classificação de Risco Manchester (Enfermagem e-SUS APS) com branding dinâmico."""
+    svc._require(request.user, 'saude.records.sensitive')
+    branding = get_tenant_branding(request)
+    return render(request, 'rh_municipal/health_triage_manchester.html', {'branding': branding})
+
+
+@login_required
+@require_GET
+def health_pec_soap(request):
+    """Prontuário Eletrônico do Cidadão (PEC e-SUS) Atendimento Clínico SOAP com branding dinâmico."""
+    svc._require(request.user, 'saude.records.sensitive')
+    branding = get_tenant_branding(request)
+    return render(request, 'rh_municipal/health_pec_soap.html', {'branding': branding})
+
+
+@login_required
+@require_GET
+def health_pharmacy_dispensation(request):
+    """Farmácia Básica Municipal - Dispensação de Medicamentos Hórus / e-SUS AF com branding dinâmico."""
+    svc._require(request.user, 'saude.pharmacy.view')
+    branding = get_tenant_branding(request)
+    return render(request, 'rh_municipal/health_pharmacy_dispensation.html', {'branding': branding})

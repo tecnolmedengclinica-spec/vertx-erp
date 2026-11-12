@@ -7,8 +7,10 @@ from . import pdv
 from . import seller
 from . import pdv_offline
 from fiscal import views as fiscal_views
+from fiscal import hub_views as fiscal_hub_views
 from fiscal.nfce import views as nfce_views
 from integracoes import views as migration_views
+from . import banking_views
 from contas.views import LoginView
 from . import workforce_views
 from . import overtime_views
@@ -42,6 +44,7 @@ urlpatterns = [
     path('fiscal/simulacao/cadastros/<str:kind>/', fiscal_views.cadastrar, name='fiscal_simulacao_cadastro'),
     path('fiscal/simulacao/novo/', fiscal_views.novo, name='fiscal_simulacao_novo'),
     path('fiscal/simulacao/documentos/<int:pk>/', fiscal_views.detalhe, name='fiscal_simulacao_detalhe'),
+    path('fiscal/nfse/<int:pk>/danfse/', fiscal_views.danfse, name='nfse_danfse'),
     path('fiscal/simulacao/documentos/<int:pk>/<str:operation>/', fiscal_views.solicitar, name='fiscal_simulacao_solicitar'),
     path('fiscal/simulacao/solicitacoes/<int:pk>/reconciliar/', fiscal_views.reconciliar, name='fiscal_simulacao_reconciliar'),
     path('vendedor/',seller.home,name='seller_home'),
@@ -121,6 +124,7 @@ urlpatterns = [
     path('manifest-pdv.webmanifest', pwa.pdv_manifest, name='pdv_manifest'),
     path('sw.js', pwa.worker, name='worker'),
     path('configuracoes/', configuration.configuracao, name='configuracao'),
+    path('configuracoes/email/', configuration.configuracao_email, name='configuracao_email'),
     path('notificacoes/', configuration.notificacoes, name='notificacoes'),
     path('notificacoes/<int:pk>/lida/', configuration.notificacao_lida, name='notificacao_lida'),
     path('portal/', portal.home, name='portal'),
@@ -145,6 +149,13 @@ urlpatterns = [
     path('bancos/extrato/<int:pk>/conciliar/', views.financeiro_acao, {'action': 'conciliar'}, name='conciliar'),
     path('bancos/extrato/importar/', views.extrato_importar, name='extrato_importar'),
     path('bancos/extrato/<int:pk>/acao/<str:action>/', views.extrato_acao, name='extrato_acao'),
+    path('bancos/integracao/', banking_views.bancos_integracao, name='bancos_integracao'),
+    path('api/bancos/webhook/<uuid:org_id>/<int:integracao_id>/', banking_views.webhook_banco_publico, name='webhook_banco_publico'),
+    path('fiscal/hub/', fiscal_hub_views.fiscal_hub, name='fiscal_hub'),
+    path('fiscal/nfe/<int:pk>/danfe/', fiscal_hub_views.fiscal_nfe_danfe, name='nfe_danfe'),
+    path('fiscal/documentos/<int:pk>/nota.json', fiscal_hub_views.fiscal_nota_json, name='fiscal_nota_json'),
+    path('fiscal/recebidas/', fiscal_hub_views.fiscal_notas_recebidas, name='fiscal_notas_recebidas'),
+    path('fiscal/recebidas/<int:pk>/', fiscal_hub_views.fiscal_nota_recebida_detalhe, name='fiscal_nota_recebida_detalhe'),
     path('financeiro/movimentacoes/', views.financeiro_movimentacoes, name='financeiro_movimentacoes'),
 ]
 for resource, prefix in {'conhecimento': 'conhecimento', 'deposito': 'depositos', 'categoria': 'categorias-pecas', 'chamado': 'chamados', 'checklist': 'checklists', 'plano': 'preventivas', 'compra': 'compras', 'venda': 'vendas', 'banco': 'bancos', 'extrato': 'bancos/extrato', 'fiscal': 'fiscal', 'documento': 'documentos', 'portal_acesso': 'portal-acessos'}.items():

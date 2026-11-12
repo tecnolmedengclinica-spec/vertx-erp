@@ -1,17 +1,89 @@
 {% extends 'commercial/base.html' %}
+{% load static %}
 {% block title %}Criar sua empresa — VERTYX{% endblock %}
 {% block body_class %}signup-page{% endblock %}
 {% block content %}
-<section class="section signup-section"><div class="container signup-grid">
-  <aside class="signup-aside"><span class="eyebrow">COMECE SUA JORNADA</span><h1>Crie o acesso da sua empresa.</h1><p>Você está iniciando o onboarding do VERTYX. Não há cobrança nem pagamento neste ambiente de homologação.</p><div class="signup-plan"><span>PLANO SELECIONADO</span><strong>{{ plan.nome }}</strong><b>{% if plan.preco is not None %}R$ {{ plan.preco|floatformat:2 }} / {% if period == 'ANUAL' %}ano{% else %}mês{% endif %}{% else %}Preço a definir{% endif %}</b><a href="{% url 'commercial:pricing' %}{% if period == 'ANUAL' %}?periodo=ANUAL{% endif %}#planos">Voltar e escolher outro plano</a></div><p class="signup-security">Seu administrador criará a própria senha pelo link de primeiro acesso. Nenhuma senha provisória será enviada.</p></aside>
-  <div class="demo-form-card signup-card"><div class="form-heading"><h2>Dados para iniciar</h2><p>Preencha os dados da empresa e do administrador.</p></div>
-    {% if signup_error %}<div class="form-alert" role="alert">{{ signup_error }}</div>{% endif %}
-    <form method="post" class="demo-form" autocomplete="on">{% csrf_token %}<input type="hidden" name="plano" value="{{ plan.slug }}"><input type="hidden" name="periodo" value="{{ period }}">
-      {% if company_form.non_field_errors or admin_form.non_field_errors %}<div class="form-alert" role="alert">{{ company_form.non_field_errors }}{{ admin_form.non_field_errors }}</div>{% endif %}
-      <h3 class="signup-form-section">Empresa</h3><div class="form-grid">{% for field in company_form %}<div class="form-field{% if field.name == 'endereco' %} full-width{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span>*</span>{% endif %}</label>{{ field }}{% if field.errors %}<div class="field-errors" role="alert">{{ field.errors }}</div>{% endif %}</div>{% endfor %}</div>
-      <h3 class="signup-form-section">Administrador inicial</h3><div class="form-grid">{% for field in admin_form %}<div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span>*</span>{% endif %}</label>{{ field }}{% if field.errors %}<div class="field-errors" role="alert">{{ field.errors }}</div>{% endif %}</div>{% endfor %}</div>
-      <button class="button button-primary" type="submit">Criar cadastro e continuar <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button><p class="form-fineprint">Ao continuar, os dados serão usados para criar a organização, o vínculo SaaS e o acesso inicial. Nenhum pagamento será processado.</p>
-    </form>
+<canvas id="vx-ambient-canvas" class="vx-ambient-canvas" aria-hidden="true"></canvas>
+
+<section class="section signup-section position-relative">
+  <div class="container signup-grid" style="position: relative; z-index: 2;">
+    <aside class="signup-aside">
+      <span class="eyebrow">COMECE SUA JORNADA</span>
+      <h1>Crie o acesso da sua empresa.</h1>
+      <p>Você está iniciando o onboarding do VERTYX ERP. Crie a conta corporativa da sua organização em poucos instantes.</p>
+
+      <div class="signup-plan">
+        <span>PLANO SELECIONADO</span>
+        <strong>{{ plan.nome }}</strong>
+        <b>{% if plan.preco is not None %}R$ {{ plan.preco|floatformat:2 }} / {% if period == 'ANUAL' %}ano{% else %}mês{% endif %}{% else %}Preço a definir{% endif %}</b>
+        <a href="{% url 'commercial:pricing' %}{% if period == 'ANUAL' %}?periodo=ANUAL{% endif %}#planos">Voltar e escolher outro plano</a>
+      </div>
+
+      <p class="signup-security">Seu administrador criará a própria senha pelo link de primeiro acesso seguro. Nenhuma senha provisória será transmitida.</p>
+    </aside>
+
+    <div class="demo-form-card signup-card shadow-lg">
+      <div class="form-heading">
+        <h2>Dados para iniciar</h2>
+        <p>Preencha os dados da empresa e do administrador responsável.</p>
+      </div>
+
+      {% if signup_error %}
+        <div class="form-alert" role="alert">{{ signup_error }}</div>
+      {% endif %}
+
+      <form method="post" class="demo-form" autocomplete="on">
+        {% csrf_token %}
+        <input type="hidden" name="plano" value="{{ plan.slug }}">
+        <input type="hidden" name="periodo" value="{{ period }}">
+
+        {% if company_form.non_field_errors or admin_form.non_field_errors %}
+          <div class="form-alert" role="alert">
+            {{ company_form.non_field_errors }}
+            {{ admin_form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <h3 class="signup-form-section">Empresa</h3>
+        <div class="form-grid">
+          {% for field in company_form %}
+            <div class="form-field{% if field.name == 'endereco' %} full-width{% endif %}">
+              <label for="{{ field.id_for_label }}">
+                {{ field.label }}{% if field.field.required %} <span>*</span>{% endif %}
+              </label>
+              {{ field }}
+              {% if field.errors %}
+                <div class="field-errors" role="alert">{{ field.errors }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <h3 class="signup-form-section">Administrador inicial</h3>
+        <div class="form-grid">
+          {% for field in admin_form %}
+            <div class="form-field">
+              <label for="{{ field.id_for_label }}">
+                {{ field.label }}{% if field.field.required %} <span>*</span>{% endif %}
+              </label>
+              {{ field }}
+              {% if field.errors %}
+                <div class="field-errors" role="alert">{{ field.errors }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <button class="button button-primary" type="submit">
+          Criar cadastro e continuar <svg aria-hidden="true"><use href="#i-arrow"></use></svg>
+        </button>
+        <p class="form-fineprint">
+          Ao continuar, os dados serão usados para criar a organização, o vínculo do plano e o acesso inicial. Ambiente seguro com isolamento de dados.
+        </p>
+      </form>
+    </div>
   </div>
-</div></section>
+</section>
+
+<script src="{% static 'js/ambient-background.js' %}" defer></script>
 {% endblock %}

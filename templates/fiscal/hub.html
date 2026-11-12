@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %}Central Fiscal · NF-e · NFS-e · NFC-e · Reforma Tributária{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <span class="badge rounded-pill text-bg-success mb-1"><i class="bi bi-check-circle me-1"></i>Reforma Tributária · CBS + IBS + IS</span>
+      <h1 class="h3 mb-0">Central Fiscal Unificada</h1>
+      <p class="text-secondary small mb-0">NF-e (Modelo 55), NFS-e Nacional + Contingência RPS, NFC-e PDV Offline e espelho <code>nota.json</code> (NT 2025.002).</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-primary btn-sm" href="{% url 'operacao:fiscal_notas_recebidas' %}">
+        <i class="bi bi-inbox-fill me-1"></i>Notas Recebidas Automáticas <span class="badge text-bg-primary ms-1">{{ recebidas_count }}</span>
+      </a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'operacao:bancos_integracao' %}">
+        <i class="bi bi-bank me-1"></i>API Bancária (Pix / Boleto)
+      </a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'operacao:fiscal_configuracao' %}">
+        <i class="bi bi-sliders me-1"></i>Configurações &amp; Certificados
+      </a>
+    </div>
+  </div>
+
+  {% if nfse_contingencia or nfce_contingencia %}
+  <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <strong>Documentos em Contingência aguardando transmissão:</strong>
+      {% if nfse_contingencia %}<span class="badge text-bg-dark ms-1">{{ nfse_contingencia|length }} NFS-e (RPS Offline)</span>{% endif %}
+      {% if nfce_contingencia %}<span class="badge text-bg-dark ms-1">{{ nfce_contingencia|length }} NFC-e (PDV tpEmis=9)</span>{% endif %}
+    </div>
+    <div class="d-flex gap-2">
+      {% if nfse_contingencia %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="sincronizar_nfse">
+        <button class="btn btn-sm btn-warning" type="submit"><i class="bi bi-cloud-upload me-1"></i>Sincronizar Lote NFS-e com ADN</button>
+      </form>
+      {% endif %}
+      {% if nfce_contingencia %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="sincronizar_nfce">
+        <button class="btn btn-sm btn-outline-dark" type="submit"><i class="bi bi-cloud-upload me-1"></i>Sincronizar NFC-e Offline</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <!-- NF-e Modelo 55 (Produtos) -->
+    <div class="col-lg-4">
+      <div class="card h-100 p-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <span class="badge text-bg-primary mb-1">Modelo 55</span>
+            <h2 class="h5 mb-0"><i class="bi bi-box-seam me-1"></i>NF-e · Produtos</h2>
+          </div>
+          <span class="badge rounded-pill text-bg-success"><i class="bi bi-check2"></i> CBS+IBS</span>
+        </div>
+        <p class="small text-secondary mb-3">Emissão XML v4.00, contingência SVC-AN / SVC-RS / FS-DA / EPEC, CC-e (110110), Cancelamento (110111) e DANFE A4.</p>
+        <form method="post" class="d-grid gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="emitir_nfe">
+          <select class="form-select form-select-sm" name="estabelecimento_id" required>
+            {% for e in estabelecimentos %}<option value="{{ e.pk }}">{{ e.nome }} ({{ e.cnpj|default:'CNPJ Matriz' }})</option>{% endfor %}
+          </select>
+          <select class="form-select form-select-sm" name="cliente_id">
+            <option value="">Destinatário: Consumidor / Avulso</option>
+            {% for c in clientes %}<option value="{{ c.pk }}">{{ c.nome_razao_social }} ({{ c.cpf_cnpj }})</option>{% endfor %}
+          </select>
+          <input class="form-control form-control-sm" type="text" name="descricao" value="Equipamento Hospitalar Multiparamétrico" placeholder="Descrição da mercadoria" required>
+          <div class="row g-2">
+            <div class="col-6"><input class="form-control form-control-sm" type="text" name="valor" value="1250.00" placeholder="Valor R$" required></div>
+            <div class="col-6">
+              <select class="form-select form-select-sm" name="modo_emissao">
+                <option value="NORMAL">Normal (tpEmis=1)</option>
+                <option value="SVC_AN">SVC-AN (tpEmis=6)</option>
+                <option value="SVC_RS">SVC-RS (tpEmis=7)</option>
+                <option value="FS_DA">FS-DA Contingência</option>
+                <option value="EPEC">EPEC Contingência</option>
+              </select>
+            </div>
+          </div>
+          <select class="form-select form-select-sm" name="regime_transicao">
+            {% for key, cfg in regimes.items %}<option value="{{ key }}">{{ cfg.label }}</option>{% endfor %}
+            <option value="SEM_RTC">Sem grupos CBS/IBS</option>
+          </select>
+          <input class="form-control form-control-sm" type="text" name="motivo_contingencia" placeholder="Motivo (caso em contingência)">
+          <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-file-earmark-code me-1"></i>Emitir NF-e + DANFE PDF</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- NFS-e Nacional (Serviços + Contingência RPS) -->
+    <div class="col-lg-4">
+      <div class="card h-100 p-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <span class="badge text-bg-info mb-1">ADN Nacional</span>
+            <h2 class="h5 mb-0"><i class="bi bi-wrench-adjustable me-1"></i>NFS-e · Serviços</h2>
+          </div>
+          <span class="badge rounded-pill text-bg-warning">Contingência RPS</span>
+        </div>
+        <p class="small text-secondary mb-3">Emissão DPS v1.00 e contingência offline (RPS) quando ADN/SEFIN oscila, gerando DANFSE provisório e sincronização posterior.</p>
+        <form method="post" class="d-grid gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="emitir_nfse">
+          <select class="form-select form-select-sm" name="estabelecimento_id" required>
+            {% for e in estabelecimentos %}<option value="{{ e.pk }}">{{ e.nome }}</option>{% endfor %}
+          </select>
+          <select class="form-select form-select-sm" name="cliente_id" required>
+            {% for c in clientes %}<option value="{{ c.pk }}">{{ c.nome_razao_social }}</option>{% empty %}<option value="">Cadastre um cliente antes</option>{% endfor %}
+          </select>
+          <input class="form-control form-control-sm" type="text" name="descricao" value="Manutenção preventiva e calibração técnica" required>
+          <div class="row g-2">
+            <div class="col-4"><input class="form-control form-control-sm" type="text" name="valor" value="480.00" placeholder="Valor" required></div>
+            <div class="col-4"><input class="form-control form-control-sm" type="text" name="codigo_servico" value="010701" placeholder="Cód. Serv."></div>
+            <div class="col-4"><input class="form-control form-control-sm" type="text" name="municipio" value="2800308" placeholder="IBGE"></div>
+          </div>
+          <select class="form-select form-select-sm" name="modo_nfse">
+            <option value="ADN_AUTO">ADN Online (Fallback automático para RPS em falha)</option>
+            <option value="CONTINGENCIA_RPS">Forçar Contingência RPS Offline (Provisório)</option>
+          </select>
+          <div class="form-check form-switch small">
+            <input class="form-check-input" type="checkbox" name="simular_falha_adn" value="1" id="simFalhaADN">
+            <label class="form-check-label" for="simFalhaADN">Simular queda do webservice ADN (testa fallback automático)</label>
+          </div>
+          <select class="form-select form-select-sm" name="regime_transicao">
+            {% for key, cfg in regimes.items %}<option value="{{ key }}">{{ cfg.label }}</option>{% endfor %}
+          </select>
+          <button class="btn btn-info btn-sm text-dark fw-semibold" type="submit"><i class="bi bi-send-check me-1"></i>Emitir NFS-e / RPS Contingência</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- NFC-e Varejo PDV (Modelo 65) -->
+    <div class="col-lg-4">
+      <div class="card h-100 p-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <span class="badge text-bg-secondary mb-1">Modelo 65 · PDV</span>
+            <h2 class="h5 mb-0"><i class="bi bi-bag-check me-1"></i>NFC-e · Varejo</h2>
+          </div>
+          <span class="badge rounded-pill text-bg-success"><i class="bi bi-wifi-off me-1"></i>Offline tpEmis=9</span>
+        </div>
+        <p class="small text-secondary mb-3">Cupom fiscal de consumidor com QR Code imediato, grupos CBS/IBS NT 2025.002 e contingência offline no caixa.</p>
+        <form method="post" class="d-grid gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="emitir_nfce">
+          <select class="form-select form-select-sm" name="estabelecimento_id" required>
+            {% for e in estabelecimentos %}<option value="{{ e.pk }}">{{ e.nome }}</option>{% endfor %}
+          </select>
+          <select class="form-select form-select-sm" name="cliente_id">
+            <option value="">Consumidor final não identificado</option>
+            {% for c in clientes %}<option value="{{ c.pk }}">{{ c.nome_razao_social }}</option>{% endfor %}
+          </select>
+          <input class="form-control form-control-sm" type="text" name="descricao" value="Kit Insumos Hospitalares Balcão" required>
+          <input class="form-control form-control-sm" type="text" name="valor" value="149.90" required>
+          <select class="form-select form-select-sm" name="regime_transicao">
+            {% for key, cfg in regimes.items %}<option value="{{ key }}">{{ cfg.label }}</option>{% endfor %}
+            <option value="SEM_RTC">Dispensa Simples Nacional 2026</option>
+          </select>
+          <div class="form-check form-switch small">
+            <input class="form-check-input" type="checkbox" name="contingencia_offline" value="1" id="nfceOffSwitch">
+            <label class="form-check-label" for="nfceOffSwitch">Emitir em Contingência Offline PDV (tpEmis=9)</label>
+          </div>
+          <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-receipt me-1"></i>Emitir Cupom NFC-e</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Espelho nota.json Reforma Tributária -->
+    <div class="col-lg-5">
+      <div class="card p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="h5 mb-0"><i class="bi bi-braces me-1"></i>Simulador Reforma Tributária · <code>nota.json</code></h2>
+          <span class="badge rounded-pill text-bg-success"><i class="bi bi-check-lg me-1"></i>Reforma Tributária</span>
+        </div>
+        <form method="get" class="row g-2 mb-3">
+          <div class="col-md-5">
+            <input class="form-control form-control-sm" type="text" name="valor_sim" value="{{ valor_sim }}" placeholder="Base R$">
+          </div>
+          <div class="col-md-5">
+            <select class="form-select form-select-sm" name="regime">
+              {% for key, cfg in regimes.items %}<option value="{{ key }}" {% if key == regime_sim %}selected{% endif %}>{{ cfg.label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2 d-grid">
+            <button class="btn btn-sm btn-outline-primary" type="submit">Calcular</button>
+          </div>
+        </form>
+        <div class="rounded-3 p-3" style="background:#0f172a;color:#e2e8f0;font-family:monospace;font-size:.82rem;max-height:360px;overflow:auto;">
+          <div class="small text-secondary mb-2 border-bottom border-secondary pb-1">
+            <span class="text-danger me-1">●</span><span class="text-warning me-1">●</span><span class="text-success me-2">●</span> nota.json
+          </div>
+          <pre class="mb-0" style="color:#f8fafc;">{{ preview_nota_json_pretty }}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Últimos Documentos Emitidos -->
+    <div class="col-lg-7">
+      <div class="card p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="h5 mb-0">Documentos Fiscais Recentes (NF-e · NFS-e · NFC-e)</h2>
+          <a class="btn btn-sm btn-link" href="{% url 'operacao:fiscal_lista' %}">Ver todos</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Número</th>
+                <th>Status</th>
+                <th>Valor</th>
+                <th>CBS / IBS</th>
+                <th class="text-end">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in documentos %}
+              <tr>
+                <td><span class="badge text-bg-dark">{{ d.tipo }}</span></td>
+                <td>
+                  <strong>{{ d.numero|default:"-" }}</strong>
+                  {% if d.chave %}<div class="small text-secondary font-monospace">{{ d.chave|truncatechars:18 }}</div>{% endif %}
+                </td>
+                <td>
+                  {% if d.status == 'AUTORIZADA' %}<span class="badge text-bg-success">Autorizada</span>
+                  {% elif d.status == 'CONTINGENCIA' %}<span class="badge text-bg-warning">Contingência</span>
+                  {% elif d.status == 'CANCELADA' %}<span class="badge text-bg-danger">Cancelada</span>
+                  {% else %}<span class="badge text-bg-secondary">{{ d.status }}</span>{% endif %}
+                </td>
+                <td>R$ {{ d.valor }}</td>
+                <td class="small">
+                  {% if d.detalhesnfe and d.detalhesnfe.nota_json %}
+                    CBS R$ {{ d.detalhesnfe.nota_json.cbs.vCBS }} · IBS R$ {{ d.detalhesnfe.nota_json.ibs.vIBS }}
+                  {% elif d.detalhesnfse and d.detalhesnfse.nota_json %}
+                    CBS R$ {{ d.detalhesnfse.nota_json.cbs.vCBS }} · IBS R$ {{ d.detalhesnfse.nota_json.ibs.vIBS }}
+                  {% elif d.detalhesnfce and d.detalhesnfce.nota_json %}
+                    CBS R$ {{ d.detalhesnfce.nota_json.cbs.vCBS }} · IBS R$ {{ d.detalhesnfce.nota_json.ibs.vIBS }}
+                  {% else %}-{% endif %}
+                </td>
+                <td class="text-end">
+                  <div class="d-inline-flex gap-1 flex-wrap justify-content-end">
+                    <a class="btn btn-xs btn-outline-secondary" style="font-size:.75rem;padding:.15rem .45rem;" href="{% url 'operacao:fiscal_nota_json' d.pk %}" target="_blank">nota.json</a>
+                    {% if d.tipo == 'NFE' %}
+                    <a class="btn btn-xs btn-outline-primary" style="font-size:.75rem;padding:.15rem .45rem;" href="{% url 'operacao:nfe_danfe' d.pk %}" target="_blank">DANFE PDF</a>
+                    {% if d.status == 'AUTORIZADA' %}
+                    <form method="post" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="acao" value="cce_nfe">
+                      <input type="hidden" name="documento_id" value="{{ d.pk }}">
+                      <input type="hidden" name="correcao" value="Ajuste de dados adicionais de transporte conforme conferência logística.">
+                      <button class="btn btn-xs btn-outline-info" style="font-size:.75rem;padding:.15rem .45rem;" type="submit">CC-e</button>
+                    </form>
+                    {% if can_cancel %}
+                    <form method="post" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="acao" value="cancelar_nfe">
+                      <input type="hidden" name="documento_id" value="{{ d.pk }}">
+                      <input type="hidden" name="justificativa" value="Cancelamento operacional por solicitação de devolução antes da saída.">
+                      <button class="btn btn-xs btn-outline-danger" style="font-size:.75rem;padding:.15rem .45rem;" type="submit">Cancelar</button>
+                    </form>
+                    {% endif %}
+                    {% endif %}
+                    {% elif d.tipo == 'NFSE' and d.status == 'CONTINGENCIA' %}
+                    <form method="post" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="acao" value="sincronizar_nfse">
+                      <input type="hidden" name="documento_id" value="{{ d.pk }}">
+                      <button class="btn btn-xs btn-warning" style="font-size:.75rem;padding:.15rem .45rem;" type="submit">Sincronizar ADN</button>
+                    </form>
+                    {% elif d.tipo == 'NFCE' and d.status == 'CONTINGENCIA' %}
+                    <form method="post" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="acao" value="sincronizar_nfce">
+                      <input type="hidden" name="documento_id" value="{{ d.pk }}">
+                      <button class="btn btn-xs btn-warning" style="font-size:.75rem;padding:.15rem .45rem;" type="submit">Transmitir SEFAZ</button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-center text-secondary py-4">Nenhum documento fiscal emitido ainda pelo Hub. Utilize os formulários acima.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

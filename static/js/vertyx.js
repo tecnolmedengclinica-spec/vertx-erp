@@ -13,13 +13,34 @@ document.addEventListener('DOMContentLoaded',()=>{
     report();addEventListener('online',report);addEventListener('offline',report);
     document.addEventListener('submit',event=>{if(!navigator.onLine){event.preventDefault();report();connection.scrollIntoView({block:'nearest'});}},true);
   }
-  const sidebar=document.querySelector('[data-sidebar-toggle]');
-  if(sidebar){
-    const apply=(collapsed)=>{document.body.classList.toggle('vx-sidebar-collapsed',collapsed);sidebar.setAttribute('aria-expanded',String(!collapsed));sidebar.setAttribute('aria-label',collapsed?'Expandir menu lateral':'Recolher menu lateral');};
+  const sidebarToggles=document.querySelectorAll('[data-sidebar-toggle]');
+  if(sidebarToggles.length){
+    const apply=(collapsed)=>{
+      document.body.classList.toggle('vx-sidebar-collapsed',collapsed);
+      sidebarToggles.forEach(btn=>{
+        btn.setAttribute('aria-expanded',String(!collapsed));
+        btn.setAttribute('aria-label',collapsed?'Expandir menu lateral':'Recolher menu lateral');
+        btn.setAttribute('title',collapsed?'Expandir menu lateral':'Recolher menu lateral');
+      });
+    };
     try{apply(localStorage.getItem('vertyx.sidebarCollapsed')==='true');}catch{}
-    sidebar.addEventListener('click',()=>{const collapsed=!document.body.classList.contains('vx-sidebar-collapsed');apply(collapsed);try{localStorage.setItem('vertyx.sidebarCollapsed',String(collapsed));}catch{}});
+    sidebarToggles.forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const collapsed=!document.body.classList.contains('vx-sidebar-collapsed');
+        apply(collapsed);
+        try{localStorage.setItem('vertyx.sidebarCollapsed',String(collapsed));}catch{}
+      });
+    });
   }
-  document.querySelectorAll('.navbar-nav a').forEach(a=>{if(a.pathname===location.pathname)a.setAttribute('aria-current','page');});
+  document.querySelectorAll('.navbar-nav a').forEach(a=>{
+    const curPath=location.pathname;
+    if(a.pathname===curPath || (a.pathname!=='/' && a.pathname!=='/assistencia/' && a.pathname.length > 2 && curPath.startsWith(a.pathname))){
+      a.classList.add('active');
+      a.setAttribute('aria-current','page');
+      const details=a.closest('details');
+      if(details){details.open=true;}
+    }
+  });
   document.querySelectorAll('.sv-bottom a').forEach(a=>{if(a.pathname===location.pathname || (a.pathname==='/pdv/' && location.pathname.startsWith('/pdv/')))a.setAttribute('aria-current','page');});
   if(document.body.classList.contains('vx-seller')&&location.hash==='#abrir-meu-caixa'){const panel=document.getElementById('abrir-meu-caixa');if(panel){panel.open=true;panel.scrollIntoView({block:'center'});}}
   document.querySelectorAll('form').forEach(form=>form.addEventListener('submit',event=>{
@@ -48,3 +69,42 @@ document.addEventListener('submit',async event=>{
     form.dataset.pdvIdentityLocked='true';form.requestSubmit();
   }
 });
+
+// Global Vertyx Theme Management (Dark / Light Mode)
+window.getVertyxTheme = function() {
+  try {
+    return localStorage.getItem('vertyx_theme') || 'dark';
+  } catch (e) {
+    return 'dark';
+  }
+};
+
+window.applyVertyxTheme = function(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  try {
+    localStorage.setItem('vertyx_theme', theme);
+  } catch (e) {}
+
+  document.querySelectorAll('.vx-theme-toggle-btn').forEach(btn => {
+    const label = btn.querySelector('.vx-theme-label');
+    if (label) {
+      label.textContent = theme === 'dark' ? 'Modo Claro' : 'Modo Escuro';
+    }
+  });
+
+  window.dispatchEvent(new CustomEvent('vertyxThemeChanged', { detail: { theme: theme } }));
+};
+
+window.toggleVertyxTheme = function() {
+  const current = document.documentElement.getAttribute('data-theme') || window.getVertyxTheme();
+  const next = current === 'light' ? 'dark' : 'light';
+  window.applyVertyxTheme(next);
+};
+
+(() => {
+  const current = window.getVertyxTheme();
+  document.documentElement.setAttribute('data-theme', current);
+  document.addEventListener('DOMContentLoaded', () => {
+    window.applyVertyxTheme(window.getVertyxTheme());
+  });
+})();

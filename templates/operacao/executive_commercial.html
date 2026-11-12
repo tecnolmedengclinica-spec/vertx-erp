@@ -1,1 +1,313 @@
-{% extends 'base.html' %}{% block content %}<main class="container-fluid"><h1>Gestão executiva</h1><form class="d-flex gap-2 flex-wrap my-3"><label for="inicio">Início</label><input id="inicio" name="inicio" type="date" value="{{ inicio|date:'Y-m-d' }}"><label for="fim">Fim</label><input id="fim" name="fim" type="date" value="{{ fim|date:'Y-m-d' }}"><label for="filial">Filial própria</label><select id="filial" name="filial"><option value="">Todas</option>{% for row in filiais %}<option value="{{ row.pk }}" {% if request.GET.filial == row.pk|stringformat:'s' %}selected{% endif %}>{{ row }}</option>{% endfor %}</select><label for="centro">Centro de custo</label><select id="centro" name="centro_custo"><option value="">Todos</option>{% for row in centros %}<option value="{{ row.pk }}" {% if request.GET.centro_custo == row.pk|stringformat:'s' %}selected{% endif %}>{{ row }}</option>{% endfor %}</select><button>Aplicar filtros</button></form><p>Valores vêm de vendas finalizadas, custos documentados por lote e devoluções formais. OS/estoque legados não têm alocação por filial própria; esses indicadores ficam sem base ao filtrar filial/centro.</p><div class="row g-3"><div class="col-md-4 card card-body"><h2 class="h5">Vendas líquidas</h2><strong>R$ {{ data.vendas_liquidas|floatformat:2 }}</strong></div><div class="col-md-4 card card-body"><h2 class="h5">Custo líquido documentado</h2><strong>R$ {{ data.custo_liquido_produtos|floatformat:2 }}</strong></div><div class="col-md-4 card card-body"><h2 class="h5">Margem comercial registrada</h2><strong>R$ {{ data.margem_registrada|floatformat:2 }}</strong></div></div><p class="mt-3">OS no período: {{ data.os_no_periodo|default_if_none:'Sem base' }} · Lotes com saldo: {{ data.lotes_com_saldo|default_if_none:'Sem base' }} · Lotes vencidos: {{ data.lotes_vencidos|default_if_none:'Sem base' }} · Funcionários ativos: {{ data.funcionarios_ativos|default_if_none:'Sem base' }}</p><div class="table-responsive"><table class="table"><thead><tr><th>Vendedor</th><th>Vendas na competência</th><th>Receita líquida</th><th>Custo líquido</th></tr></thead><tbody>{% for row in data.vendedores %}<tr><td>{{ row.vendedor }}</td><td>{{ row.vendas }}</td><td>{{ row.valor }}</td><td>{{ row.custo }}</td></tr>{% endfor %}</tbody></table></div><h2 class="h4">Financeiro oficial</h2><p>A receber R$ {{ data.financeiro.a_receber|floatformat:2 }} · A pagar R$ {{ data.financeiro.a_pagar|floatformat:2 }} · Recebido no período R$ {{ data.financeiro.recebido|floatformat:2 }} · Pago R$ {{ data.financeiro.pago|floatformat:2 }}</p><p>Margem comercial não equivale ao resultado contábil completo: despesas administrativas e impostos não são presumidos.</p></main>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestão Executiva · Métricas & Resultados · VERTYX{% endblock %}
+
+{% block content %}
+<main class="container-fluid px-3 px-md-4 py-4">
+
+  <!-- Header Section -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge" style="background: rgba(37, 99, 235, 0.15); color: #3b82f6; border: 1px solid rgba(37, 99, 235, 0.3); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">
+          <i class="bi bi-graph-up-arrow me-1"></i> Inteligência Gerencial
+        </span>
+        <span class="text-secondary small">· Competência: {{ inicio|date:"d/m/Y" }} até {{ fim|date:"d/m/Y" }}</span>
+      </div>
+      <h1 class="h3 font-bold mb-1" style="color: var(--vx-ink); letter-spacing: -0.02em;">
+        Gestão Executiva & Métricas Comerciais
+      </h1>
+      <p class="text-secondary mb-0 small" style="color: var(--vx-muted) !important;">
+        Indicadores consolidados a partir de vendas faturadas, custos documentados por lote (FEFO) e conciliação financeira oficial.
+      </p>
+    </div>
+
+    <!-- Quick Back to Main Dashboard -->
+    <div class="d-flex gap-2">
+      <a href="/assistencia/" class="btn btn-outline-secondary btn-sm px-3 py-2">
+        <i class="bi bi-grid-fill me-1"></i> Painel Geral
+      </a>
+      <button type="button" class="btn btn-outline-primary btn-sm px-3 py-2" onclick="window.print()">
+        <i class="bi bi-printer me-1"></i> Imprimir / Relatório
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter Bar Card -->
+  <div class="card mb-4 shadow-sm" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 12px;">
+    <div class="card-body p-3">
+      <form method="get" class="row g-2 align-items-end">
+        <div class="col-12 col-sm-6 col-md-2">
+          <label for="inicio" class="form-label small fw-semibold text-secondary mb-1">Data Início</label>
+          <input id="inicio" name="inicio" type="date" class="form-control form-control-sm" value="{{ inicio|date:'Y-m-d' }}">
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-2">
+          <label for="fim" class="form-label small fw-semibold text-secondary mb-1">Data Fim</label>
+          <input id="fim" name="fim" type="date" class="form-control form-control-sm" value="{{ fim|date:'Y-m-d' }}">
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-3">
+          <label for="filial" class="form-label small fw-semibold text-secondary mb-1">Filial Própria</label>
+          <select id="filial" name="filial" class="form-select form-select-sm">
+            <option value="">Todas as Filiais</option>
+            {% for row in filiais %}
+            <option value="{{ row.pk }}" {% if request.GET.filial == row.pk|stringformat:'s' %}selected{% endif %}>{{ row }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-3">
+          <label for="centro" class="form-label small fw-semibold text-secondary mb-1">Centro de Custo</label>
+          <select id="centro" name="centro_custo" class="form-select form-select-sm">
+            <option value="">Todos os Centros</option>
+            {% for row in centros %}
+            <option value="{{ row.pk }}" {% if request.GET.centro_custo == row.pk|stringformat:'s' %}selected{% endif %}>{{ row }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-12 col-md-2 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-sm w-100 py-1">
+            <i class="bi bi-funnel-fill me-1"></i> Filtrar
+          </button>
+          <a href="{% url 'operacao:executive' %}" class="btn btn-outline-secondary btn-sm py-1" title="Limpar Filtros">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Primary Metric Cards -->
+  <div class="row g-3 mb-4">
+    <!-- Card 1: Vendas Líquidas -->
+    <div class="col-12 col-md-4">
+      <div class="card h-100 shadow-sm" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 12px; border-left: 4px solid #10b981;">
+        <div class="card-body p-3 p-md-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Vendas Líquidas</span>
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); color: #10b981;">
+              <i class="bi bi-cash-stack fs-5"></i>
+            </span>
+          </div>
+          <div class="h3 font-bold mb-1" style="color: var(--vx-ink); letter-spacing: -0.02em;">
+            R$ {{ data.vendas_liquidas|floatformat:2 }}
+          </div>
+          <div class="d-flex align-items-center gap-1 small text-secondary">
+            <i class="bi bi-check2-circle text-success"></i>
+            <span>Vendas confirmadas líquidas de devoluções</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Custo Líquido dos Produtos -->
+    <div class="col-12 col-md-4">
+      <div class="card h-100 shadow-sm" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 12px; border-left: 4px solid #f59e0b;">
+        <div class="card-body p-3 p-md-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Custo Líquido (CMV)</span>
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); color: #f59e0b;">
+              <i class="bi bi-box-seam fs-5"></i>
+            </span>
+          </div>
+          <div class="h3 font-bold mb-1" style="color: var(--vx-ink); letter-spacing: -0.02em;">
+            R$ {{ data.custo_liquido_produtos|floatformat:2 }}
+          </div>
+          <div class="d-flex align-items-center gap-1 small text-secondary">
+            <i class="bi bi-clock-history text-warning"></i>
+            <span>Custos apurados por lotes e movimentações</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Margem Comercial Registrada -->
+    <div class="col-12 col-md-4">
+      <div class="card h-100 shadow-sm" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 12px; border-left: 4px solid #3b82f6;">
+        <div class="card-body p-3 p-md-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Margem Comercial</span>
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: #3b82f6;">
+              <i class="bi bi-pie-chart-fill fs-5"></i>
+            </span>
+          </div>
+          <div class="h3 font-bold mb-1" style="color: var(--vx-ink); letter-spacing: -0.02em;">
+            R$ {{ data.margem_registrada|floatformat:2 }}
+          </div>
+          <div class="d-flex align-items-center gap-1 small text-secondary">
+            <i class="bi bi-graph-up text-primary"></i>
+            <span>Resultado bruto registrado das operações</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary Metrics: Operational & Official Financial -->
+  <div class="row g-3 mb-4">
+    <!-- Financial Overview -->
+    <div class="col-12 col-lg-7">
+      <div class="card h-100 shadow-sm" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 12px;">
+        <div class="card-header bg-transparent py-3 d-flex align-items-center justify-content-between border-bottom" style="border-color: var(--vx-card-border) !important;">
+          <h2 class="h6 font-bold mb-0" style="color: var(--vx-ink);">
+            <i class="bi bi-bank me-2 text-primary"></i> Conciliação Financeira Oficial
+          </h2>
+          <span class="badge bg-light text-dark border">Oficial ERP</span>
+        </div>
+        <div class="card-body p-3 p-md-4">
+          <div class="row g-3">
+            <div class="col-6 col-md-3">
+              <div class="p-3 rounded" style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.2);">
+                <div class="small text-secondary mb-1">A Receber</div>
+                <div class="fw-bold" style="color: #10b981; font-size: 1.05rem;">
+                  R$ {{ data.financeiro.a_receber|floatformat:2|default:'0,00' }}
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 rounded" style="background: rgba(239, 68, 68, 0.06); border: 1px solid rgba(239, 68, 68, 0.2);">
+                <div class="small text-secondary mb-1">A Pagar</div>
+                <div class="fw-bold" style="color: #ef4444; font-size: 1.05rem;">
+                  R$ {{ data.financeiro.a_pagar|floatformat:2|default:'0,00' }}
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 rounded" style="background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.2);">
+                <div class="small text-secondary mb-1">Recebido Período</div>
+                <div class="fw-bold" style="color: #3b82f6; font-size: 1.05rem;">
+                  R$ {{ data.financeiro.recebido|floatformat:2|default:'0,00' }}
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-3 rounded" style="background: rgba(107, 114, 128, 0.06); border: 1px solid rgba(107, 114, 128, 0.2);">
+                <div class="small text-secondary mb-1">Pago Período</div>
+                <div class="fw-bold" style="color: var(--vx-ink); font-size: 1.05rem;">
+                  R$ {{ data.financeiro.pago|floatformat:2|default:'0,00' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operational Indicators -->
+    <div class="col-12 col-lg-5">
+      <div class="card h-100 shadow-sm" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 12px;">
+        <div class="card-header bg-transparent py-3 d-flex align-items-center justify-content-between border-bottom" style="border-color: var(--vx-card-border) !important;">
+          <h2 class="h6 font-bold mb-0" style="color: var(--vx-ink);">
+            <i class="bi bi-gear-wide-connected me-2 text-warning"></i> Indicadores Operacionais
+          </h2>
+          <span class="badge bg-secondary">Módulos Ativos</span>
+        </div>
+        <div class="card-body p-3 p-md-4">
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="p-2 border rounded d-flex justify-content-between align-items-center" style="border-color: var(--vx-card-border) !important;">
+                <span class="small text-secondary">OS no Período</span>
+                <strong style="color: var(--vx-ink);">{{ data.os_no_periodo|default_if_none:'Sem base' }}</strong>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 border rounded d-flex justify-content-between align-items-center" style="border-color: var(--vx-card-border) !important;">
+                <span class="small text-secondary">Lotes com Saldo</span>
+                <strong style="color: var(--vx-ink);">{{ data.lotes_com_saldo|default_if_none:'Sem base' }}</strong>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 border rounded d-flex justify-content-between align-items-center" style="border-color: var(--vx-card-border) !important;">
+                <span class="small text-secondary">Lotes Vencidos</span>
+                <strong class="{% if data.lotes_vencidos %}text-danger{% else %}text-secondary{% endif %}">
+                  {{ data.lotes_vencidos|default_if_none:'Sem base' }}
+                </strong>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-2 border rounded d-flex justify-content-between align-items-center" style="border-color: var(--vx-card-border) !important;">
+                <span class="small text-secondary">Equipe Ativa</span>
+                <strong style="color: var(--vx-ink);">{{ data.funcionarios_ativos|default_if_none:'Sem base' }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Commercial Performance by Seller Table -->
+  <div class="card mb-4 shadow-sm" style="background: var(--vx-surface); border: 1px solid var(--vx-card-border); border-radius: 12px;">
+    <div class="card-header bg-transparent py-3 d-flex align-items-center justify-content-between border-bottom" style="border-color: var(--vx-card-border) !important;">
+      <div>
+        <h2 class="h6 font-bold mb-0" style="color: var(--vx-ink);">
+          <i class="bi bi-people-fill me-2 text-info"></i> Performance por Vendedor na Competência
+        </h2>
+        <span class="small text-secondary">Apuração oficial de vendas, faturamento e custos documentados</span>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead style="background: var(--vx-table-th-bg); color: var(--vx-table-th-color);">
+            <tr>
+              <th class="ps-3 py-3">Vendedor</th>
+              <th class="text-center py-3">Vendas na Competência</th>
+              <th class="text-end py-3">Receita Líquida</th>
+              <th class="text-end py-3">Custo Líquido</th>
+              <th class="text-end pe-3 py-3">Margem Bruta Calculada</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in data.vendedores %}
+            <tr>
+              <td class="ps-3 py-3">
+                <div class="d-flex align-items-center gap-2">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(59, 130, 246, 0.15); color: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold;">
+                    {{ row.vendedor|slice:":2"|upper }}
+                  </div>
+                  <div>
+                    <strong style="color: var(--vx-ink);">{{ row.vendedor }}</strong>
+                  </div>
+                </div>
+              </td>
+              <td class="text-center py-3">
+                <span class="badge rounded-pill bg-secondary px-3 py-2">{{ row.vendas }} pedido(s)</span>
+              </td>
+              <td class="text-end py-3 font-mono fw-semibold" style="color: #10b981;">
+                R$ {{ row.valor|floatformat:2 }}
+              </td>
+              <td class="text-end py-3 font-mono text-secondary">
+                R$ {{ row.custo|floatformat:2 }}
+              </td>
+              <td class="text-end pe-3 py-3 font-mono fw-bold" style="color: #3b82f6;">
+                R$ {{ row.valor|add:"0"|floatformat:2 }}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-5 text-secondary">
+                <i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>
+                Nenhuma venda finalizada no período selecionado ou filtros aplicados.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Regulatory & Audit Notice -->
+  <div class="alert p-3 d-flex align-items-center gap-3 shadow-sm rounded-3" style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); color: var(--vx-ink);">
+    <i class="bi bi-info-circle-fill text-primary fs-4 flex-shrink-0"></i>
+    <div class="small">
+      <strong>Critério de Apuração Contábil & Gestão:</strong> A margem comercial reflete os custos diretos documentados de movimentação física e devoluções formais de vendas. Não equivale ao resultado contábil integral (DRE completo), uma vez que despesas administrativas, encargos operacionais e tributos indiretos não são presumidos.
+    </div>
+  </div>
+
+</main>
+{% endblock %}

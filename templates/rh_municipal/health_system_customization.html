@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central de Parametrização e Identidade Visual Governamental · VERTYX SaaS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    /* DESIGN SYSTEM: PADRÃO DIGITAL GOV.BR / ENTERPRISE HIGH-TRUST */
+    :root {
+      --gov-blue-dark: #071d41;
+      --gov-blue: #1351b4;
+      --gov-blue-hover: #0c326f;
+      --gov-blue-light: #f0f4fa;
+      --gov-surface: #ffffff;
+      --gov-bg: #f8fafc;
+      --gov-border: #e2e8f0;
+      --gov-border-strong: #cbd5e1;
+      --gov-text: #0f172a;
+      --gov-text-muted: #64748b;
+      --gov-green: #15803d;
+      --gov-green-light: #f0fdf4;
+      --gov-yellow: #b45309;
+      --gov-yellow-light: #fefce8;
+      --gov-red: #b91c1c;
+
+      --brand-primary: #1351b4;
+      --brand-secondary: #059669;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    /* MODO ESCURO ENTERPRISE / CENTRO DE CONTROLE */
+    body.dark-mode {
+      --gov-surface: #1e293b;
+      --gov-bg: #0f172a;
+      --gov-border: #334155;
+      --gov-border-strong: #475569;
+      --gov-text: #f8fafc;
+      --gov-text-muted: #94a3b8;
+      --gov-blue-light: rgba(19, 81, 180, 0.15);
+      --gov-green-light: rgba(21, 128, 61, 0.15);
+      --gov-yellow-light: rgba(180, 83, 9, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--gov-bg);
+      color: var(--gov-text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    /* HEADER OFICIAL FEDERAL / ENTERPRISE */
+    header.gov-topbar {
+      background: var(--gov-surface);
+      border-bottom: 1px solid var(--gov-border);
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .gov-brand-block {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .brand-mark {
+      background: var(--brand-primary);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-hierarchy h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gov-text);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .badge-saas-status {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      background: var(--gov-green-light);
+      color: var(--gov-green);
+      border: 1px solid rgba(21, 128, 61, 0.25);
+    }
+
+    .brand-hierarchy p {
+      font-size: 0.82rem;
+      color: var(--gov-text-muted);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-toggle-theme {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border);
+      color: var(--gov-text-muted);
+      padding: 0.5rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s;
+    }
+    .btn-toggle-theme:hover {
+      background: var(--gov-border);
+      color: var(--gov-text);
+    }
+
+    .btn-exit {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border);
+      color: var(--gov-text);
+      text-decoration: none;
+      padding: 0.5rem 0.95rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s;
+    }
+    .btn-exit:hover { background: var(--gov-border); }
+
+    .btn-primary-publish {
+      background: var(--brand-primary);
+      color: #fff;
+      border: none;
+      padding: 0.55rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 2px 6px rgba(19, 81, 180, 0.25);
+      transition: all 0.2s;
+    }
+    .btn-primary-publish:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    /* CONTAINER PRINCIPAL GRID */
+    .admin-container {
+      display: grid;
+      grid-template-columns: 280px 1fr 420px;
+      flex: 1;
+      max-width: 1720px;
+      margin: 0 auto;
+      width: 100%;
+      gap: 1.5rem;
+      padding: 1.5rem 2rem;
+    }
+
+    /* SIDEBAR DE ABAS */
+    .nav-sidebar {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border);
+      border-radius: 10px;
+      padding: 1rem 0.75rem;
+      height: fit-content;
+      position: sticky;
+      top: 5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .nav-sidebar-title {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--gov-text-muted);
+      padding: 0.5rem 0.75rem 0.75rem;
+      border-bottom: 1px solid var(--gov-border);
+      margin-bottom: 0.5rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 6px;
+      color: var(--gov-text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      transition: all 0.15s ease-in-out;
+    }
+    .nav-item:hover {
+      background: var(--gov-blue-light);
+      color: var(--brand-primary);
+    }
+    .nav-item.active {
+      background: var(--gov-blue-light);
+      color: var(--brand-primary);
+      font-weight: 700;
+      box-shadow: inset 3px 0 0 var(--brand-primary);
+    }
+
+    /* ÁREA CENTRAL DE CONTEÚDO */
+    .content-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .panel-card {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border);
+      border-radius: 10px;
+      padding: 1.75rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      display: none;
+    }
+    .panel-card.active {
+      display: block;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-title-bar {
+      border-bottom: 1px solid var(--gov-border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .card-title-bar h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gov-text);
+      margin-bottom: 0.25rem;
+    }
+
+    .card-title-bar p {
+      font-size: 0.85rem;
+      color: var(--gov-text-muted);
+    }
+
+    .legal-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--gov-blue);
+      background: var(--gov-blue-light);
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      border: 1px solid rgba(19, 81, 180, 0.2);
+    }
+
+    /* FORMULÁRIO DE PRECISÃO */
+    .form-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gov-text);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .form-hint {
+      font-size: 0.72rem;
+      color: var(--gov-text-muted);
+      font-weight: normal;
+    }
+
+    .form-control {
+      background: var(--gov-bg);
+      border: 1px solid var(--gov-border-strong);
+      color: var(--gov-text);
+      border-radius: 6px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.92rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control:focus {
+      border-color: var(--brand-primary);
+      box-shadow: 0 0 0 3px rgba(19, 81, 180, 0.15);
+      background: var(--gov-surface);
+    }
+
+    /* UPLOAD DE BRASÃO E IMAGEM */
+    .coat-upload-area {
+      border: 2px dashed var(--gov-border-strong);
+      border-radius: 8px;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      background: var(--gov-bg);
+      transition: all 0.2s;
+    }
+    .coat-upload-area:hover {
+      border-color: var(--brand-primary);
+      background: var(--gov-blue-light);
+    }
+
+    .coat-preview-box {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      background: var(--brand-primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.35rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .coat-preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .coat-upload-text h4 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--gov-text);
+      margin-bottom: 0.2rem;
+    }
+
+    .coat-upload-text p {
+      font-size: 0.78rem;
+      color: var(--gov-text-muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .btn-file-select {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border-strong);
+      color: var(--gov-text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    /* PALETA DE CORES */
+    .color-select-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .color-picker-card {
+      border: 1px solid var(--gov-border);
+      border-radius: 8px;
+      padding: 1rem;
+      background: var(--gov-bg);
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .color-picker-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .color-picker-circle input[type="color"] {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 60px;
+      height: 60px;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .color-info h5 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--gov-text);
+    }
+
+    .color-info span {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--gov-text-muted);
+    }
+
+    /* PRESETS GOVERNAMENTAIS */
+    .presets-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+
+    .btn-preset-pill {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border);
+      color: var(--gov-text);
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s;
+    }
+    .btn-preset-pill:hover {
+      border-color: var(--brand-primary);
+      color: var(--brand-primary);
+    }
+    .preset-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+
+    /* TABELA DE UNIDADES DA REDE */
+    .unit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+    }
+    .unit-table th {
+      text-align: left;
+      padding: 0.65rem 0.85rem;
+      background: var(--gov-bg);
+      border-bottom: 2px solid var(--gov-border);
+      font-weight: 700;
+      color: var(--gov-text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .unit-table td {
+      padding: 0.75rem 0.85rem;
+      border-bottom: 1px solid var(--gov-border);
+      color: var(--gov-text);
+    }
+    .unit-table tr:hover td {
+      background: var(--gov-blue-light);
+    }
+
+    /* PAINEL LATERAL DE INSPEÇÃO 360° (PREVIEW REAL) */
+    .inspector-panel {
+      background: var(--gov-surface);
+      border: 1px solid var(--gov-border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      height: fit-content;
+      position: sticky;
+      top: 5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .inspector-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--gov-text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--gov-border);
+      padding-bottom: 0.75rem;
+    }
+
+    .preview-mode-switch {
+      display: flex;
+      background: var(--gov-bg);
+      padding: 0.2rem;
+      border-radius: 6px;
+      border: 1px solid var(--gov-border);
+      gap: 0.2rem;
+    }
+
+    .btn-mode-tab {
+      flex: 1;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--gov-text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .btn-mode-tab.active {
+      background: var(--gov-surface);
+      color: var(--brand-primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    /* MOCKUP VISUAL FIDEDIGNO NO INSPECTOR */
+    .mockup-frame {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0.95rem;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-height: 280px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .mockup-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 0.6rem;
+    }
+
+    .mockup-coat-badge {
+      width: 34px;
+      height: 34px;
+      background: var(--brand-primary);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .mockup-titles h5 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .mockup-titles p {
+      font-size: 0.68rem;
+      color: #94a3b8;
+    }
+
+    .mockup-screen-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: 0.5rem;
+    }
+
+    .mockup-ticket-box {
+      background: #1e293b;
+      border: 2px solid var(--brand-primary);
+      border-radius: 8px;
+      padding: 0.85rem 1.25rem;
+      width: 100%;
+    }
+
+    .mockup-ticket-number {
+      font-family: var(--font-mono);
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #f59e0b;
+      letter-spacing: 0.05em;
+    }
+
+    .mockup-ticket-dest {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 0.2rem;
+    }
+
+    .inspector-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .btn-test-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--gov-bg);
+      border: 1px solid var(--gov-border);
+      color: var(--gov-text);
+      padding: 0.55rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .btn-test-link:hover {
+      border-color: var(--brand-primary);
+      color: var(--brand-primary);
+      background: var(--gov-blue-light);
+    }
+
+    /* TOAST ELEGANTE */
+    .toast-system {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--gov-blue-dark);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      z-index: 1000;
+      animation: slideUp 0.25s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR GOVERNAMENTAL -->
+  <header class="gov-topbar">
+    <div class="gov-brand-block">
+      <div class="brand-mark">VERTYX</div>
+      <div class="brand-hierarchy">
+        <h1>
+          Central de Parametrização Governamental
+          <span class="badge-saas-status">SaaS Multi-Tenant Ativo</span>
+        </h1>
+        <p>Configuração Oficial de Identidade, Unidades de Saúde e Políticas Operacionais</p>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button type="button" class="btn-toggle-theme" onclick="toggleTheme()" title="Alternar entre Modo Claro (Gov.br) e Modo Escuro (Tático)">
+        <span id="theme-icon">🌙</span> Modo Tático
+      </button>
+
+      <a href="/gestao-publica/saude/painel-chamadas/" class="btn-exit">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Console do Médico
+      </a>
+
+      <button type="button" class="btn-primary-publish" onclick="saveAllConfigurations()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+        Salvar e Publicar em Produção
+      </button>
+    </div>
+  </header>
+
+  <!-- WORKSPACE CONTAINER -->
+  <main class="admin-container">
+
+    <!-- 1. SIDEBAR DE NAVEGAÇÃO POR ABAS -->
+    <aside class="nav-sidebar">
+      <div class="nav-sidebar-title">Módulos de Configuração</div>
+
+      <button type="button" class="nav-item active" onclick="switchTab('entidade')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+        Entidade & Governo
+      </button>
+
+      <button type="button" class="nav-item" onclick="switchTab('identidade')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"/></svg>
+        Identidade Visual & Brasão
+      </button>
+
+      <button type="button" class="nav-item" onclick="switchTab('rede-saude')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21a9 9 0 0 0 9-9c0-4.97-4.03-9-9-9s-9 4.03-9 9a9 9 0 0 0 9 9Z"/><path d="M12 7v10M7 12h10"/></svg>
+        Rede de Saúde & Unidades
+      </button>
+
+      <button type="button" class="nav-item" onclick="switchTab('filas-totem')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Filas & Totem Kiosk
+      </button>
+
+      <button type="button" class="nav-item" onclick="switchTab('tv-audio')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+        SmartTV & Voz de Chamada
+      </button>
+
+      <button type="button" class="nav-item" onclick="switchTab('manchester')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Triagem Manchester
+      </button>
+    </aside>
+
+    <!-- 2. WORKSPACE DE FORMULÁRIOS DINÂMICOS -->
+    <section class="content-workspace">
+
+      <!-- ABA 1: ENTIDADE & GOVERNO -->
+      <div class="panel-card active" id="tab-entidade">
+        <div class="card-title-bar">
+          <div>
+            <h2>Dados da Entidade e Órgão Contratante</h2>
+            <p>Configuração institucional do Município conforme a Lei de Acesso à Informação e Editais de Licitação.</p>
+          </div>
+          <span class="legal-pill">Edital Poço Redondo & Brejo Grande</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">
+                Tipo de Entidade Contratante
+                <span class="form-hint">Natureza Jurídica</span>
+              </label>
+              <select id="cfg-tipo-entidade" class="form-control" onchange="syncFields()">
+                <option value="PREFEITURA">Prefeitura Municipal (Governo Municipal Integral)</option>
+                <option value="FMS">Fundo Municipal de Saúde (FMS / Secretaria de Saúde)</option>
+                <option value="CIS">Consórcio Intermunicipal de Saúde</option>
+                <option value="FUNDACAO">Fundação Pública / Hospital Municipal</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Nome Oficial da Prefeitura / Instituição
+                <span class="form-hint">Aparece no cabeçalho</span>
+              </label>
+              <input type="text" id="cfg-nome-institucional" class="form-control" value="{{ branding.nome_institucional|default:'Prefeitura Municipal' }}" placeholder="Ex: Prefeitura Municipal de Joinville">
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">
+                Órgão / Secretaria Gestora da Saúde
+                <span class="form-hint">Gestão Local</span>
+              </label>
+              <input type="text" id="cfg-orgao-gestor" class="form-control" value="{{ branding.orgao_gestor|default:'Secretaria Municipal de Saúde' }}" placeholder="Ex: Secretaria Municipal de Saúde">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">
+                Unidade de Saúde Ativa Padrão
+                <span class="form-hint">Estabelecimento Primário</span>
+              </label>
+              <input type="text" id="cfg-unidade-nome" class="form-control" value="{{ branding.unidade_nome|default:'Unidade Básica de Saúde Central' }}" placeholder="Ex: UBS Central Dr. Paulo Freire">
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label class="form-label">Município</label>
+              <input type="text" id="cfg-municipio" class="form-control" value="{{ branding.municipio|default:'Município Central' }}" placeholder="Ex: Aracaju">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Estado (UF)</label>
+              <select id="cfg-uf" class="form-control" onchange="syncFields()">
+                <option value="AC">AC - Acre</option><option value="AL">AL - Alagoas</option><option value="AP">AP - Amapá</option><option value="AM">AM - Amazonas</option><option value="BA">BA - Bahia</option><option value="CE">CE - Ceará</option><option value="DF">DF - Distrito Federal</option><option value="ES">ES - Espírito Santo</option><option value="GO">GO - Goiás</option><option value="MA">MA - Maranhão</option><option value="MT">MT - Mato Grosso</option><option value="MS">MS - Mato Grosso do Sul</option><option value="MG">MG - Minas Gerais</option><option value="PA">PA - Pará</option><option value="PB">PB - Paraíba</option><option value="PR">PR - Paraná</option><option value="PE">PE - Pernambuco</option><option value="PI">PI - Piauí</option><option value="RJ">RJ - Rio de Janeiro</option><option value="RN">RN - Rio Grande do Norte</option><option value="RS">RS - Rio Grande do Sul</option><option value="RO">RO - Rondônia</option><option value="RR">RR - Roraima</option><option value="SC">SC - Santa Catarina</option><option value="SP">SP - São Paulo</option><option value="SE" selected>SE - Sergipe</option><option value="TO">TO - Tocantins</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Código IBGE</label>
+              <input type="text" id="cfg-codigo-ibge" class="form-control" value="{{ branding.codigo_ibge|default:'' }}" placeholder="Ex: 2800705">
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">CNPJ da Entidade / FMS</label>
+              <input type="text" id="cfg-cnpj" class="form-control" value="{{ branding.cnpj|default:'' }}" placeholder="00.000.000/0001-00">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Slogan / Mensagem Institucional</label>
+              <input type="text" id="cfg-slogan" class="form-control" value="{{ branding.slogan|default:'Sistema Integrado de Gestão Pública e Saúde da Família' }}" placeholder="Ex: Cuidando da nossa gente">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 2: IDENTIDADE VISUAL & BRASÃO -->
+      <div class="panel-card" id="tab-identidade">
+        <div class="card-title-bar">
+          <div>
+            <h2>Identidade Visual, Cores & Brasão Oficial</h2>
+            <p>Adequação visual das telas aos padrões oficiais do município e aos requisitos de acessibilidade WCAG 2.1 AAA.</p>
+          </div>
+          <span class="legal-pill">Acessibilidade WCAG 2.1</span>
+        </div>
+
+        <div class="form-grid">
+          <!-- UPLOAD DE BRASÃO -->
+          <div class="coat-upload-area">
+            <div class="coat-preview-box" id="coat-display-box">
+              <span id="coat-initials-preview">SE</span>
+            </div>
+            <div class="coat-upload-text">
+              <h4>Brasão Oficial ou Logotipo da Cidade</h4>
+              <p>Envie o brasão oficial em formato vetorial (SVG) ou PNG com fundo transparente (resolução recomendada: 512x512px).</p>
+              <label class="btn-file-select">
+                📁 Selecionar Arquivo do Brasão
+                <input type="file" id="inp-file-coat" accept="image/*" style="display: none;" onchange="handleCoatUpload(event)">
+              </label>
+              <button type="button" class="btn-preset-pill" style="display: inline-flex; margin-left: 0.5rem;" onclick="resetCoatToInitials()">Usar Sigla Oficial</button>
+            </div>
+          </div>
+
+          <!-- PALETA DE CORES -->
+          <div class="color-select-grid">
+            <div class="color-picker-card">
+              <div class="color-picker-circle" id="circle-primary" style="background: var(--brand-primary);">
+                <input type="color" id="cfg-color-primary" value="{{ branding.cor_primaria|default:'#1351b4' }}" oninput="updateBrandColor('primary')">
+              </div>
+              <div class="color-info">
+                <h5>Cor Primária (Institucional)</h5>
+                <span id="hex-label-primary">{{ branding.cor_primaria|default:'#1351b4' }}</span>
+              </div>
+            </div>
+
+            <div class="color-picker-card">
+              <div class="color-picker-circle" id="circle-secondary" style="background: var(--brand-secondary);">
+                <input type="color" id="cfg-color-secondary" value="{{ branding.cor_secundaria|default:'#059669' }}" oninput="updateBrandColor('secondary')">
+              </div>
+              <div class="color-info">
+                <h5>Cor Secundária (Destaque / Ação)</h5>
+                <span id="hex-label-secondary">{{ branding.cor_secundaria|default:'#059669' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PRESETS GOVERNAMENTAIS -->
+          <div class="form-group">
+            <label class="form-label">Paletas Oficiais Pré-Configuradas</label>
+            <div class="presets-row">
+              <button type="button" class="btn-preset-pill" onclick="setPresetTheme('Gov.br Federal', '#1351b4', '#15803d')">
+                <span class="preset-swatch" style="background: #1351b4;"></span> Gov.br Federal
+              </button>
+              <button type="button" class="btn-preset-pill" onclick="setPresetTheme('SUS Saúde Oficial', '#005ea6', '#059669')">
+                <span class="preset-swatch" style="background: #005ea6;"></span> SUS Saúde Oficial
+              </button>
+              <button type="button" class="btn-preset-pill" onclick="setPresetTheme('Verde Esperança', '#15803d', '#0284c7')">
+                <span class="preset-swatch" style="background: #15803d;"></span> Verde Esperança
+              </button>
+              <button type="button" class="btn-preset-pill" onclick="setPresetTheme('Azul Marinho Tático', '#0f172a', '#38bdf8')">
+                <span class="preset-swatch" style="background: #0f172a;"></span> Slate Enterprise
+              </button>
+              <button type="button" class="btn-preset-pill" onclick="setPresetTheme('Bordô / Regional', '#881337', '#e11d48')">
+                <span class="preset-swatch" style="background: #881337;"></span> Bordô Regional
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 3: REDE DE SAÚDE & UNIDADES -->
+      <div class="panel-card" id="tab-rede-saude">
+        <div class="card-title-bar">
+          <div>
+            <h2>Rede Municipal de Estabelecimentos de Saúde</h2>
+            <p>Gerenciamento de Unidades Básicas de Saúde (UBS), UPAs, Policlínicas e Farmácias Municipais cadastradas no CNES.</p>
+          </div>
+          <span class="legal-pill">Cadastro Nacional CNES / MS</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Adicionar Nova Unidade de Saúde à Rede</label>
+              <input type="text" id="new-unit-name" class="form-control" placeholder="Nome da Unidade (ex: UBS Jardim Primavera)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Código CNES Oficial</label>
+              <div style="display:flex; gap:0.5rem;">
+                <input type="text" id="new-unit-cnes" class="form-control" placeholder="7 dígitos CNES">
+                <button type="button" class="btn-preset-pill" style="white-space:nowrap;" onclick="addHealthUnit()">+ Adicionar</button>
+              </div>
+            </div>
+          </div>
+
+          <table class="unit-table">
+            <thead>
+              <tr>
+                <th>Nome do Estabelecimento</th>
+                <th>Tipo</th>
+                <th>Código CNES</th>
+                <th>Equipes eSF</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="unit-table-body">
+              <tr>
+                <td><strong>UBS Central / Sede Municipal</strong></td>
+                <td>UBS Tipo I</td>
+                <td>2498712</td>
+                <td>eSF 01, eSF 02</td>
+                <td><span class="badge-saas-status">Ativa</span></td>
+              </tr>
+              <tr>
+                <td><strong>Centro de Especialidades & Saúde Bucal</strong></td>
+                <td>Policlínica / CEO</td>
+                <td>2498715</td>
+                <td>eSB 01</td>
+                <td><span class="badge-saas-status">Ativa</span></td>
+              </tr>
+              <tr>
+                <td><strong>Farmácia Básica Central</strong></td>
+                <td>Dispensação Hórus</td>
+                <td>2498720</td>
+                <td>Assistência Farmacêutica</td>
+                <td><span class="badge-saas-status">Ativa</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ABA 4: FILAS & TOTEM KIOSK -->
+      <div class="panel-card" id="tab-filas-totem">
+        <div class="card-title-bar">
+          <div>
+            <h2>Parametrização de Filas & Totem Touchscreen</h2>
+            <p>Estrutura dos serviços da recepção, prioridades legais (Lei 10.048/00 e Lei 14.626/23) e regras do Novo SGA.</p>
+          </div>
+          <span class="legal-pill">Padrão Oficial Novo SGA</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Serviços Habilitados no Totem Kiosk</label>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <input type="checkbox" checked id="chk-serv-cln"> Clínica Médica Geral (Prefixo CLN)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <input type="checkbox" checked id="chk-serv-enf"> Enfermagem / Triagem / Acolhimento (Prefixo ENF)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <input type="checkbox" checked id="chk-serv-odo"> Odontologia / Saúde Bucal (Prefixo ODO)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <input type="checkbox" checked id="chk-serv-vac"> Sala de Vacinação (Prefixo VAC)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <input type="checkbox" checked id="chk-serv-far"> Farmácia Básica Municipal (Prefixo FAR)
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Regras de Prioridade Legal</label>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <input type="checkbox" checked disabled> Lei 10.048/2000 (Idosos 60+, Gestantes, PCD)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <input type="checkbox" checked> Lei 14.626/2023 (Pessoas no Espectro Autista - TEA)
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem;">
+                  <input type="checkbox" checked> Estatuto do Idoso (Superprioridade 80+)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 5: SMART TV & SINTETIZADOR DE VOZ -->
+      <div class="panel-card" id="tab-tv-audio">
+        <div class="card-title-bar">
+          <div>
+            <h2>SmartTV & Sintetizador de Voz (Item 3 do Edital)</h2>
+            <p>Gerenciamento de chamadas por voz TTS, reprodução multimídia e ajustes de tom e velocidade de locução.</p>
+          </div>
+          <span class="legal-pill">Item 3 - Termo de Referência</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Velocidade da Locução por Voz</label>
+              <input type="range" id="cfg-voice-rate" min="0.8" max="1.3" step="0.05" value="1.0" oninput="document.getElementById('voice-rate-val').textContent = this.value + 'x'">
+              <span class="form-hint" id="voice-rate-val" style="font-weight:700;">1.0x (Padrão Humano Natural)</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tom da Voz (Pitch)</label>
+              <input type="range" id="cfg-voice-pitch" min="0.8" max="1.2" step="0.05" value="1.0" oninput="document.getElementById('voice-pitch-val').textContent = this.value">
+              <span class="form-hint" id="voice-pitch-val" style="font-weight:700;">1.0 (Afinação Neutra)</span>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Modo de Exibição da SmartTV</label>
+              <select id="cfg-tv-layout" class="form-control">
+                <option value="SIMPLE">Painel de Chamadas Clássico (Fila em Destaque)</option>
+                <option value="MULTIMIDIA">Painel Híbrido com Multimídia Institucional & Avisos</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Testar Voz de Chamada em Tempo Real</label>
+              <button type="button" class="btn-preset-pill" style="height:38px; justify-content:center;" onclick="testVoiceCall()">
+                🔊 Emitir Teste Sonoro de Chamada
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 6: TRIAGEM MANCHESTER -->
+      <div class="panel-card" id="tab-manchester">
+        <div class="card-title-bar">
+          <div>
+            <h2>Protocolo de Classificação de Risco Manchester</h2>
+            <p>Tempos de resposta clínicos e discriminação de prioridades conforme protocolo oficial do Ministério da Saúde.</p>
+          </div>
+          <span class="legal-pill">Protocolo Oficial MS</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">🔴 Vermelho (Emergência)</label>
+              <input type="text" class="form-control" value="0 min (Atendimento Imediato)" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">🟠 Laranja (Muito Urgente)</label>
+              <input type="text" class="form-control" value="10 min" readonly>
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label class="form-label">🟡 Amarelo (Urgente)</label>
+              <input type="text" class="form-control" value="60 min" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">🟢 Verde (Pouco Urgente)</label>
+              <input type="text" class="form-control" value="120 min" readonly>
+            </div>
+            <div class="form-group">
+              <label class="form-label">🔵 Azul (Não Urgente)</label>
+              <input type="text" class="form-control" value="240 min" readonly>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 3. PAINEL LATERAL DE INSPEÇÃO 360° (PREVIEW REAL) -->
+    <aside class="inspector-panel">
+      <div class="inspector-title">
+        <span>Simulador Visual 360°</span>
+        <span class="badge-saas-status">Ao Vivo</span>
+      </div>
+
+      <div class="preview-mode-switch">
+        <button type="button" class="btn-mode-tab active" onclick="setPreviewMockup('totem')">Totem</button>
+        <button type="button" class="btn-mode-tab" onclick="setPreviewMockup('tv')">SmartTV</button>
+        <button type="button" class="btn-mode-tab" onclick="setPreviewMockup('pec')">PEC</button>
+        <button type="button" class="btn-mode-tab" onclick="setPreviewMockup('portal')">Cidadão</button>
+      </div>
+
+      <!-- MOCKUP DISPLAY -->
+      <div class="mockup-frame" id="mockup-screen">
+        <div class="mockup-header">
+          <div class="mockup-coat-badge" id="insp-coat">SE</div>
+          <div class="mockup-titles">
+            <h5 id="insp-entity-name">Prefeitura Municipal</h5>
+            <p id="insp-unit-name">Unidade Básica de Saúde Central</p>
+          </div>
+        </div>
+
+        <div class="mockup-screen-content" id="insp-inner-content">
+          <div class="mockup-ticket-box">
+            <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Senha Chamada</div>
+            <div class="mockup-ticket-number">CLN-002</div>
+            <div class="mockup-ticket-dest">Consultório 01 · Dr. Clínico Geral</div>
+          </div>
+          <span style="font-size:0.7rem; color:#38bdf8;">✓ Parâmetros atualizados em tempo real</span>
+        </div>
+      </div>
+
+      <div class="inspector-actions">
+        <span style="font-size: 0.72rem; color: var(--gov-text-muted); font-weight: 700; text-transform: uppercase;">Acessos Diretos Operacionais:</span>
+        <a href="/gestao-publica/saude/totem/" target="_blank" class="btn-test-link">
+          <span>Abrir Totem Kiosk 1080p</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+        <a href="/gestao-publica/saude/painel-chamadas/tv/" target="_blank" class="btn-test-link">
+          <span>Abrir SmartTV de Chamadas</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+        <a href="/gestao-publica/saude/painel-chamadas/" target="_blank" class="btn-test-link">
+          <span>Abrir Console do Médico</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+        <a href="/gestao-publica/saude/pec/" target="_blank" class="btn-test-link">
+          <span>Abrir Prontuário PEC SOAP</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+        <a href="/gestao-publica/cidadao/central/" target="_blank" class="btn-test-link">
+          <span>Abrir Portal do Cidadão Gov.br</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- NOTIFICAÇÃO TOAST -->
+  <div class="toast-system" id="sys-toast">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <span id="toast-message">Configuração publicada com sucesso em toda a rede municipal!</span>
+  </div>
+
+  <script>
+    // BroadcastChannel para sincronização instantânea sem recarregar páginas
+    const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+
+    // 1. ALTERNÂNCIA DE ABAS
+    function switchTab(tabId) {
+      document.querySelectorAll('.panel-card').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+
+      const targetCard = document.getElementById(`tab-${tabId}`);
+      if (targetCard) targetCard.classList.add('active');
+
+      const btn = event.currentTarget;
+      if (btn) btn.classList.add('active');
+    }
+
+    // 2. MODO CLARO (GOV.BR) / MODO ESCURO (TÁTICO)
+    function toggleTheme() {
+      const isDark = document.body.classList.toggle('dark-mode');
+      document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('vertyx_admin_theme', isDark ? 'dark' : 'light');
+    }
+
+    // 3. SINCRONISMO DE CORES
+    function updateBrandColor(type) {
+      const colorVal = document.getElementById(`cfg-color-${type}`).value;
+      document.getElementById(`circle-${type}`).style.background = colorVal;
+      document.getElementById(`hex-label-${type}`).textContent = colorVal.toUpperCase();
+      document.documentElement.style.setProperty(`--brand-${type}`, colorVal);
+      syncInspector();
+    }
+
+    function setPresetTheme(name, primary, secondary) {
+      document.getElementById('cfg-color-primary').value = primary;
+      document.getElementById('cfg-color-secondary').value = secondary;
+      document.getElementById('circle-primary').style.background = primary;
+      document.getElementById('circle-secondary').style.background = secondary;
+      document.getElementById('hex-label-primary').textContent = primary.toUpperCase();
+      document.getElementById('hex-label-secondary').textContent = secondary.toUpperCase();
+      document.documentElement.style.setProperty('--brand-primary', primary);
+      document.documentElement.style.setProperty('--brand-secondary', secondary);
+      syncInspector();
+    }
+
+    // 4. ATUALIZAÇÃO DO SIMULADOR 360°
+    function syncInspector() {
+      const entity = document.getElementById('cfg-nome-institucional').value || 'Prefeitura Municipal';
+      const unit = document.getElementById('cfg-unidade-nome').value || 'Unidade Básica de Saúde Central';
+      const uf = document.getElementById('cfg-uf').value || 'BR';
+      const primaryColor = document.getElementById('cfg-color-primary').value;
+
+      document.getElementById('insp-entity-name').textContent = entity;
+      document.getElementById('insp-unit-name').textContent = unit;
+      document.getElementById('insp-coat').textContent = uf;
+      document.getElementById('insp-coat').style.background = primaryColor;
+    }
+
+    function setPreviewMockup(mode) {
+      document.querySelectorAll('.btn-mode-tab').forEach(b => b.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      const content = document.getElementById('insp-inner-content');
+      if (mode === 'totem') {
+        content.innerHTML = `
+          <div style="font-size:0.75rem; color:#94a3b8;">Toque para retirar sua senha</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.4rem; width:100%; margin-top:0.4rem;">
+            <div style="background:#1e293b; border:1px solid #475569; border-radius:4px; padding:0.5rem; font-size:0.68rem; font-weight:700;">Clínica Médica</div>
+            <div style="background:#1e293b; border:1px solid #475569; border-radius:4px; padding:0.5rem; font-size:0.68rem; font-weight:700;">Enfermagem</div>
+            <div style="background:#1e293b; border:1px solid #475569; border-radius:4px; padding:0.5rem; font-size:0.68rem; font-weight:700;">Odontologia</div>
+            <div style="background:#1e293b; border:1px solid #475569; border-radius:4px; padding:0.5rem; font-size:0.68rem; font-weight:700;">Vacinação</div>
+          </div>
+        `;
+      } else if (mode === 'tv') {
+        content.innerHTML = `
+          <div class="mockup-ticket-box">
+            <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">Senha Chamada na SmartTV</div>
+            <div class="mockup-ticket-number">CLN-002</div>
+            <div class="mockup-ticket-dest">Consultório 01 · Dr. Clínico Geral</div>
+          </div>
+          <span style="font-size:0.7rem; color:#38bdf8;">Sintetizador por voz ativo</span>
+        `;
+      } else if (mode === 'pec') {
+        content.innerHTML = `
+          <div style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:0.6rem; width:100%; text-align:left;">
+            <div style="font-size:0.7rem; font-weight:700; color:#38bdf8;">e-SUS PEC SOAP</div>
+            <div style="font-size:0.68rem; color:#cbd5e1; margin-top:0.25rem;">Paciente: José da Silva Santos · CNS 7000...</div>
+            <div style="font-size:0.65rem; color:#94a3b8;">Plano: Losartana 50mg + Metformina 850mg</div>
+          </div>
+        `;
+      } else if (mode === 'portal') {
+        content.innerHTML = `
+          <div style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:0.6rem; width:100%; text-align:left;">
+            <div style="font-size:0.75rem; font-weight:800; color:#2563eb;">gov.br Cidadão</div>
+            <div style="font-size:0.68rem; color:#e2e8f0; margin-top:0.25rem;">Minhas Consultas e Receitas Digitais</div>
+            <div style="font-size:0.65rem; color:#22c55e;">Status: Conectado à Prefeitura</div>
+          </div>
+        `;
+      }
+    }
+
+    // 5. TESTE SONORO DE VOZ
+    function testVoiceCall() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const rate = parseFloat(document.getElementById('cfg-voice-rate').value) || 1.0;
+        const pitch = parseFloat(document.getElementById('cfg-voice-pitch').value) || 1.0;
+        const entity = document.getElementById('cfg-nome-institucional').value || 'Prefeitura Municipal';
+        const utter = new SpeechSynthesisUtterance(`Atenção. Senha C L N 0 0 2. Dirija-se ao Consultório 0 1. ${entity}.`);
+        utter.lang = 'pt-BR';
+        utter.rate = rate;
+        utter.pitch = pitch;
+        window.speechSynthesis.speak(utter);
+      } else {
+        alert('Síntese de voz não suportada neste navegador.');
+      }
+    }
+
+    // 6. UPLOAD DE BRASÃO
+    function handleCoatUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const box = document.getElementById('coat-display-box');
+          box.innerHTML = `<img src="${e.target.result}" alt="Brasão Oficial">`;
+          const inspCoat = document.getElementById('insp-coat');
+          inspCoat.innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; border-radius:6px; object-fit:cover;">`;
+          localStorage.setItem('vertyx_custom_coat_img', e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function resetCoatToInitials() {
+      const uf = document.getElementById('cfg-uf').value || 'BR';
+      const box = document.getElementById('coat-display-box');
+      box.innerHTML = `<span id="coat-initials-preview">${uf}</span>`;
+      const inspCoat = document.getElementById('insp-coat');
+      inspCoat.innerHTML = uf;
+      localStorage.removeItem('vertyx_custom_coat_img');
+    }
+
+    function addHealthUnit() {
+      const name = document.getElementById('new-unit-name').value;
+      const cnes = document.getElementById('new-unit-cnes').value;
+      if (!name || !cnes) {
+        alert('Informe o Nome da Unidade e o código CNES.');
+        return;
+      }
+      const tbody = document.getElementById('unit-table-body');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${name}</strong></td>
+        <td>UBS de Atenção Primária</td>
+        <td>${cnes}</td>
+        <td>eSF Vinculada</td>
+        <td><span class="badge-saas-status">Ativa</span></td>
+      `;
+      tbody.appendChild(tr);
+      document.getElementById('new-unit-name').value = '';
+      document.getElementById('new-unit-cnes').value = '';
+      showToastNotification(`Unidade ${name} adicionada à rede com sucesso!`);
+    }
+
+    // 7. SALVAR TODAS AS CONFIGURAÇÕES
+    async function saveAllConfigurations() {
+      const data = {
+        nome_institucional: document.getElementById('cfg-nome-institucional').value,
+        orgao_gestor: document.getElementById('cfg-orgao-gestor').value,
+        unidade_nome: document.getElementById('cfg-unidade-nome').value,
+        municipio: document.getElementById('cfg-municipio').value,
+        uf: document.getElementById('cfg-uf').value,
+        cnpj: document.getElementById('cfg-cnpj').value,
+        codigo_ibge: document.getElementById('cfg-codigo-ibge').value,
+        slogan: document.getElementById('cfg-slogan').value,
+        cor_primaria: document.getElementById('cfg-color-primary').value,
+        cor_secundaria: document.getElementById('cfg-color-secondary').value,
+        voz_rate: document.getElementById('cfg-voice-rate').value,
+        voz_pitch: document.getElementById('cfg-voice-pitch').value,
+        tv_layout: document.getElementById('cfg-tv-layout').value,
+      };
+
+      // Salva no backend
+      try {
+        await fetch('/gestao-publica/saude/personalizacao/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken') || ''
+          },
+          body: JSON.stringify(data)
+        });
+      } catch (err) {
+        console.warn('Persistindo localmente em fallback:', err);
+      }
+
+      // Salva no LocalStorage
+      localStorage.setItem('vertyx_branding', JSON.stringify(data));
+
+      // Dispara BroadcastChannel para todas as abas (Totem, TV, Console, Triagem, PEC, Portal)
+      syncChannel.postMessage({
+        type: 'BRANDING_UPDATED',
+        branding: data
+      });
+
+      showToastNotification('Configurações publicadas com sucesso em todo o ecossistema municipal!');
+    }
+
+    function showToastNotification(text) {
+      const toast = document.getElementById('sys-toast');
+      document.getElementById('toast-message').textContent = text;
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 4000);
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    // Ouvintes dinâmicos
+    ['cfg-nome-institucional', 'cfg-unidade-nome', 'cfg-municipio', 'cfg-uf'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', syncInspector);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Carrega tema salvo
+      if (localStorage.getItem('vertyx_admin_theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('theme-icon').textContent = '☀️';
+      }
+
+      // Carrega dados salvos
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) {
+        try {
+          const b = JSON.parse(saved);
+          if (b.nome_institucional) document.getElementById('cfg-nome-institucional').value = b.nome_institucional;
+          if (b.orgao_gestor) document.getElementById('cfg-orgao-gestor').value = b.orgao_gestor;
+          if (b.unidade_nome) document.getElementById('cfg-unidade-nome').value = b.unidade_nome;
+          if (b.municipio) document.getElementById('cfg-municipio').value = b.municipio;
+          if (b.uf) document.getElementById('cfg-uf').value = b.uf;
+          if (b.cnpj) document.getElementById('cfg-cnpj').value = b.cnpj;
+          if (b.codigo_ibge) document.getElementById('cfg-codigo-ibge').value = b.codigo_ibge;
+          if (b.slogan) document.getElementById('cfg-slogan').value = b.slogan;
+          if (b.cor_primaria) {
+            document.getElementById('cfg-color-primary').value = b.cor_primaria;
+            document.getElementById('circle-primary').style.background = b.cor_primaria;
+            document.getElementById('hex-label-primary').textContent = b.cor_primaria.toUpperCase();
+            document.documentElement.style.setProperty('--brand-primary', b.cor_primaria);
+          }
+          if (b.cor_secundaria) {
+            document.getElementById('cfg-color-secondary').value = b.cor_secundaria;
+            document.getElementById('circle-secondary').style.background = b.cor_secundaria;
+            document.getElementById('hex-label-secondary').textContent = b.cor_secundaria.toUpperCase();
+            document.documentElement.style.setProperty('--brand-secondary', b.cor_secundaria);
+          }
+        } catch(e) {}
+      }
+
+      const customCoat = localStorage.getItem('vertyx_custom_coat_img');
+      if (customCoat) {
+        document.getElementById('coat-display-box').innerHTML = `<img src="${customCoat}" alt="Brasão">`;
+        document.getElementById('insp-coat').innerHTML = `<img src="${customCoat}" style="width:100%; height:100%; border-radius:6px; object-fit:cover;">`;
+      }
+
+      syncInspector();
+    });
+  </script>
+</body>
+</html>

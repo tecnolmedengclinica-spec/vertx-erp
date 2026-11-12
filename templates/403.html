@@ -1,1 +1,126 @@
-{% extends 'base.html' %}{% block title %}Acesso não permitido{% endblock %}{% block content %}<h1>Acesso não permitido</h1><p class="alert alert-warning">{{ exception|default:'Seu usuário não possui autorização para esta operação.' }}</p><a class="btn btn-primary" href="{% url 'operacao:tecnico' %}">Abrir agenda / atividade do dia</a>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo|default:'Acesso Restrito' }} · VERTYX{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-10 col-lg-7">
+      <div class="card p-4 p-md-5 text-center shadow-sm" style="background: var(--vx-card-bg, #111827); border: 1px solid var(--vx-card-border, #1f293d); border-radius: 16px;">
+
+        <!-- Icon Badge -->
+        <div class="mb-4 d-flex justify-content-center">
+          <div style="width: 76px; height: 76px; border-radius: 50%; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 2.2rem;">
+            <i class="bi bi-shield-lock-fill"></i>
+          </div>
+        </div>
+
+        <!-- Pill Status -->
+        <div class="mb-3">
+          <span class="badge px-3 py-2" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 600; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;">
+            <i class="bi bi-exclamation-octagon me-1"></i> HTTP 403 · Acesso Não Autorizado
+          </span>
+        </div>
+
+        <!-- Title -->
+        <h1 class="h3 font-bold mb-3" style="color: var(--vx-ink, #ffffff); letter-spacing: -0.02em;">
+          {{ titulo|default:'Recurso Restrito ou Não Vinculado' }}
+        </h1>
+
+        <!-- Explanation Message -->
+        <p class="mb-4 mx-auto" style="color: var(--vx-muted, #94a3b8); font-size: 1rem; line-height: 1.6; max-width: 520px;">
+          {{ exception|default:'Esta rota não faz parte do plano ativo contratado para sua organização ou seu perfil de acesso não possui permissão para este recurso.' }}
+        </p>
+
+        <!-- Upgrade Recommendation Card (Direct path to plan) -->
+        {% if upgrade_info and upgrade_info.plano %}
+        <div class="card p-4 mb-4 text-center text-sm-start shadow-sm" style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.3); border-radius: 14px;">
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1 justify-content-center justify-content-sm-start">
+                <span class="badge" style="background: rgba(37, 99, 235, 0.25); color: #3b82f6; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
+                  <i class="bi bi-stars me-1"></i> Disponível no Plano {{ upgrade_info.plano.nome }}
+                </span>
+                <span class="text-secondary small">· Apenas R$ {{ upgrade_info.plano.preco|floatformat:2 }}/mês</span>
+              </div>
+              <h2 class="h5 fw-bold mb-1" style="color: var(--vx-ink, #ffffff);">
+                Libere o recurso "{{ upgrade_info.recurso_nome }}"
+              </h2>
+              <p class="text-secondary small mb-0" style="color: var(--vx-muted, #94a3b8) !important;">
+                Faça o upgrade do seu plano para liberar esta funcionalidade imediatamente sem perder nenhum dado já cadastrado.
+              </p>
+            </div>
+            <div class="flex-shrink-0">
+              <a href="{{ upgrade_info.upgrade_url }}" class="btn btn-success btn-lg px-4 py-2 fw-bold text-nowrap shadow-sm">
+                <i class="bi bi-arrow-up-circle-fill me-1"></i> Ver Plano {{ upgrade_info.plano.nome }}
+              </a>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="card p-4 mb-4 text-center text-sm-start shadow-sm" style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.3); border-radius: 14px;">
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-1 justify-content-center justify-content-sm-start">
+                <span class="badge" style="background: rgba(37, 99, 235, 0.25); color: #3b82f6; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;">
+                  <i class="bi bi-stars me-1"></i> Planos & Recursos VERTYX
+                </span>
+                <span class="text-secondary small">· Recursos exclusivos para sua empresa</span>
+              </div>
+              <h2 class="h5 fw-bold mb-1" style="color: var(--vx-ink, #ffffff);">
+                Recurso exclusivo de planos superiores
+              </h2>
+              <p class="text-secondary small mb-0" style="color: var(--vx-muted, #94a3b8) !important;">
+                Conheça nossos planos e módulos avançados (Compras, Gestão Executiva, Controle de Lotes, RH e Apps Mobile).
+              </p>
+            </div>
+            <div class="flex-shrink-0">
+              <a href="/planos/" class="btn btn-primary btn-lg px-4 py-2 fw-bold text-nowrap shadow-sm">
+                <i class="bi bi-arrow-up-circle-fill me-1"></i> Conhecer Planos e Preços
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Context Pill Box (if user authenticated) -->
+        {% if request.user.is_authenticated %}
+        <div class="p-3 mb-4 text-start rounded" style="background: var(--vx-surface, rgba(255,255,255,0.03)); border: 1px solid var(--vx-card-border, rgba(255,255,255,0.08)); font-size: 0.88rem;">
+          <div class="row g-2">
+            <div class="col-sm-6">
+              <span class="text-secondary small d-block">Usuário Conectado:</span>
+              <strong style="color: var(--vx-ink, #ffffff);">{{ request.user.get_full_name|default:request.user.username }}</strong>
+            </div>
+            <div class="col-sm-6">
+              <span class="text-secondary small d-block">Organização / Perfil:</span>
+              <strong style="color: var(--vx-ink, #ffffff);">{{ request.organization.razao_social|default:'VERTYX' }} ({% if request.membership %}{{ request.membership.get_role_display|default:request.membership.role }}{% else %}Membro{% endif %})</strong>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
+          <a class="btn btn-primary px-4 py-2" href="/assistencia/">
+            <i class="bi bi-house-door-fill me-1"></i> Voltar ao Painel Principal
+          </a>
+          <a class="btn btn-outline-secondary px-4 py-2" href="javascript:history.back()">
+            <i class="bi bi-arrow-left me-1"></i> Página Anterior
+          </a>
+          {% if request.membership and request.membership.role == 'ADMIN' %}
+          <a class="btn btn-outline-info px-4 py-2" href="/vertyx/empresa/plano/">
+            <i class="bi bi-stars me-1"></i> Gerenciar Planos & Módulos
+          </a>
+          {% else %}
+          <a class="btn btn-outline-info px-4 py-2" href="/planos/">
+            <i class="bi bi-grid-3x3-gap me-1"></i> Tabela de Planos
+          </a>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

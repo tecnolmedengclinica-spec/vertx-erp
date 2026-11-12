@@ -3,6 +3,8 @@ from .context import current_organization
 
 
 class TenantModelForm(forms.ModelForm):
+    required_css_class = 'required'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         organization = current_organization()
@@ -12,6 +14,8 @@ class TenantModelForm(forms.ModelForm):
         for name, field in self.fields.items():
             if isinstance(field, (forms.ModelChoiceField, forms.ModelMultipleChoiceField)):
                 field.queryset = field.queryset.model._default_manager.all()
+            if field.required:
+                field.widget.attrs.setdefault('required', 'required')
 
     def clean(self):
         data = super().clean()

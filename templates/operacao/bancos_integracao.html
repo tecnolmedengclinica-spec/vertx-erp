@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}API de Integração Bancária · Pix · Boleto · Webhook{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <span class="badge rounded-pill text-bg-primary mb-1"><i class="bi bi-link-45deg me-1"></i>Open Finance &amp; Cobranças API</span>
+      <h1 class="h3 mb-0"><i class="bi bi-bank me-2"></i>API de Integração com Bancos</h1>
+      <p class="text-secondary small mb-0">Emissão de Pix (BRCode CRC16) &amp; Boletos, conciliação automática de extrato via API e baixa por webhook idempotente.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'operacao:extrato_lista' %}"><i class="bi bi-arrow-left-right me-1"></i>Conciliação Manual</a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'operacao:fiscal_hub' %}"><i class="bi bi-file-earmark-check me-1"></i>Central Fiscal</a>
+    </div>
+  </div>
+
+  {% if ultimo_webhook_secret %}
+  <div class="alert alert-info">
+    <strong>Segredo do Webhook gerado (exibição única — armazenado apenas como hash SHA-256):</strong>
+    <code class="ms-2 user-select-all">{{ ultimo_webhook_secret }}</code>
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <!-- Configurar Integração Bancária -->
+    <div class="col-lg-5">
+      <div class="card p-3 h-100">
+        <h2 class="h5 mb-3">1. Conectar Conta Bancária à API</h2>
+        <form method="post" class="d-grid gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="configurar">
+          <label class="small text-secondary mb-0">Conta Bancária</label>
+          <select class="form-select form-select-sm" name="conta_id" required>
+            {% for c in contas %}<option value="{{ c.pk }}">{{ c.nome }} (Saldo R$ {{ c.saldo }})</option>{% empty %}<option value="">Cadastre uma Conta Bancária antes</option>{% endfor %}
+          </select>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="small text-secondary mb-0">Provedor API</label>
+              <select class="form-select form-select-sm" name="provedor">
+                {% for cod, lbl in provedores %}<option value="{{ cod }}">{{ lbl }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="small text-secondary mb-0">Ambiente</label>
+              <select class="form-select form-select-sm" name="ambiente">
+                <option value="SANDBOX">Sandbox / Homologação</option>
+                <option value="PRODUCAO">Produção (Cofre/Env)</option>
+              </select>
+            </div>
+          </div>
+          <input class="form-control form-control-sm" type="text" name="credencial_referencia" value="simulacao://banco-local" placeholder="Referência opaca: cofre://..., env://... ou simulacao://..." required>
+          <div class="row g-2">
+            <div class="col-6"><input class="form-control form-control-sm" type="text" name="client_id" placeholder="Client ID / Convênio público"></div>
+            <div class="col-6"><input class="form-control form-control-sm" type="text" name="chave_pix" placeholder="Chave Pix (CNPJ / EVP)"></div>
+          </div>
+          <div class="row g-2">
+            <div class="col-6"><input class="form-control form-control-sm" type="text" name="convenio_boleto" placeholder="Carteira / Convênio Boleto"></div>
+            <div class="col-6"><input class="form-control form-control-sm" type="password" name="webhook_secret" placeholder="Token Webhook (opcional: auto)"></div>
+          </div>
+          <div class="form-check form-switch small">
+            <input class="form-check-input" type="checkbox" name="conciliar_automaticamente" value="1" checked id="autoConcSwitch">
+            <label class="form-check-label" for="autoConcSwitch">Dar baixa no Contas a Receber e lançar Caixa automaticamente ao receber</label>
+          </div>
+          <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-plug me-1"></i>Salvar Integração Bancária</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Emitir Pix / Boleto vinculado ao Contas a Receber -->
+    <div class="col-lg-7">
+      <div class="card p-3 h-100">
+        <h2 class="h5 mb-3">2. Emitir Cobrança Pix / Boleto Registrado</h2>
+        <form method="post" class="row g-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="emitir_cobranca">
+          <div class="col-md-6">
+            <label class="small text-secondary mb-0">Integração Bancária</label>
+            <select class="form-select form-select-sm" name="integracao_id" required>
+              {% for i in integracoes %}<option value="{{ i.pk }}">{{ i.conta.nome }} · {{ i.get_provedor_display }}</option>{% empty %}<option value="">Conecte uma conta ao lado</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="small text-secondary mb-0">Vincular Conta a Receber (opcional)</label>
+            <select class="form-select form-select-sm" name="lancamento_id">
+              <option value="">Cobrança avulsa sem título</option>
+              {% for l in lancamentos_aberto %}<option value="{{ l.pk }}">#{{ l.pk }} · {{ l.descricao|truncatechars:32 }} (Saldo R$ {{ l.saldo }})</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="small text-secondary mb-0">Tipo</label>
+            <select class="form-select form-select-sm" name="tipo">
+              <option value="HIBRIDO">Híbrido (Boleto + Pix)</option>
+              <option value="PIX">Somente Pix QR</option>
+              <option value="BOLETO">Somente Boleto</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="small text-secondary mb-0">Valor R$</label>
+            <input class="form-control form-control-sm" type="text" name="valor" value="350.00" required>
+          </div>
+          <div class="col-md-4">
+            <label class="small text-secondary mb-0">Vencimento</label>
+            <input class="form-control form-control-sm" type="date" name="vencimento" value="{{ hoje_iso }}" required>
+          </div>
+          <div class="col-md-6">
+            <input class="form-control form-control-sm" type="text" name="pagador_nome" placeholder="Nome do pagador (automático se título selecionado)">
+          </div>
+          <div class="col-md-6">
+            <input class="form-control form-control-sm" type="text" name="descricao" value="Fatura de Serviços / Peças" placeholder="Descrição na fatura">
+          </div>
+          <div class="col-12">
+            <button class="btn btn-success btn-sm" type="submit"><i class="bi bi-qr-code me-1"></i>Gerar Pix Copia e Cola + Boleto API</button>
+          </div>
+        </form>
+
+        <hr class="my-3">
+        <h3 class="h6 mb-2">Bancos Conectados &amp; Webhooks</h3>
+        <div class="d-grid gap-2">
+          {% for i in integracoes %}
+          <div class="border rounded p-2 d-flex flex-wrap align-items-center justify-content-between gap-2 small">
+            <div>
+              <strong>{{ i.conta.nome }}</strong> · <span class="badge text-bg-info">{{ i.get_provedor_display }}</span>
+              <span class="badge text-bg-secondary">{{ i.ambiente }}</span>
+              <div class="text-secondary mt-1">
+                Webhook URL: <code>{% url 'operacao:webhook_banco_publico' i.organization.public_id i.pk %}</code>
+                {% if i.ultima_sincronizacao_em %} · Sync: {{ i.ultima_sincronizacao_em|date:"d/m H:i" }}{% endif %}
+              </div>
+            </div>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="acao" value="sincronizar_extrato">
+              <input type="hidden" name="integracao_id" value="{{ i.pk }}">
+              <button class="btn btn-sm btn-outline-primary" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Sincronizar Extrato API</button>
+            </form>
+          </div>
+          {% empty %}
+          <p class="text-secondary small mb-0">Nenhuma integração bancária configurada ainda.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cobranças Emitidas -->
+  <div class="card p-3 mb-4">
+    <h2 class="h5 mb-3">Cobranças Pix &amp; Boletos Emitidos</h2>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead><tr><th>TXID / Nosso Nº</th><th>Tipo / Conta</th><th>Título Financeiro</th><th>Valor</th><th>Pix Copia e Cola / Linha Digitável</th><th>Status</th><th class="text-end">Ações</th></tr></thead>
+        <tbody>
+          {% for cob in cobrancas %}
+          <tr>
+            <td class="font-monospace small"><strong>{{ cob.txid }}</strong><br><span class="text-secondary">{{ cob.nosso_numero }}</span></td>
+            <td><span class="badge text-bg-dark">{{ cob.tipo }}</span><div class="small text-secondary">{{ cob.conta.nome }}</div></td>
+            <td class="small">{% if cob.lancamento %}Receber #{{ cob.lancamento.pk }} ({{ cob.lancamento.status }}){% else %}Avulso{% endif %}</td>
+            <td><strong>R$ {{ cob.valor }}</strong><div class="small text-secondary">Venc. {{ cob.vencimento|date:"d/m/Y" }}</div></td>
+            <td class="small" style="max-width:340px;">
+              {% if cob.pix_copia_cola %}<div class="text-truncate font-monospace">Pix: {{ cob.pix_copia_cola }}</div>{% endif %}
+              {% if cob.linha_digitavel %}<div class="text-truncate font-monospace text-secondary">Linha: {{ cob.linha_digitavel }}</div>{% endif %}
+            </td>
+            <td>
+              {% if cob.status == 'PAGA' %}<span class="badge text-bg-success">Paga / Baixada</span>
+              {% elif cob.status == 'ATIVA' %}<span class="badge text-bg-warning">Aguardando</span>
+              {% else %}<span class="badge text-bg-secondary">{{ cob.status }}</span>{% endif %}
+            </td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1">
+                <form method="post" class="d-inline">
+                  {% csrf_token %}<input type="hidden" name="acao" value="consultar_cobranca"><input type="hidden" name="cobranca_id" value="{{ cob.pk }}">
+                  <button class="btn btn-sm btn-outline-secondary" style="font-size:.75rem;padding:.15rem .45rem;" type="submit">Consultar</button>
+                </form>
+                {% if cob.status == 'ATIVA' %}
+                <form method="post" class="d-inline">
+                  {% csrf_token %}<input type="hidden" name="acao" value="simular_pagamento_sandbox"><input type="hidden" name="cobranca_id" value="{{ cob.pk }}">
+                  <button class="btn btn-sm btn-outline-success" style="font-size:.75rem;padding:.15rem .45rem;" type="submit">Simular Liquidação</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-secondary py-3">Nenhuma cobrança bancária gerada até o momento.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -394,7 +394,11 @@ class GestaoTests(Dados, TestCase):
                     response = self.client.get(url)
                     self.assertEqual(response.status_code, 200 if access else 403)
                     if access:
-                        self.assertContains(response, 'Estoque')
+                        stock_url = reverse('gestao:peca_lista')
+                        if role in {'ADMIN', 'GESTOR', 'ESTOQUE'}:
+                            self.assertContains(response, f'href="{stock_url}"')
+                        else:
+                            self.assertNotContains(response, f'href="{stock_url}"')
             self.assertEqual(self.client.get(reverse('gestao:peca_novo')).status_code, 200 if role in ['ADMIN','GESTOR','ESTOQUE'] else 403)
 
     def test_isolamento_detalhes_edicao_pdf_post_e_queryset(self):

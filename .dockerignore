@@ -19,3 +19,6 @@ material_comercial
 *.log
 *.tmp
 validation_settings_*.py
+seed_local_users.py
+rh_municipal/populate_brejo_grande_real.py
+RELATORIO_*.pdf

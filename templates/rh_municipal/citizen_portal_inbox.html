@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central do Cidadão · Autoatendimento & Caixa de Protocolos Gov.br</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gov-blue-dark: #071d41;
+      --gov-blue: #1351b4;
+      --gov-blue-vivid: #0c326f;
+      --gov-blue-light: #e7effb;
+      --gov-gold: #ffcd07;
+      --gov-green: #168821;
+      --gov-red: #e52207;
+      --gov-bg: #f8fafc;
+      --gov-card-bg: #ffffff;
+      --gov-text: #1b263b;
+      --gov-text-dim: #64748b;
+      --gov-border: #cbd5e1;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--gov-bg);
+      color: var(--gov-text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 1. BARRA DE ACESSIBILIDADE GOV.BR */
+    .gov-access-bar {
+      background: #000000;
+      color: #ffffff;
+      padding: 0.35rem 2rem;
+      font-size: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .access-shortcuts {
+      display: flex;
+      gap: 1.25rem;
+      align-items: center;
+    }
+
+    .access-shortcuts a {
+      color: #cbd5e1;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .access-shortcuts a:hover {
+      color: #fff;
+      text-decoration: underline;
+    }
+
+    .access-tools {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn-access {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    /* 2. HEADER OFICIAL GOV.BR */
+    header {
+      background: var(--gov-blue-vivid);
+      color: #fff;
+      padding: 1.25rem 2rem;
+      border-bottom: 3px solid var(--gov-blue);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .gov-brand {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .gov-logo {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+      color: #fff;
+    }
+
+    .gov-divider {
+      width: 1px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .gov-entity h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .gov-entity p {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      margin-top: 2px;
+    }
+
+    /* CARD DE USUÁRIO AUTENTICADO */
+    .user-profile-badge {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 0.6rem 1.25rem;
+      border-radius: 999px;
+      backdrop-filter: blur(10px);
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gov-gold), #f59e0b);
+      color: #000;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-name {
+      font-weight: 800;
+      font-size: 0.9rem;
+      color: #fff;
+    }
+
+    .user-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: #e2e8f0;
+    }
+
+    .seal-gold {
+      background: var(--gov-gold);
+      color: #000;
+      font-weight: 800;
+      font-size: 0.68rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    /* 3. HERO DE GEOLOCALIZAÇÃO AUTOMÁTICA (EDITAL POÇO REDONDO) */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .geo-banner {
+      background: linear-gradient(135deg, #e7effb, #f1f5f9);
+      border: 1px solid #bfdbfe;
+      border-left: 6px solid var(--gov-blue);
+      border-radius: 16px;
+      padding: 1.4rem 1.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(19, 81, 180, 0.05);
+    }
+
+    .geo-info {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .radar-icon {
+      width: 48px;
+      height: 48px;
+      background: #1351b4;
+      color: #fff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .geo-text h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--gov-blue-dark);
+    }
+    .geo-text p {
+      font-size: 0.88rem;
+      color: var(--gov-text-dim);
+      margin-top: 2px;
+    }
+
+    .btn-change-city {
+      background: #ffffff;
+      border: 1px solid var(--gov-border);
+      color: var(--gov-blue);
+      padding: 0.65rem 1.25rem;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s;
+    }
+    .btn-change-city:hover {
+      background: var(--gov-blue);
+      color: #fff;
+      border-color: var(--gov-blue);
+    }
+
+    /* 4. ATALHOS DE SERVIÇOS DIGITAIS */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .service-card {
+      background: var(--gov-card-bg);
+      border: 1px solid var(--gov-border);
+      border-radius: 16px;
+      padding: 1.4rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+
+    .service-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(19, 81, 180, 0.12);
+      border-color: var(--gov-blue);
+    }
+
+    .service-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--gov-blue-light);
+      color: var(--gov-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .service-card strong {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--gov-blue-dark);
+      line-height: 1.2;
+    }
+
+    .service-card span {
+      font-size: 0.75rem;
+      color: var(--gov-text-dim);
+    }
+
+    /* 5. A CAIXA DE ENTRADA EM 2 ABAS ESTADAS */
+    .inbox-section {
+      background: #ffffff;
+      border: 1px solid var(--gov-border);
+      border-radius: 20px;
+      padding: 2.25rem;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    .inbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .inbox-title h2 {
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--gov-blue-dark);
+      letter-spacing: -0.5px;
+    }
+    .inbox-title p {
+      font-size: 0.88rem;
+      color: var(--gov-text-dim);
+      margin-top: 2px;
+    }
+
+    .btn-new-protocol {
+      background: var(--gov-blue);
+      color: #ffffff;
+      border: none;
+      padding: 0.85rem 1.6rem;
+      border-radius: 12px;
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(19, 81, 180, 0.3);
+      transition: all 0.2s;
+    }
+    .btn-new-protocol:hover {
+      background: var(--gov-blue-vivid);
+      transform: translateY(-2px);
+    }
+
+    /* AS 2 ABAS LITERAIS EXIGIDAS NO EDITAL */
+    .tabs-nav {
+      display: flex;
+      border-bottom: 2px solid var(--gov-border);
+      gap: 2rem;
+    }
+
+    .tab-button {
+      background: transparent;
+      border: none;
+      padding: 1rem 0.5rem;
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--gov-text-dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .tab-button.active {
+      color: var(--gov-blue);
+    }
+
+    .tab-button.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--gov-blue);
+      border-radius: 3px 3px 0 0;
+    }
+
+    .tab-counter {
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+    }
+    .tab-button.active .tab-counter {
+      background: var(--gov-blue-light);
+      color: var(--gov-blue);
+    }
+
+    /* CONTEÚDO DAS ABAS */
+    .tab-pane { display: none; flex-direction: column; gap: 1.25rem; }
+    .tab-pane.active { display: flex; }
+
+    /* CARD DE PROCESSO / REQUERIMENTO */
+    .protocol-card {
+      background: #ffffff;
+      border: 1px solid var(--gov-border);
+      border-radius: 16px;
+      padding: 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s;
+    }
+
+    .protocol-card:hover {
+      border-color: #93c5fd;
+      box-shadow: 0 8px 20px rgba(19, 81, 180, 0.06);
+    }
+
+    .protocol-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .protocol-code {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--gov-blue);
+      background: var(--gov-blue-light);
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+    }
+
+    .protocol-status {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 8px;
+    }
+    .status-running { background: rgba(234, 179, 8, 0.15); color: #b45309; border: 1px solid rgba(234, 179, 8, 0.3); }
+    .status-done { background: rgba(22, 136, 33, 0.15); color: #166534; border: 1px solid rgba(22, 136, 33, 0.3); }
+
+    .protocol-title h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--gov-blue-dark);
+      margin-top: 0.3rem;
+    }
+    .protocol-title p {
+      font-size: 0.85rem;
+      color: var(--gov-text-dim);
+      margin-top: 2px;
+    }
+
+    /* STEPPER / TIMELINE VISUAL DE TRAMITAÇÃO */
+    .tramitation-stepper {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 1.25rem 1.5rem;
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #64748b;
+      font-weight: 800;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+      z-index: 2;
+    }
+    .step-item.completed .step-circle {
+      background: var(--gov-green);
+      color: #fff;
+    }
+    .step-item.active .step-circle {
+      background: var(--gov-blue);
+      color: #fff;
+      box-shadow: 0 0 0 4px var(--gov-blue-light);
+    }
+
+    .step-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--gov-text);
+    }
+    .step-time {
+      font-size: 0.72rem;
+      color: var(--gov-text-dim);
+      margin-top: 2px;
+    }
+
+    .protocol-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 1rem;
+    }
+
+    .btn-action-ghost {
+      background: transparent;
+      border: 1px solid var(--gov-border);
+      color: var(--gov-text);
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-action-ghost:hover {
+      background: #f1f5f9;
+      border-color: var(--gov-blue);
+    }
+
+    .btn-action-primary {
+      background: var(--gov-blue);
+      border: 1px solid var(--gov-blue);
+      color: #fff;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-action-primary:hover {
+      background: var(--gov-blue-vivid);
+    }
+
+    /* MODAL DE NOVO PROTOCOLO */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 29, 65, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: #ffffff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 620px;
+      padding: 2.25rem;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--gov-border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .modal-head h3 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--gov-blue-dark);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+    .form-group label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--gov-text);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--gov-border);
+      border-radius: 10px;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--gov-blue);
+      box-shadow: 0 0 0 3px var(--gov-blue-light);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. BARRA DE ACESSIBILIDADE GOV.BR -->
+  <div class="gov-access-bar">
+    <div class="access-shortcuts">
+      <a href="#conteudo">Ir para o conteúdo [1]</a>
+      <a href="#menu">Ir para o menu [2]</a>
+      <a href="#busca">Ir para a busca [3]</a>
+    </div>
+    <div class="access-tools">
+      <button class="btn-access" onclick="alert('Modo Alto Contraste ativado.')">Alto Contraste</button>
+      <button class="btn-access" onclick="alert('Ferramenta de VLibras ativada.')">VLibras</button>
+    </div>
+  </div>
+
+  <!-- 2. HEADER GOV.BR FEDERAL -->
+  <header>
+    <div class="header-inner">
+      <div class="gov-brand">
+        <div class="gov-logo">gov.br</div>
+        <div class="gov-divider"></div>
+        <div class="gov-entity">
+          <h1 id="gov-entity-name">{{ branding.nome_institucional|default:"Prefeitura Municipal" }}</h1>
+          <p id="gov-entity-sub">Central Oficial de Atendimento ao Cidadão</p>
+        </div>
+      </div>
+
+      <div class="user-profile-badge">
+        <div class="user-avatar">GS</div>
+        <div class="user-details">
+          <div class="user-name">Guilherme Silva Santos</div>
+          <div class="user-meta">
+            <span>CPF: ***.842.195-**</span>
+            <span class="seal-gold">★ Nível Ouro</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3. CONTAINER PRINCIPAL -->
+  <main class="container" id="conteudo">
+
+    <!-- HERO DE GEOLOCALIZAÇÃO AUTOMÁTICA -->
+    <section class="geo-banner">
+      <div class="geo-info">
+        <div class="radar-icon">📍</div>
+        <div class="geo-text">
+          <h3>Localização Identificada pelo Dispositivo</h3>
+          <p>Você está conectado aos serviços oficiais de: <strong id="gov-geo-city">{{ branding.municipio_uf|default:"Município Central" }}</strong>. Protocolos e serviços sincronizados com sucesso.</p>
+        </div>
+      </div>
+      <button class="btn-change-city" onclick="openCityModal()">Alterar Município</button>
+    </section>
+
+    <!-- GRADE DE ATALHOS RÁPIDOS -->
+    <section class="services-grid">
+      <div class="service-card" onclick="switchInboxTab('archived')">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <strong>Emitir Certidão Negativa (CND)</strong>
+        <span>Autenticação ICP-Brasil</span>
+      </div>
+
+      <div class="service-card" onclick="openAppointmentModal()">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
+        </div>
+        <strong>Agendar Consulta SUS</strong>
+        <span>Unidades Básicas e e-SUS</span>
+      </div>
+
+      <div class="service-card" onclick="openNewProtocolModal()">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+        </div>
+        <strong>Novo Protocolo</strong>
+        <span>Abertura de Requerimento</span>
+      </div>
+
+      <div class="service-card" onclick="openVaccineModal()">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/></svg>
+        </div>
+        <strong>Vacinação Digital</strong>
+        <span>Carteira Nacional SUS</span>
+      </div>
+
+      <div class="service-card" onclick="openExamsModal()">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0-14 0"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>
+        </div>
+        <strong>Exames & Laudos</strong>
+        <span>Laboratório Municipal</span>
+      </div>
+
+      <div class="service-card" onclick="openOuvidoriaModal()">
+        <div class="service-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+        </div>
+        <strong>Ouvidoria Fala.BR</strong>
+        <span>Elogios, Denúncias e E-SIC</span>
+      </div>
+    </section>
+
+    <!-- 4. CAIXA DE ENTRADA OBRIGATÓRIA EM 2 ABAS -->
+    <section class="inbox-section">
+      <div class="inbox-header">
+        <div class="inbox-title">
+          <h2>Minha Caixa de Solicitações</h2>
+          <p>Acompanhamento de processos, protocolos e certidões emitidas via Gov.br</p>
+        </div>
+        <button class="btn-new-protocol" onclick="openNewProtocolModal()">
+          ＋ Nova Solicitação / Protocolo
+        </button>
+      </div>
+
+      <!-- AS 2 ABAS EXIGIDAS NO EDITAL -->
+      <nav class="tabs-nav">
+        <button class="tab-button active" id="tab-open-btn" onclick="switchInboxTab('open')">
+          <span>Processos em Aberto</span>
+          <span class="tab-counter" id="badge-open">3</span>
+        </button>
+        <button class="tab-button" id="tab-arch-btn" onclick="switchInboxTab('archived')">
+          <span>Arquivados & Concluídos</span>
+          <span class="tab-counter" id="badge-arch">3</span>
+        </button>
+      </nav>
+
+      <!-- ABA 1: EM ABERTO -->
+      <div class="tab-pane active" id="pane-open">
+        <!-- PROCESSO 1 -->
+        <article class="protocol-card">
+          <div class="protocol-top">
+            <div>
+              <span class="protocol-code">SEC-SAUDE-2026/0842</span>
+              <div class="protocol-title">
+                <h3>Solicitação de Transporte Sanitário (TFD) para Aracaju</h3>
+                <p>Secretaria Municipal de Saúde · Setor de Regulação e Transporte</p>
+              </div>
+            </div>
+            <span class="protocol-status status-running">● Em Análise Médica</span>
+          </div>
+
+          <!-- STEPPER VISUAL DE TRAMITAÇÃO -->
+          <div class="tramitation-stepper">
+            <div class="step-item completed">
+              <div class="step-circle">✓</div>
+              <div class="step-title">Protocolado</div>
+              <div class="step-time">08/11 às 09:15</div>
+            </div>
+            <div class="step-item completed">
+              <div class="step-circle">✓</div>
+              <div class="step-title">Triagem de Laudo</div>
+              <div class="step-time">09/11 às 14:30</div>
+            </div>
+            <div class="step-item active">
+              <div class="step-circle">3</div>
+              <div class="step-title">Análise Reguladora</div>
+              <div class="step-time">Em andamento (24h)</div>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">4</div>
+              <div class="step-title">Emissão de Guia</div>
+              <div class="step-time">Pendente</div>
+            </div>
+          </div>
+
+          <div class="protocol-actions">
+            <button class="btn-action-ghost" onclick="alert('Exibindo histórico de despachos do processo SEC-SAUDE-2026/0842.')">Histórico Completo</button>
+            <button class="btn-action-ghost" onclick="alert('Selecione o arquivo do laudo complementar em PDF ou imagem.')">Anexar Documento</button>
+            <button class="btn-action-primary" onclick="alert('Canal de comunicação aberto com o analista da Secretaria de Saúde.')">Mensagem ao Atendente</button>
+          </div>
+        </article>
+
+        <!-- PROCESSO 2 -->
+        <article class="protocol-card">
+          <div class="protocol-top">
+            <div>
+              <span class="protocol-code">SEMOB-2026/0119</span>
+              <div class="protocol-title">
+                <h3>Alvará de Funcionamento Comercial · Restaurante Sertanejo</h3>
+                <p>Secretaria de Obras e Urbanismo · Setor de Posturas Municipais</p>
+              </div>
+            </div>
+            <span class="protocol-status status-running">● Aguardando Vistoria</span>
+          </div>
+
+          <div class="tramitation-stepper">
+            <div class="step-item completed">
+              <div class="step-circle">✓</div>
+              <div class="step-title">Protocolado</div>
+              <div class="step-time">05/11 às 11:20</div>
+            </div>
+            <div class="step-item active">
+              <div class="step-circle">2</div>
+              <div class="step-title">Agendamento Vistoria</div>
+              <div class="step-time">Agendado p/ 12/11</div>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">3</div>
+              <div class="step-title">Parecer Técnico</div>
+              <div class="step-time">Pendente</div>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">4</div>
+              <div class="step-title">Emissão Alvará</div>
+              <div class="step-time">Pendente</div>
+            </div>
+          </div>
+
+          <div class="protocol-actions">
+            <button class="btn-action-ghost" onclick="alert('Histórico da Secretaria de Obras exibido.')">Histórico Completo</button>
+            <button class="btn-action-primary" onclick="alert('Vistoria agendada para 12/11 às 14:00.')">Ver Detalhes da Vistoria</button>
+          </div>
+        </article>
+
+        <!-- PROCESSO 3 -->
+        <article class="protocol-card">
+          <div class="protocol-top">
+            <div>
+              <span class="protocol-code">SEMED-2026/1940</span>
+              <div class="protocol-title">
+                <h3>Vaga e Rota de Transporte Escolar Rural · Santa Rosa do Ermírio</h3>
+                <p>Secretaria Municipal de Educação · Transporte Escolar</p>
+              </div>
+            </div>
+            <span class="protocol-status status-running">● Parecer Emitido</span>
+          </div>
+
+          <div class="tramitation-stepper">
+            <div class="step-item completed">
+              <div class="step-circle">✓</div>
+              <div class="step-title">Protocolado</div>
+              <div class="step-time">01/11 às 08:30</div>
+            </div>
+            <div class="step-item completed">
+              <div class="step-circle">✓</div>
+              <div class="step-title">Mapeamento de Linha</div>
+              <div class="step-time">03/11 às 16:00</div>
+            </div>
+            <div class="step-item active">
+              <div class="step-circle">3</div>
+              <div class="step-title">Confirmação Cidadão</div>
+              <div class="step-time">Aguardando aceite</div>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">4</div>
+              <div class="step-title">Carteirinha Escolar</div>
+              <div class="step-time">Pendente</div>
+            </div>
+          </div>
+
+          <div class="protocol-actions">
+            <button class="btn-action-ghost" onclick="alert('Histórico exibido.')">Ver Parecer</button>
+            <button class="btn-action-primary" onclick="alert('Rota Linha 04 Rural aceita com sucesso!')">Confirmar Rota e Vaga</button>
+          </div>
+        </article>
+      </div>
+
+      <!-- ABA 2: ARQUIVADOS & CONCLUÍDOS -->
+      <div class="tab-pane" id="pane-archived">
+        <!-- DOCUMENTO 1 -->
+        <article class="protocol-card">
+          <div class="protocol-top">
+            <div>
+              <span class="protocol-code" style="background:#dcfce7; color:#166534;">CND-2026/9941</span>
+              <div class="protocol-title">
+                <h3>Certidão Negativa de Débitos Municipais (CND)</h3>
+                <p>Secretaria de Finanças e Tributos · Chave ICP-Brasil: <strong>8F3A-92BC-4410-EF01-2026</strong></p>
+              </div>
+            </div>
+            <span class="protocol-status status-done">✓ Válida até 01/05/2027</span>
+          </div>
+
+          <p style="font-size: 0.88rem; color: var(--gov-text-dim);">
+            Certidão emitida com sucesso com base no Art. 205 do Código Tributário Nacional. Documento assinado digitalmente com certificado ICP-Brasil Nível Ouro.
+          </p>
+
+          <div class="protocol-actions">
+            <button class="btn-action-ghost" onclick="alert('QR Code e chave de autenticidade ICP-Brasil conferidos: DOCUMENTO VÁLIDO.')">Validar Autenticidade</button>
+            <button class="btn-action-primary" onclick="alert('Iniciando download do arquivo PDF oficial da Certidão Negativa...')">📥 Baixar Certidão PDF</button>
+          </div>
+        </article>
+
+        <!-- DOCUMENTO 2 -->
+        <article class="protocol-card">
+          <div class="protocol-top">
+            <div>
+              <span class="protocol-code" style="background:#f1f5f9; color:#475569;">HAB-2026/0441</span>
+              <div class="protocol-title">
+                <h3>Carta de Habite-se Residencial · Loteamento Residencial Central</h3>
+                <p>Secretaria de Obras e Urbanismo · Concluído em 15/10/2026</p>
+              </div>
+            </div>
+            <span class="protocol-status status-done">✓ Aprovado e Arquivado</span>
+          </div>
+
+          <div class="protocol-actions">
+            <button class="btn-action-primary" onclick="alert('Baixando Habite-se digital autenticado.')">📥 Baixar Documento PDF</button>
+          </div>
+        </article>
+
+        <!-- DOCUMENTO 3 -->
+        <article class="protocol-card">
+          <div class="protocol-top">
+            <div>
+              <span class="protocol-code" style="background:#f1f5f9; color:#475569;">VAC-2026/3012</span>
+              <div class="protocol-title">
+                <h3>Declaração de Vacinação Atualizada e-SUS APS</h3>
+                <p>Secretaria Municipal de Saúde · Unidade Básica de Saúde</p>
+              </div>
+            </div>
+            <span class="protocol-status status-done">✓ Homologado</span>
+          </div>
+
+          <div class="protocol-actions">
+            <button class="btn-action-primary" onclick="alert('Baixando Comprovante Vacinal oficial.')">📥 Baixar Comprovante</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL DE NOVO PROTOCOLO -->
+  <div class="modal-overlay" id="protocol-modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Abrir Novo Requerimento Digital</h3>
+        <button onclick="closeNewProtocolModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <form onsubmit="handleNewProtocol(event)">
+        <div class="form-group">
+          <label>Secretaria Municipal de Destino</label>
+          <select id="new-sec" required>
+            <option value="Secretaria de Saúde">Secretaria Municipal de Saúde</option>
+            <option value="Secretaria de Obras">Secretaria de Obras e Urbanismo</option>
+            <option value="Secretaria de Finanças">Secretaria de Finanças e Tributos</option>
+            <option value="Secretaria de Educação">Secretaria Municipal de Educação</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Assunto do Requerimento</label>
+          <input type="text" id="new-subject" placeholder="Ex: Solicitação de exame especializado, poda de árvore..." required>
+        </div>
+
+        <div class="form-group">
+          <label>Descrição Detalhada da Solicitação</label>
+          <textarea id="new-desc" rows="3" placeholder="Descreva os motivos e dados da sua solicitação..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Anexar Documento / Foto (Opcional)</label>
+          <input type="file" id="new-file">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+          <button type="button" class="btn-action-ghost" onclick="closeNewProtocolModal()">Cancelar</button>
+          <button type="submit" class="btn-action-primary">Enviar Requerimento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 1. MODAL DE AGENDAMENTO DE CONSULTA SUS (PADRÃO MEDPLUM / MEU SUS DIGITAL) -->
+  <div class="modal-overlay" id="appointment-modal">
+    <div class="modal-box" style="max-width: 680px;">
+      <div class="modal-head">
+        <div>
+          <h3>Agendar Consulta na Atenção Primária</h3>
+          <p style="font-size: 0.8rem; color: var(--gov-text-dim);">Rede Municipal de Saúde · Integração e-SUS APS</p>
+        </div>
+        <button onclick="closeAppointmentModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <form onsubmit="handleNewAppointment(event)">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Especialidade Desejada</label>
+            <select id="app-spec" required onchange="updateDoctorsList()">
+              <option value="Clínica Médica Geral">Clínica Médica Geral / APS</option>
+              <option value="Medicina de Família">Medicina de Família e Comunidade</option>
+              <option value="Pediatria">Pediatria</option>
+              <option value="Pré-Natal e Saúde da Mulher">Pré-Natal & Saúde da Mulher</option>
+              <option value="Odontologia">Odontologia e Saúde Bucal</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Unidade Básica de Saúde (UBS)</label>
+            <select id="app-unit" required>
+              <option value="UBS Central (Sede)">UBS Central (Sede)</option>
+              <option value="UBS Povoado Brejão">UBS Povoado Brejão</option>
+              <option value="Centro de Saúde Municipal">Centro de Saúde Municipal</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label>Profissional Designado</label>
+            <select id="app-doctor" required>
+              <option value="Dra. Beatriz Carvalho (CRM/SE 4.821)">Dra. Beatriz Carvalho (Clínica Geral)</option>
+              <option value="Dr. Marcos Vinícius Melo (CRM/SE 5.120)">Dr. Marcos Vinícius Melo (Med. Família)</option>
+              <option value="Dra. Camila Nogueira (CRM/SE 6.304)">Dra. Camila Nogueira (Pediatria)</option>
+              <option value="Dr. Fernando Diniz (CRO/SE 2.891)">Dr. Fernando Diniz (Dentista)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Data Preferencial</label>
+            <input type="date" id="app-date" required value="2026-11-12">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Horário Disponível</label>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.25rem;">
+            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
+              <input type="radio" name="app-time" value="08:30" checked> 08:30
+            </label>
+            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
+              <input type="radio" name="app-time" value="09:15"> 09:15
+            </label>
+            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
+              <input type="radio" name="app-time" value="10:00"> 10:00
+            </label>
+            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
+              <input type="radio" name="app-time" value="11:30"> 11:30
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Motivo da Consulta / Observações</label>
+          <input type="text" id="app-reason" placeholder="Ex: Avaliação de exames, dor crônica, renovação de receita" required>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+          <button type="button" class="btn-action-ghost" onclick="closeAppointmentModal()">Cancelar</button>
+          <button type="submit" class="btn-action-primary">Confirmar Agendamento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. MODAL DA CARTEIRA DIGITAL DE VACINAÇÃO (MEU SUS DIGITAL) -->
+  <div class="modal-overlay" id="vaccine-modal">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-head">
+        <div style="display:flex; align-items:center; gap:0.85rem;">
+          <div style="font-size:2rem;">💉</div>
+          <div>
+            <h3>Carteira Nacional de Vacinação Digital</h3>
+            <p style="font-size: 0.8rem; color: var(--gov-text-dim);">Certificado ConecteSUS · Autenticação Digital Federal</p>
+          </div>
+        </div>
+        <button onclick="closeVaccineModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="background:#f0fdf4; border:1px solid #86efac; padding:0.85rem 1.25rem; border-radius:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+        <div>
+          <strong style="color:#166534; font-size:0.95rem;">● Esquema Vacinal Completo e Atualizado</strong>
+          <div style="font-size:0.78rem; color:#15803d;">Cidadão: Carlos Eduardo Silveira · CPF: 042.***.***-89</div>
+        </div>
+        <span style="background:#16a34a; color:#fff; font-size:0.72rem; font-weight:800; padding:0.25rem 0.65rem; border-radius:6px;">SELO VERDE SUS</span>
+      </div>
+
+      <div style="max-height: 280px; overflow-y: auto; border: 1px solid var(--gov-border); border-radius: 8px;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+          <thead>
+            <tr style="background:#f8fafc; border-bottom:1px solid var(--gov-border); text-align:left;">
+              <th style="padding:0.65rem 0.85rem;">Imunobiológico</th>
+              <th style="padding:0.65rem 0.85rem;">Dose</th>
+              <th style="padding:0.65rem 0.85rem;">Data</th>
+              <th style="padding:0.65rem 0.85rem;">Lote / Fabricante</th>
+              <th style="padding:0.65rem 0.85rem;">Local de Aplicação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:0.65rem 0.85rem;"><strong>COVID-19 Bivalente</strong></td>
+              <td style="padding:0.65rem 0.85rem;">Reforço</td>
+              <td style="padding:0.65rem 0.85rem;">12/03/2026</td>
+              <td style="padding:0.65rem 0.85rem;"><code>FP9210</code> · Pfizer</td>
+              <td style="padding:0.65rem 0.85rem;">UBS Central</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:0.65rem 0.85rem;"><strong>Influenza Trivalente 2026</strong></td>
+              <td style="padding:0.65rem 0.85rem;">Anual</td>
+              <td style="padding:0.65rem 0.85rem;">18/04/2026</td>
+              <td style="padding:0.65rem 0.85rem;"><code>IN4412</code> · Butantan</td>
+              <td style="padding:0.65rem 0.85rem;">UBS Central</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f1f5f9;">
+              <td style="padding:0.65rem 0.85rem;"><strong>Febre Amarela</strong></td>
+              <td style="padding:0.65rem 0.85rem;">Dose Única</td>
+              <td style="padding:0.65rem 0.85rem;">10/05/2022</td>
+              <td style="padding:0.65rem 0.85rem;"><code>FA8801</code> · Bio-Manguinhos</td>
+              <td style="padding:0.65rem 0.85rem;">Posto de Saúde</td>
+            </tr>
+            <tr>
+              <td style="padding:0.65rem 0.85rem;"><strong>Dupla Adulto (dT - Tétano)</strong></td>
+              <td style="padding:0.65rem 0.85rem;">Reforço 10 anos</td>
+              <td style="padding:0.65rem 0.85rem;">14/09/2021</td>
+              <td style="padding:0.65rem 0.85rem;"><code>DT2219</code> · Butantan</td>
+              <td style="padding:0.65rem 0.85rem;">UBS Central</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--gov-border);">
+        <div style="font-size:0.75rem; color:var(--gov-text-dim);">Chave de Autenticação ICP-Brasil: <strong>BR-SUS-2026-9810-774A</strong></div>
+        <button class="btn-action-primary" onclick="alert('Certificado Internacional de Vacinação baixado com sucesso em PDF!')">📥 Baixar Certificado PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODAL DE EXAMES & LAUDOS LABORATORIAIS -->
+  <div class="modal-overlay" id="exams-modal">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-head">
+        <div style="display:flex; align-items:center; gap:0.85rem;">
+          <div style="font-size:2rem;">🔬</div>
+          <div>
+            <h3>Laudos & Exames Laboratoriais</h3>
+            <p style="font-size: 0.8rem; color: var(--gov-text-dim);">Laboratório Municipal de Análises Clínicas · SUS</p>
+          </div>
+        </div>
+        <button onclick="closeExamsModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:0.85rem; max-height:350px; overflow-y:auto;">
+        <!-- EXAME 1 -->
+        <div style="border:1px solid var(--gov-border); border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:0.75rem; color:#0284c7; font-weight:800;">PEDIDO Nº LAB-2026/4102</span>
+            <h4 style="font-size:1.05rem; margin-top:2px;">Hemograma Completo + Plaquetas</h4>
+            <div style="font-size:0.78rem; color:var(--gov-text-dim); margin-top:2px;">Coleta: 28/10/2026 · Dra. Beatriz Carvalho · Resultado: Normal</div>
+          </div>
+          <button class="btn-action-primary" onclick="alert('Baixando Laudo Oficial com assinatura digital do Bioquímico Responsável (CRF/SE 1.482).')">📥 Laudo PDF</button>
+        </div>
+
+        <!-- EXAME 2 -->
+        <div style="border:1px solid var(--gov-border); border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:0.75rem; color:#0284c7; font-weight:800;">PEDIDO Nº LAB-2026/4103</span>
+            <h4 style="font-size:1.05rem; margin-top:2px;">Glicemia de Jejum & Hemoglobina Glicada</h4>
+            <div style="font-size:0.78rem; color:var(--gov-text-dim); margin-top:2px;">Coleta: 28/10/2026 · Glicemia: 92 mg/dL · HbA1c: 5.4% (Normal)</div>
+          </div>
+          <button class="btn-action-primary" onclick="alert('Baixando Laudo Oficial com assinatura digital do Bioquímico Responsável (CRF/SE 1.482).')">📥 Laudo PDF</button>
+        </div>
+
+        <!-- EXAME 3 -->
+        <div style="border:1px solid var(--gov-border); border-radius:10px; padding:1rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:0.75rem; color:#0284c7; font-weight:800;">PEDIDO Nº LAB-2026/4104</span>
+            <h4 style="font-size:1.05rem; margin-top:2px;">Lipidograma Completo (Colesterol Total, HDL, LDL, Triglicerídeos)</h4>
+            <div style="font-size:0.78rem; color:var(--gov-text-dim); margin-top:2px;">Coleta: 28/10/2026 · Colesterol Total: 178 mg/dL · Liberado</div>
+          </div>
+          <button class="btn-action-primary" onclick="alert('Baixando Laudo Oficial com assinatura digital do Bioquímico Responsável (CRF/SE 1.482).')">📥 Laudo PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MODAL INSTITUCIONAL DE SELEÇÃO DE MUNICÍPIO (SEM PROMPT FEIO) -->
+  <div class="modal-overlay" id="city-modal">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-head">
+        <h3>Alterar Município de Conexão</h3>
+        <button onclick="closeCityModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label>Selecione a Prefeitura / Município:</label>
+        <select id="select-city-input" style="width:100%; padding:0.75rem; border-radius:8px; border:1px solid var(--gov-border); font-size:0.95rem; font-weight:600;">
+          <option value="Poço Redondo">Poço Redondo - SE</option>
+          <option value="Brejo Grande">Brejo Grande - SE</option>
+          <option value="Aracaju">Aracaju - SE</option>
+          <option value="Propriá">Propriá - SE</option>
+          <option value="Canindé de São Francisco">Canindé de São Francisco - SE</option>
+        </select>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+        <button type="button" class="btn-action-ghost" onclick="closeCityModal()">Cancelar</button>
+        <button type="button" class="btn-action-primary" onclick="applyCitySelection()">Confirmar Conexão</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchInboxTab(tabKey) {
+      document.getElementById('tab-open-btn').classList.toggle('active', tabKey === 'open');
+      document.getElementById('tab-arch-btn').classList.toggle('active', tabKey === 'archived');
+      document.getElementById('pane-open').classList.toggle('active', tabKey === 'open');
+      document.getElementById('pane-archived').classList.toggle('active', tabKey === 'archived');
+    }
+
+    function openNewProtocolModal() { document.getElementById('protocol-modal').classList.add('open'); }
+    function closeNewProtocolModal() { document.getElementById('protocol-modal').classList.remove('open'); }
+
+    function openAppointmentModal() { document.getElementById('appointment-modal').classList.add('open'); }
+    function closeAppointmentModal() { document.getElementById('appointment-modal').classList.remove('open'); }
+
+    function openVaccineModal() { document.getElementById('vaccine-modal').classList.add('open'); }
+    function closeVaccineModal() { document.getElementById('vaccine-modal').classList.remove('open'); }
+
+    function openExamsModal() { document.getElementById('exams-modal').classList.add('open'); }
+    function closeExamsModal() { document.getElementById('exams-modal').classList.remove('open'); }
+
+    function openOuvidoriaModal() {
+      document.getElementById('new-sec').value = 'Secretaria de Saúde';
+      document.getElementById('new-subject').value = 'Manifestação de Ouvidoria / E-SIC';
+      openNewProtocolModal();
+    }
+
+    function openCityModal() { document.getElementById('city-modal').classList.add('open'); }
+    function closeCityModal() { document.getElementById('city-modal').classList.remove('open'); }
+
+    function applyCitySelection() {
+      const city = document.getElementById('select-city-input').value;
+      document.querySelector('.geo-text p').innerHTML = `Você está conectado a partir de: <strong>${city} - SE</strong>. Serviços municipais e agendamento SUS ativados com sucesso.`;
+      document.querySelector('.gov-entity h1').textContent = `Prefeitura Municipal de ${city}`;
+      closeCityModal();
+    }
+
+    function handleNewProtocol(e) {
+      e.preventDefault();
+      const sec = document.getElementById('new-sec').value;
+      const subj = document.getElementById('new-subject').value;
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const code = `PROT-2026/${randomNum}`;
+
+      createProtocolCard(code, subj, `${sec} · Protocolo Aberto Agora`, '● Protocolado');
+      closeNewProtocolModal();
+      switchInboxTab('open');
+      alert(`Protocolo gerado com sucesso!\nNúmero: ${code}\nVocê pode acompanhar os despachos e notificações aqui na sua Caixa de Entrada.`);
+    }
+
+    function handleNewAppointment(e) {
+      e.preventDefault();
+      const spec = document.getElementById('app-spec').value;
+      const unit = document.getElementById('app-unit').value;
+      const doc = document.getElementById('app-doctor').value;
+      const date = document.getElementById('app-date').value;
+      const time = document.querySelector('input[name="app-time"]:checked').value;
+      const reason = document.getElementById('app-reason').value;
+
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const code = `CONS-2026/${randomNum}`;
+
+      createProtocolCard(
+        code,
+        `Consulta Agendada: ${spec} · ${date.split('-').reverse().join('/')} às ${time}`,
+        `${unit} · ${doc} · Motivo: ${reason}`,
+        '● Agendamento Confirmado'
+      );
+
+      closeAppointmentModal();
+      switchInboxTab('open');
+      alert(`Consulta agendada com sucesso no Sistema Municipal de Saúde!\nProtocolo: ${code}\nData: ${date.split('-').reverse().join('/')} às ${time}\nLocal: ${unit}\nProfissional: ${doc}\nCompareça com seu Cartão SUS e documento oficial.`);
+    }
+
+    function createProtocolCard(code, title, desc, statusText) {
+      const pane = document.getElementById('pane-open');
+      const card = document.createElement('article');
+      card.className = 'protocol-card';
+      card.innerHTML = `
+        <div class="protocol-top">
+          <div>
+            <span class="protocol-code">${code}</span>
+            <div class="protocol-title">
+              <h3>${title}</h3>
+              <p>${desc}</p>
+            </div>
+          </div>
+          <span class="protocol-status status-running">${statusText}</span>
+        </div>
+        <div class="tramitation-stepper">
+          <div class="step-item active">
+            <div class="step-circle">1</div>
+            <div class="step-title">Confirmado</div>
+            <div class="step-time">Agora</div>
+          </div>
+          <div class="step-item">
+            <div class="step-circle">2</div>
+            <div class="step-title">Recepção UBS</div>
+            <div class="step-time">No dia</div>
+          </div>
+          <div class="step-item">
+            <div class="step-circle">3</div>
+            <div class="step-title">Atendimento</div>
+            <div class="step-time">Pendente</div>
+          </div>
+          <div class="step-item">
+            <div class="step-circle">4</div>
+            <div class="step-title">Conclusão</div>
+            <div class="step-time">Pendente</div>
+          </div>
+        </div>
+        <div class="protocol-actions">
+          <button class="btn-action-ghost" onclick="alert('Comprovante oficial emitido sob o protocolo ${code}.')">Comprovante Digital</button>
+          <button class="btn-action-primary" onclick="alert('Seu agendamento está ativo e confirmado no sistema e-SUS APS.')">Ver Detalhes</button>
+        </div>
+      `;
+      pane.insertBefore(card, pane.firstChild);
+
+      const badge = document.getElementById('badge-open');
+      badge.textContent = parseInt(badge.textContent) + 1;
+    }
+    // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
+    function applyDynamicBranding(b) {
+      if (!b) return;
+      if (b.nome_institucional) document.getElementById('gov-entity-name').textContent = b.nome_institucional;
+      if (b.municipio_uf) document.getElementById('gov-geo-city').textContent = b.municipio_uf;
+    }
+
+    try {
+      const syncChannel = new BroadcastChannel('vertyx_branding_sync');
+      syncChannel.onmessage = (e) => {
+        if (e.data && e.data.type === 'BRANDING_UPDATED') {
+          applyDynamicBranding(e.data.branding);
+        }
+      };
+      const saved = localStorage.getItem('vertyx_branding');
+      if (saved) applyDynamicBranding(JSON.parse(saved));
+    } catch (e) {}
+  </script>
+</body>
+</html>

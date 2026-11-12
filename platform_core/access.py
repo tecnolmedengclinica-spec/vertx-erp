@@ -26,6 +26,7 @@ PRODUCT_ROUTE_PREFIXES = (
     # PDV and seller experiences remain here until a separately approved
     # product entitlement migration moves organizations to Comercio e PDV.
     ('/assistencia/', 'assistencia'),
+    ('/gestao/', 'assistencia'),
     ('/clientes/', 'assistencia'),
     ('/equipamentos/', 'assistencia'),
     ('/ordens/', 'assistencia'),
@@ -48,6 +49,7 @@ PRODUCT_ROUTE_PREFIXES = (
     ('/categorias-pecas/', 'assistencia'),
     ('/checklists/', 'assistencia'),
     ('/configuracoes/', 'assistencia'),
+    ('/empresa/', 'assistencia'),
     ('/financeiro/', 'assistencia'),
     ('/bancos/', 'assistencia'),
     ('/relatorios/', 'assistencia'),

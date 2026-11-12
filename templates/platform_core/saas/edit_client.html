@@ -1,0 +1,41 @@
+{% extends 'platform_core/saas/base.html' %}
+{% block title %}Editar {{ organization.display_name }} · VERTYX Admin{% endblock %}
+{% block content %}
+<a class="back-link" href="{{ back }}">← {{ organization.display_name }}</a>
+<section class="page-heading detail-heading">
+  <div>
+    <p class="eyebrow">CONFIGURAÇÃO DA PLATAFORMA</p>
+    <h1>Editar cliente · {{ organization.display_name }}</h1>
+    <p>Atualize dados cadastrais e personalize os módulos liberados ou bloqueados para esta organização.</p>
+  </div>
+  <span class="pill {% if organization.status == 'ATIVA' %}pill-green{% elif organization.status == 'SUSPENSA' %}pill-red{% else %}pill-amber{% endif %}">{{ organization.get_status_display }}</span>
+</section>
+
+<form method="post" class="panel form-panel">
+  {% csrf_token %}
+  <div class="panel-heading">
+    <div>
+      <p class="eyebrow">EMPRESA</p>
+      <h2>Dados cadastrais</h2>
+    </div>
+    <span>{% if subscription %}Plano: {{ subscription.plano.nome }}{% else %}Sem plano comercial{% endif %}</span>
+  </div>
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid">
+    {% for field in form %}
+      <div class="field {% if field.field.widget.input_type == 'textarea' %}field-wide{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+  <div class="form-actions">
+    <button class="btn-primary">Salvar dados cadastrais</button>
+    <a class="btn-secondary" href="{{ back }}">Cancelar</a>
+  </div>
+</form>
+
+{% include 'platform_core/saas/_client_modules_panel.html' with next_target='edit' %}
+{% endblock %}

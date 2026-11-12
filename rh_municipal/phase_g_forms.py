@@ -10,6 +10,19 @@ from .models import AcessoMunicipal, DepartamentoMunicipal, Secretaria, Servidor
 from .public_services import accesses_for, has_municipal_permission, scoped_queryset
 
 
+class HealthBrandingForm(forms.Form):
+    nome_institucional = forms.CharField(max_length=120)
+    orgao_gestor = forms.CharField(max_length=120, required=False)
+    unidade_nome = forms.CharField(max_length=120)
+    municipio = forms.CharField(max_length=100)
+    uf = forms.RegexField(r'^[A-Z]{2}$', max_length=2)
+    cnpj = forms.CharField(max_length=18, required=False)
+    codigo_ibge = forms.RegexField(r'^\d{0,7}$', max_length=7, required=False)
+    cor_primaria = forms.RegexField(r'^#[0-9a-fA-F]{6}$', required=False)
+    cor_secundaria = forms.RegexField(r'^#[0-9a-fA-F]{6}$', required=False)
+    slogan = forms.CharField(max_length=200, required=False)
+
+
 class _HealthScopedForm(forms.ModelForm):
     """Forms only offer related records in the active tenant and user scope."""
 

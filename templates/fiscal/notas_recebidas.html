@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Notas Recebidas Automáticas · DF-e · Reforma Tributária{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge rounded-pill text-bg-success"><i class="bi bi-check-lg me-1"></i>automáticas</span>
+        <span class="badge rounded-pill text-bg-info"><i class="bi bi-check-lg me-1"></i>Reforma Tributária</span>
+      </div>
+      <h1 class="h3 mb-0"><i class="bi bi-inbox-fill me-2"></i>Notas Recebidas Automáticas (DF-e)</h1>
+      <p class="text-secondary small mb-0">
+        Monitoramento SEFAZ <code>NFeDistribuicaoDFe</code> · Estabelecimento <strong>{{ estabelecimento.nome }}</strong>
+        {% if configuracao_dfe %}· Último NSU: <code>{{ configuracao_dfe.ultimo_nsu }}</code>{% endif %}
+      </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="sincronizar_dfe">
+        <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Sincronizar Notas DF-e (SEFAZ)</button>
+      </form>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'operacao:fiscal_hub' %}"><i class="bi bi-arrow-left me-1"></i>Voltar ao Hub Fiscal</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card p-3 h-100">
+        <h2 class="h5 mb-2">Importar XML de Fornecedor Manualmente</h2>
+        <p class="small text-secondary">Faz parsing automático dos itens e extrai grupos <code>&lt;IBSCBS&gt;</code> (CBS / IBS / IS) direto para <code>nota.json</code>.</p>
+        <form method="post" enctype="multipart/form-data" class="d-grid gap-2">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="importar_xml">
+          <input class="form-control form-control-sm" type="file" name="arquivo_xml" accept=".xml">
+          <textarea class="form-control form-control-sm font-monospace" name="xml_conteudo" rows="3" placeholder="Ou cole o XML da NF-e/procNFe recebida aqui..."></textarea>
+          <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-upload me-1"></i>Processar XML &amp; Extrair CBS/IBS</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card p-3 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h2 class="h5 mb-0"><code>nota.json</code> da última nota capturada</h2>
+          <span class="badge rounded-pill text-bg-success"><i class="bi bi-check-lg me-1"></i>Reforma Tributária</span>
+        </div>
+        <div class="rounded-3 p-3" style="background:#0f172a;color:#e2e8f0;font-family:monospace;font-size:.8rem;max-height:210px;overflow:auto;">
+          {% if ultima_nota_json %}
+          <pre class="mb-0" style="color:#f8fafc;">{{ ultima_nota_json }}</pre>
+          {% else %}
+          <span class="text-secondary">Clique em "Sincronizar Notas DF-e (SEFAZ)" para capturar uma nota de entrada automaticamente.</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card p-3">
+    <h2 class="h5 mb-3">Caixa de Entrada DF-e (Emitidas contra seu CNPJ)</h2>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>Número / Chave</th>
+            <th>Emitente</th>
+            <th>Valor Total</th>
+            <th>CBS + IBS (RTC)</th>
+            <th>Manifestação</th>
+            <th>Entrada Estoque</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for n in notas %}
+          <tr>
+            <td>
+              <a class="fw-semibold text-decoration-none" href="{% url 'operacao:fiscal_nota_recebida_detalhe' n.pk %}">NF-e {{ n.numero }}</a>
+              <div class="small text-secondary font-monospace">{{ n.chave_acesso }}</div>
+            </td>
+            <td>
+              <div>{{ n.nome_emitente }}</div>
+              <div class="small text-secondary">CNPJ {{ n.cnpj_emitente }} · NSU {{ n.nsu|default:"Manual" }}</div>
+            </td>
+            <td class="fw-semibold">R$ {{ n.valor_total }}</td>
+            <td>
+              {% if n.reforma_tributaria %}
+              <span class="badge text-bg-success mb-1">Reforma Tributária</span>
+              <div class="small">CBS R$ {{ n.valor_cbs }} · IBS R$ {{ n.valor_ibs }}</div>
+              {% else %}
+              <span class="badge text-bg-secondary">Sem destaque CBS/IBS</span>
+              {% endif %}
+            </td>
+            <td><span class="badge text-bg-info">{{ n.get_manifestacao_status_display }}</span></td>
+            <td>
+              {% if n.compra %}
+              <a class="badge text-bg-primary text-decoration-none" href="{% url 'operacao:compra_detalhe' n.compra.pk %}">COMP-{{ n.compra.pk|stringformat:"06d" }}</a>
+              {% else %}
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="gerar_compra">
+                <input type="hidden" name="nota_id" value="{{ n.pk }}">
+                <button class="btn btn-sm btn-outline-primary" style="font-size:.75rem;padding:.15rem .45rem;" type="submit">Gerar Compra</button>
+              </form>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1">
+                <form method="post" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="acao" value="manifestar">
+                  <input type="hidden" name="nota_id" value="{{ n.pk }}">
+                  <input type="hidden" name="tipo_manifestacao" value="CONFIRMADA">
+                  <button class="btn btn-sm btn-outline-success" style="font-size:.75rem;padding:.15rem .45rem;" type="submit">210200 Confirmar</button>
+                </form>
+                <a class="btn btn-sm btn-outline-secondary" style="font-size:.75rem;padding:.15rem .45rem;" href="{% url 'operacao:fiscal_nota_recebida_detalhe' n.pk %}">Abrir nota.json</a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-secondary py-4">Nenhuma nota recebida capturada ainda.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

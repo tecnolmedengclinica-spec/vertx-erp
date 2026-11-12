@@ -273,3 +273,38 @@ class ExtratoImportForm(forms.Form):
         return upload
 
 ConfiguracaoForm = model_form(m.Configuracao, ['endereco', 'prefixo_os', 'prefixo_orcamento', 'prefixo_contrato', 'digitos_numero', 'prazo_financeiro_dias', 'juros_mensal_percentual', 'multa_percentual', 'municipio_fiscal', 'codigo_servico', 'ambiente_fiscal', 'provedor_fiscal'])
+
+
+class ConfiguracaoEmailForm(Estilizado):
+    email_teste = forms.EmailField(
+        label='E-mail de Destino para Teste',
+        required=False,
+        help_text='Digite um e-mail para validar a conexão SMTP clicando em Testar Envio.'
+    )
+
+    class Meta:
+        model = m.ConfiguracaoNotificacaoEmail
+        fields = [
+            'servidor_smtp',
+            'porta_smtp',
+            'email_remetente',
+            'nome_remetente',
+            'usuario_smtp',
+            'senha_smtp',
+            'usar_tls',
+            'usar_ssl',
+            'ativo',
+            'notificar_conclusao_os',
+            'notificar_preventiva',
+            'dias_antecedencia_preventiva',
+            'notificar_cobranca',
+        ]
+        widgets = {
+            'senha_smtp': forms.PasswordInput(render_value=True, attrs={'class': 'form-control', 'placeholder': '••••••••••••'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ['servidor_smtp', 'porta_smtp', 'email_remetente', 'nome_remetente']:
+            self.fields[name].required = True
+            self.fields[name].widget.attrs['required'] = 'required'

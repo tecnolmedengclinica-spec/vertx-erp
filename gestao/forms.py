@@ -13,10 +13,14 @@ from .permissions import allowed
 
 
 class Estilizado(TenantModelForm):
+    required_css_class = 'required'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-check-input' if isinstance(field.widget, forms.CheckboxInput) else 'form-select' if isinstance(field.widget, forms.Select) else 'form-control')
+            if field.required:
+                field.widget.attrs.setdefault('required', 'required')
             if isinstance(field.widget, forms.Textarea):
                 field.widget.attrs.setdefault('rows', 3)
             if isinstance(field, forms.DateField):

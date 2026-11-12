@@ -387,3 +387,103 @@ class AuditoriaSaaS(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError('Auditoria SaaS não pode ser apagada.')
+
+
+class CobrancaSaaS(models.Model):
+    class Metodo(models.TextChoices):
+        PIX = 'PIX', 'Pix Instantâneo'
+        BOLETO = 'BOLETO', 'Boleto Bancário'
+        CARTAO = 'CARTAO', 'Cartão de Crédito'
+
+    class Status(models.TextChoices):
+        PENDENTE = 'PENDENTE', 'Pendente'
+        PAGA = 'PAGA', 'Paga / Confirmada'
+        CANCELADA = 'CANCELADA', 'Cancelada'
+        EXPIRADA = 'EXPIRADA', 'Expirada'
+
+    organization = models.ForeignKey('platform_core.Organization', on_delete=models.CASCADE, related_name='cobrancas_saas')
+    assinatura = models.ForeignKey(AssinaturaSaaS, on_delete=models.CASCADE, related_name='cobrancas')
+    valor = models.DecimalField('Valor', max_digits=12, decimal_places=2)
+    metodo = models.CharField(max_length=20, choices=Metodo.choices, default=Metodo.PIX)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDENTE)
+    gateway = models.CharField(max_length=30, default='ASAAS')
+    gateway_id = models.CharField(max_length=100, blank=True, db_index=True)
+    pix_copia_cola = models.TextField(blank=True)
+    pix_qr_code_url = models.URLField(max_length=500, blank=True)
+    linha_digitavel = models.CharField(max_length=100, blank=True)
+    url_fatura = models.URLField(max_length=500, blank=True)
+    vencimento = models.DateField(null=True, blank=True)
+    pago_em = models.DateTimeField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-criado_em']
+        verbose_name = 'cobrança SaaS'
+        verbose_name_plural = 'cobranças SaaS'
+
+    def __str__(self):
+        return f"Cobrança #{self.pk} - {self.organization.display_name} - R$ {self.valor} ({self.status})"
+
+    def marcar_como_paga(self, actor=None):
+        if self.status == self.Status.PAGA:
+            return
+        hoje = timezone.localdate()
+        self.status = self.Status.PAGA
+        self.pago_em = timezone.now()
+        self.save(update_fields=['status', 'pago_em'])
+
+        assinatura = self.assinatura
+        dias = 365 if assinatura.periodicidade == PlanoSaaS.Period.YEAR else 30
+        data_base = assinatura.vencimento_em if (assinatura.vencimento_em and assinatura.vencimento_em >= hoje) else hoje
+        assinatura.vencimento_em = data_base + timezone.timedelta(days=dias)
+        assinatura.status = AssinaturaSaaS.Status.ACTIVE
+        assinatura.save(update_fields=['vencimento_em', 'status', 'atualizado_em'])
+
+        AuditoriaSaaS.objects.create(
+            organization=self.organization,
+            actor=actor,
+            action='COBRANCA_PAGA',
+            record=f'Cobrança SaaS #{self.pk}',
+            details={
+                'valor': str(self.valor),
+                'metodo': self.metodo,
+                'gateway': self.gateway,
+                'gateway_id': self.gateway_id,
+                'novo_vencimento': str(assinatura.vencimento_em),
+            }
+        )
+
+
+class AjusteModuloSaaS(models.Model):
+    """Explicit per-client module grant or block managed by VERTYX SaaS Admin."""
+    class Modo(models.TextChoices):
+        ALLOW = 'LIBERADO', 'Liberado manualmente'
+        DENY = 'BLOQUEADO', 'Bloqueado manualmente'
+
+    organization = models.ForeignKey(
+        'platform_core.Organization',
+        on_delete=models.CASCADE,
+        related_name='ajustes_modulos_saas',
+    )
+    codigo = models.CharField(max_length=40, choices=sorted(MODULE_LABELS.items()))
+    modo = models.CharField(max_length=12, choices=Modo.choices)
+    motivo = models.CharField(max_length=255, blank=True)
+    atualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='ajustes_modulos_saas',
+    )
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['codigo']
+        verbose_name = 'ajuste manual de módulo SaaS'
+        verbose_name_plural = 'ajustes manuais de módulos SaaS'
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'codigo'], name='ajuste_modulo_saas_org_codigo_unico'),
+        ]
+
+    def __str__(self):
+        return f'{self.organization_id}:{self.codigo}={self.modo}'

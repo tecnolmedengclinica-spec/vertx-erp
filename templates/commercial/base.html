@@ -4,13 +4,27 @@
 <meta name="description" content="Conheça o VERTYX: assistência técnica, vendas, estoque, financeiro, contratos e gestão em uma única plataforma. Veja os planos e solicite uma demonstração.">
 <meta property="og:type" content="website"><meta property="og:locale" content="pt_BR"><meta property="og:site_name" content="VERTYX"><meta property="og:title" content="VERTYX — uma plataforma para toda a sua operação"><meta property="og:description" content="Conecte atendimento, equipe e gestão. Conheça os planos do VERTYX."><meta property="og:url" content="{{ canonical }}"><meta property="og:image" content="{{ social_image }}">
 <link rel="canonical" href="{{ canonical }}"><link rel="icon" href="{% static 'commercial/brand.svg' %}" type="image/svg+xml"><meta name="theme-color" content="#245de6">
-<link rel="stylesheet" href="{% static 'css/commercial.css' %}"><script src="{% static 'js/commercial.js' %}" defer></script>
+<script>
+  (function() {
+    try {
+      const theme = localStorage.getItem('vertyx_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) {}
+  })();
+</script>
+<link rel="stylesheet" href="{% static 'css/commercial.css' %}?v=20261110_ui6"><script src="{% static 'js/commercial.js' %}?v=20261110_ui6" defer></script>
 {% block page_styles %}{% endblock %}
 </head><body class="commercial-site {% block body_class %}{% endblock %}">
 {% include 'commercial/icons.html' %}<a class="skip-link" href="#main">Pular para o conteúdo</a>
 <header class="site-header"><div class="container header-inner">
 <a class="brand" href="{% url 'commercial:home' %}" aria-label="VERTYX · Início"><img src="{% static 'commercial/brand.svg' %}" width="32" height="32" alt="">VERTYX<span class="brand-dot"></span></a>
-<button class="menu-toggle" aria-label="Abrir menu" aria-controls="public-menu" aria-expanded="false" data-menu-toggle><svg><use href="#i-menu"></use></svg></button>
+<div class="header-right-group">
+  <button type="button" class="theme-toggle-btn" aria-label="Alternar tema claro/escuro" onclick="window.toggleCommercialTheme()" title="Alternar tema">
+    <svg class="icon-sun" aria-hidden="true"><use href="#i-sun"></use></svg>
+    <svg class="icon-moon" aria-hidden="true"><use href="#i-moon"></use></svg>
+  </button>
+  <button class="menu-toggle" aria-label="Abrir menu" aria-controls="public-menu" aria-expanded="false" data-menu-toggle><svg><use href="#i-menu"></use></svg></button>
+</div>
 <nav id="public-menu" aria-label="Navegação comercial" class="header-menu">
 <a href="{% url 'commercial:pricing' %}"{% if request.resolver_match.url_name == 'pricing' %} aria-current="page"{% endif %}>Planos e preços</a><a href="{% url 'commercial:home' %}#sobre">Sobre nós</a>
 <div class="header-actions"><a class="button button-quiet header-login" href="{% url 'commercial:login' %}">Entrar</a><a class="button button-primary" href="{% url 'commercial:demo' %}">Solicitar demonstração</a></div>

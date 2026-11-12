@@ -1,43 +1,102 @@
-<header class="vx-page-header">
+<header class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-2 border-bottom border-secondary border-opacity-10">
   <div>
-    <p class="vx-eyebrow">VERTYX Gestão · Indicadores {{ analytics_level|lower }}</p>
-    <h1>{{ greeting }}, {{ user.get_full_name|default:user.username }}</h1>
-    <p>Visão da sua organização · {{ period_start|date:'d/m/Y' }} — {{ period_end|date:'d/m/Y' }}</p>
+    <h1 class="h2 mb-1">Visão Geral</h1>
+    <p class="text-muted small mb-0">{{ greeting }}, {{ user.get_full_name|default:user.username }} · {{ period_start|date:'d/m/Y' }} — {{ period_end|date:'d/m/Y' }}</p>
   </div>
-  {% if advanced_analytics %}<a class="btn btn-outline-primary" href="{% url 'operacao:calendario' %}">Ver planejamento</a>{% endif %}
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge bg-success-subtle text-success px-3 py-2">
+      <i class="bi bi-shield-check me-1"></i> Operação Ativa
+    </span>
+    {% if advanced_analytics %}<a class="btn btn-outline-primary btn-sm" href="{% url 'operacao:calendario' %}">Ver planejamento</a>{% endif %}
+  </div>
 </header>
 
-<form method="get" class="card p-3 mb-4">
-  <div class="vx-period-grid">
-    <div><label for="id_periodo">Período</label>{{ period_form.periodo }}</div>
-    {% if advanced_analytics %}<div><label for="id_inicio">De</label>{{ period_form.inicio }}</div><div><label for="id_fim">Até</label>{{ period_form.fim }}</div>{% endif %}
-    <div><label for="id_grafico">Janela dos gráficos</label>{{ period_form.grafico }}</div>
-    <button class="btn btn-primary align-self-end">Aplicar período</button>
+<form method="get" class="card p-3 mb-4 border-0" style="background-color: var(--vx-surface); border: 1px solid var(--vx-border) !important; border-radius: var(--vx-radius);">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-2">
+      <span class="vx-indicator-dot" style="background-color: var(--vx-brand);"></span>
+      <span class="vx-section-title">FILTRAR PERÍODO</span>
+    </div>
+    <div class="d-flex align-items-center flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-2">
+        <label for="id_periodo" class="small text-muted mb-0 fw-semibold text-nowrap">Período:</label>
+        {{ period_form.periodo }}
+      </div>
+      {% if advanced_analytics %}
+      <div class="d-flex align-items-center gap-2">
+        <label for="id_inicio" class="small text-muted mb-0 fw-semibold">De:</label>
+        {{ period_form.inicio }}
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <label for="id_fim" class="small text-muted mb-0 fw-semibold">Até:</label>
+        {{ period_form.fim }}
+      </div>
+      {% endif %}
+      <div class="d-flex align-items-center gap-2">
+        <label for="id_grafico" class="small text-muted mb-0 fw-semibold text-nowrap">Janela:</label>
+        {{ period_form.grafico }}
+      </div>
+      <button class="btn btn-primary btn-sm px-3 py-1 d-inline-flex align-items-center gap-1 shadow-sm" style="min-height: 36px;">
+        <i class="bi bi-funnel-fill"></i>
+        <span>Aplicar</span>
+      </button>
+    </div>
   </div>
   {{ period_form.errors }}
 </form>
 
 {% if not advanced_analytics %}
-<section class="vx-exec-kpis mb-4" aria-label="Indicadores básicos">
-  <article class="card vx-exec-kpi"><span class="text-muted">Vendas no período</span><strong>{{ commercial.vendas }}</strong></article>
-  <article class="card vx-exec-kpi"><span class="text-muted">Valor líquido de vendas</span><strong>R$ {{ sales_chart_total|floatformat:2 }}</strong></article>
-  <article class="card vx-exec-kpi"><span class="text-muted">Produtos abaixo do ideal</span><strong>{{ stock_summary.repor }}</strong></article>
-  <article class="card vx-exec-kpi"><span class="text-muted">Lotes vencendo em até 90 dias</span><strong>{{ stock_summary.vencendo }}</strong></article>
+<section class="mb-4" aria-label="Indicadores principais">
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <span class="vx-indicator-dot"></span>
+    <span class="vx-section-title">INDICADORES PRINCIPAIS</span>
+  </div>
+  <div class="row g-3">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card vx-exec-kpi vx-kpi-success">
+        <span class="vx-kpi-label">Vendas no período</span>
+        <strong class="vx-kpi-value">{{ commercial.vendas }}</strong>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card vx-exec-kpi vx-kpi-success">
+        <span class="vx-kpi-label">Valor líquido de vendas</span>
+        <strong class="vx-kpi-value">R$ {{ sales_chart_total|floatformat:2 }}</strong>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card vx-exec-kpi {% if stock_summary.repor %}vx-kpi-danger{% else %}vx-kpi-neutral{% endif %}">
+        <span class="vx-kpi-label">Produtos abaixo do ideal</span>
+        <strong class="vx-kpi-value">{{ stock_summary.repor }}</strong>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card vx-exec-kpi {% if stock_summary.vencendo %}vx-kpi-warning{% else %}vx-kpi-neutral{% endif %}">
+        <span class="vx-kpi-label">Lotes vencendo em até 90 dias</span>
+        <strong class="vx-kpi-value">{{ stock_summary.vencendo }}</strong>
+      </div>
+    </div>
+  </div>
 </section>
 {% endif %}
 
-{% if stock_summary.repor %}<a class="alert alert-warning d-block text-decoration-none" href="{% url 'operacao:stock_occurrences' %}?tipo=REPOSICAO"><strong>ATENÇÃO — {{ stock_summary.repor }} PRODUTOS PRECISAM DE REPOSIÇÃO</strong></a>{% endif %}
+{% if stock_summary.repor %}<a class="alert alert-warning d-block text-decoration-none mb-4" href="{% url 'operacao:stock_occurrences' %}?tipo=REPOSICAO"><strong>ATENÇÃO — {{ stock_summary.repor }} PRODUTOS PRECISAM DE REPOSIÇÃO</strong></a>{% endif %}
 
 {% if sales_chart %}
 <section class="card p-4 mb-4" aria-label="Gráfico de vendas">
-  <h2 class="h4">Vendas líquidas</h2>
-  <p class="small text-muted">Vendas confirmadas, descontadas devoluções formais, agrupadas pela janela selecionada.</p>
-  <svg class="vx-exec-chart" viewBox="0 0 640 210" role="img" aria-label="Vendas líquidas por período">
-    <line x1="25" y1="175" x2="620" y2="175" stroke="#dce5ed"/>
-    {% for row in sales_chart %}<rect x="{{ row.x|add:'-9' }}" y="{{ row.y }}" width="18" height="{{ row.height }}" rx="3" fill="#006f74"><title>{{ row.label }} · R$ {{ row.vendas|floatformat:2 }}</title></rect>{% endfor %}
-    <text x="25" y="202" font-size="11">{{ sales_chart.0.label }}</text><text x="620" y="202" text-anchor="end" font-size="11">{% with last=sales_chart|last %}{{ last.label }}{% endwith %}</text>
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <span class="vx-indicator-dot" style="background-color: var(--vx-brand);"></span>
+    <span class="vx-section-title">VENDAS LÍQUIDAS</span>
+  </div>
+  <p class="small text-muted mb-3">Vendas confirmadas, descontadas devoluções formais, agrupadas pela janela selecionada.</p>
+  {{ sales_chart|json_script:"sales-chart-data" }}
+  <div id="apex-vendas-chart" class="mb-2"></div>
+  <svg id="svg-vendas-chart" class="vx-exec-chart" viewBox="0 0 640 210" role="img" aria-label="Vendas líquidas por período">
+    <line x1="25" y1="175" x2="620" y2="175" stroke="rgba(255,255,255,0.08)"/>
+    {% for row in sales_chart %}<rect x="{{ row.x|add:'-9' }}" y="{{ row.y }}" width="18" height="{{ row.height }}" rx="4" fill="#10b981"><title>{{ row.label }} · R$ {{ row.vendas|floatformat:2 }}</title></rect>{% endfor %}
+    <text x="25" y="202" font-size="11" fill="#64748b">{{ sales_chart.0.label }}</text><text x="620" y="202" text-anchor="end" font-size="11" fill="#64748b">{% with last=sales_chart|last %}{{ last.label }}{% endwith %}</text>
   </svg>
-  {% if advanced_analytics %}<p class="mb-0">Total no período: <strong>R$ {{ sales_chart_total|floatformat:2 }}</strong>. Período anterior: R$ {{ sales_comparison_previous|floatformat:2 }}.{% if sales_comparison_percent is not None %} Variação: {{ sales_comparison_percent }}%.{% endif %}</p>{% endif %}
+  {% if advanced_analytics %}<p class="mb-0 mt-2 text-muted">Total no período: <strong class="text-white">R$ {{ sales_chart_total|floatformat:2 }}</strong>. Período anterior: R$ {{ sales_comparison_previous|floatformat:2 }}.{% if sales_comparison_percent is not None %} Variação: {{ sales_comparison_percent }}%.{% endif %}</p>{% endif %}
 </section>
 {% endif %}
 
@@ -51,9 +110,30 @@
 
 {% if financial_cards %}
 <section aria-label="Indicadores financeiros" class="vx-exec-kpis mb-4">{% for row in financial_cards %}<a class="card vx-exec-kpi" href="{{ row.url }}"><span class="text-muted">{{ row.title }}</span><strong>R$ {{ row.value|floatformat:2 }}</strong>{% if advanced_analytics %}<span class="small">Ver lançamentos <i class="bi bi-arrow-right" aria-hidden="true"></i></span>{% endif %}</a>{% endfor %}</section>
+{{ cash_chart|json_script:"cash-chart-data" }}
+{{ revenue_chart|json_script:"revenue-chart-data" }}
 <div class="row g-4 mb-4">
-  <section class="col-12 col-xl-6"><div class="card p-4 h-100"><h2 class="h4">Fluxo financeiro realizado</h2><p class="small text-muted">Recebimentos e pagamentos efetivos · janela selecionada</p><div class="vx-chart-legend"><span class="vx-series-in">● Entradas</span><span class="vx-series-out">● Saídas</span></div><svg class="vx-exec-chart" viewBox="0 0 640 210" role="img" aria-label="Entradas e saídas realizadas"><line x1="25" y1="175" x2="620" y2="175" stroke="#dce5ed"/><polyline points="{{ cash_in_points }}" fill="none" stroke="#006f74" stroke-width="3"/><polyline points="{{ cash_out_points }}" fill="none" stroke="#718499" stroke-width="3"/>{% for row in cash_chart %}<circle cx="{{ row.x }}" cy="{{ row.y_entrada }}" r="4" fill="#006f74"><title>{{ row.label }} · Entradas R$ {{ row.entrada|floatformat:2 }}</title></circle><circle cx="{{ row.x }}" cy="{{ row.y_saida }}" r="4" fill="#718499"><title>{{ row.label }} · Saídas R$ {{ row.saida|floatformat:2 }}</title></circle>{% endfor %}<text x="25" y="202" font-size="11">{{ cash_chart.0.label }}</text><text x="620" y="202" text-anchor="end" font-size="11">{% with last=cash_chart|last %}{{ last.label }}{% endwith %}</text></svg>{% if advanced_analytics %}<details><summary>Conferir valores</summary><div class="table-responsive"><table class="table table-sm"><tr><th>Período</th><th>Entradas</th><th>Saídas</th></tr>{% for row in cash_chart %}<tr><td>{{ row.label }}</td><td>{{ row.entrada|floatformat:2 }}</td><td>{{ row.saida|floatformat:2 }}</td></tr>{% endfor %}</table></div></details>{% endif %}</div></section>
-  <section class="col-12 col-xl-6"><div class="card p-4 h-100"><h2 class="h4">Receitas lançadas</h2><p class="small text-muted">Contas a receber emitidas no período selecionado; não representa apuração fiscal.</p><svg class="vx-exec-chart" viewBox="0 0 640 210" role="img" aria-label="Receitas lançadas por período">{% for row in revenue_chart %}<rect x="{{ row.x|add:'-9' }}" y="{{ row.revenue_y }}" width="18" height="{{ row.revenue_height }}" rx="3" fill="#006f74"><title>{{ row.label }} · R$ {{ row.faturamento|floatformat:2 }}</title></rect><text x="{{ row.x }}" y="200" text-anchor="middle" font-size="8">{{ row.label }}</text>{% endfor %}</svg>{% if advanced_analytics %}<p>Total no período: R$ {{ revenue_chart_total|floatformat:2 }} · Período anterior: R$ {{ revenue_comparison_previous|floatformat:2 }}{% if revenue_comparison_percent is not None %} · Variação: {{ revenue_comparison_percent }}%{% endif %}</p><div class="vx-actions small">{% for name,value in revenue_categories %}<span>{{ name }}: R$ {{ value|floatformat:2 }}</span>{% endfor %}</div>{% endif %}</div></section>
+  <section class="col-12 col-xl-6">
+    <div class="card p-4 h-100">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h2 class="h4 mb-0">Fluxo financeiro realizado</h2>
+        <div class="vx-chart-legend mb-0"><span class="vx-series-in text-success">● Entradas</span><span class="vx-series-out text-danger ms-2">● Saídas</span></div>
+      </div>
+      <p class="small text-muted">Recebimentos e pagamentos efetivos · janela selecionada</p>
+      <div id="apex-cash-chart" class="mb-2"></div>
+      <svg id="svg-cash-chart" class="vx-exec-chart" viewBox="0 0 640 210" role="img" aria-label="Entradas e saídas realizadas"><line x1="25" y1="175" x2="620" y2="175" stroke="#dce5ed"/><polyline points="{{ cash_in_points }}" fill="none" stroke="#006f74" stroke-width="3"/><polyline points="{{ cash_out_points }}" fill="none" stroke="#718499" stroke-width="3"/>{% for row in cash_chart %}<circle cx="{{ row.x }}" cy="{{ row.y_entrada }}" r="4" fill="#006f74"><title>{{ row.label }} · Entradas R$ {{ row.entrada|floatformat:2 }}</title></circle><circle cx="{{ row.x }}" cy="{{ row.y_saida }}" r="4" fill="#718499"><title>{{ row.label }} · Saídas R$ {{ row.saida|floatformat:2 }}</title></circle>{% endfor %}<text x="25" y="202" font-size="11">{{ cash_chart.0.label }}</text><text x="620" y="202" text-anchor="end" font-size="11">{% with last=cash_chart|last %}{{ last.label }}{% endwith %}</text></svg>
+      {% if advanced_analytics %}<details><summary>Conferir valores</summary><div class="table-responsive"><table class="table table-sm"><tr><th>Período</th><th>Entradas</th><th>Saídas</th></tr>{% for row in cash_chart %}<tr><td>{{ row.label }}</td><td>{{ row.entrada|floatformat:2 }}</td><td>{{ row.saida|floatformat:2 }}</td></tr>{% endfor %}</table></div></details>{% endif %}
+    </div>
+  </section>
+  <section class="col-12 col-xl-6">
+    <div class="card p-4 h-100">
+      <h2 class="h4 mb-2">Receitas lançadas</h2>
+      <p class="small text-muted">Contas a receber emitidas no período selecionado; não representa apuração fiscal.</p>
+      <div id="apex-revenue-chart" class="mb-2"></div>
+      <svg id="svg-revenue-chart" class="vx-exec-chart" viewBox="0 0 640 210" role="img" aria-label="Receitas lançadas por período">{% for row in revenue_chart %}<rect x="{{ row.x|add:'-9' }}" y="{{ row.revenue_y }}" width="18" height="{{ row.revenue_height }}" rx="3" fill="#006f74"><title>{{ row.label }} · R$ {{ row.faturamento|floatformat:2 }}</title></rect><text x="{{ row.x }}" y="200" text-anchor="middle" font-size="8">{{ row.label }}</text>{% endfor %}</svg>
+      {% if advanced_analytics %}<p>Total no período: R$ {{ revenue_chart_total|floatformat:2 }} · Período anterior: R$ {{ revenue_comparison_previous|floatformat:2 }}{% if revenue_comparison_percent is not None %} · Variação: {{ revenue_comparison_percent }}%{% endif %}</p><div class="vx-actions small">{% for name,value in revenue_categories %}<span>{{ name }}: R$ {{ value|floatformat:2 }}</span>{% endfor %}</div>{% endif %}
+    </div>
+  </section>
 </div>
 {% endif %}
 
@@ -72,3 +152,175 @@
 <details class="card p-4 mb-4"><summary>Produtividade técnica no mês</summary>{% for row in productivity %}<div class="vx-chart-row"><span>{{ row.name }} · {{ row.value }} atendimentos</span><div class="progress"><div class="progress-bar" style="width:{{ row.width }}%"></div></div></div>{% empty %}<p>Sem atendimentos concluídos neste mês.</p>{% endfor %}</details>
 <details class="card p-4"><summary>Cadastros e equipamentos</summary><p>Clientes ativos: {{ total_clientes }} · Equipamentos cadastrados: {{ total_equipamentos }} · {{ equipamentos_inoperantes }} inoperantes · {{ equipamentos_restricao }} com restrição</p><div class="vx-actions"><a href="{% url 'clientes:cliente_list' %}">Clientes e Unidades</a><a href="{% url 'equipamentos:equipamento_list' %}">Equipamentos</a></div></details>
 {% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+(function() {
+  const activeCharts = [];
+
+  const currencyFormatter = (val) => {
+    const num = parseFloat(val) || 0;
+    return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  function getBaseTheme(isLight) {
+    return {
+      theme: { mode: isLight ? 'light' : 'dark' },
+      chart: {
+        background: 'transparent',
+        foreColor: isLight ? '#475569' : '#94a3b8',
+        toolbar: { show: false },
+        fontFamily: 'Plus Jakarta Sans, Inter, system-ui, sans-serif'
+      },
+      grid: {
+        borderColor: isLight ? 'rgba(15, 23, 42, 0.08)' : 'rgba(255, 255, 255, 0.07)',
+        strokeDashArray: 4
+      },
+      tooltip: {
+        theme: isLight ? 'light' : 'dark',
+        y: { formatter: currencyFormatter }
+      }
+    };
+  }
+
+  function initCharts() {
+    if (typeof ApexCharts === 'undefined') return;
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const baseTheme = getBaseTheme(isLight);
+
+    // 1. Vendas Líquidas
+    const salesScript = document.getElementById('sales-chart-data');
+    const salesTarget = document.getElementById('apex-vendas-chart');
+    const salesSvg = document.getElementById('svg-vendas-chart');
+    if (salesScript && salesTarget) {
+      try {
+        const salesData = JSON.parse(salesScript.textContent);
+        if (Array.isArray(salesData) && salesData.length > 0) {
+          const salesOptions = {
+            ...baseTheme,
+            chart: { ...baseTheme.chart, type: 'bar', height: 220 },
+            series: [{ name: 'Vendas Líquidas', data: salesData.map(d => parseFloat(d.vendas) || 0) }],
+            xaxis: {
+              categories: salesData.map(d => d.label),
+              axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
+              axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
+            },
+            colors: ['#10b981'],
+            plotOptions: {
+              bar: { borderRadius: 4, columnWidth: '50%' }
+            },
+            dataLabels: { enabled: false }
+          };
+          const chart = new ApexCharts(salesTarget, salesOptions);
+          chart.render();
+          activeCharts.push(chart);
+          if (salesSvg) salesSvg.style.display = 'none';
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar gráfico de vendas:', e);
+      }
+    }
+
+    // 2. Fluxo Financeiro Realizado (Entradas vs Saídas)
+    const cashScript = document.getElementById('cash-chart-data');
+    const cashTarget = document.getElementById('apex-cash-chart');
+    const cashSvg = document.getElementById('svg-cash-chart');
+    if (cashScript && cashTarget) {
+      try {
+        const cashData = JSON.parse(cashScript.textContent);
+        if (Array.isArray(cashData) && cashData.length > 0) {
+          const cashOptions = {
+            ...baseTheme,
+            chart: { ...baseTheme.chart, type: 'area', height: 220 },
+            series: [
+              { name: 'Entradas', data: cashData.map(d => parseFloat(d.entrada) || 0) },
+              { name: 'Saídas', data: cashData.map(d => parseFloat(d.saida) || 0) }
+            ],
+            xaxis: {
+              categories: cashData.map(d => d.label),
+              axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
+              axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
+            },
+            colors: ['#10b981', '#f43f5e'],
+            stroke: { curve: 'smooth', width: 2 },
+            fill: {
+              type: 'gradient',
+              gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05, stops: [0, 95, 100] }
+            },
+            dataLabels: { enabled: false }
+          };
+          const chart = new ApexCharts(cashTarget, cashOptions);
+          chart.render();
+          activeCharts.push(chart);
+          if (cashSvg) cashSvg.style.display = 'none';
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar fluxo financeiro:', e);
+      }
+    }
+
+    // 3. Receitas Lançadas
+    const revScript = document.getElementById('revenue-chart-data');
+    const revTarget = document.getElementById('apex-revenue-chart');
+    const revSvg = document.getElementById('svg-revenue-chart');
+    if (revScript && revTarget) {
+      try {
+        const revData = JSON.parse(revScript.textContent);
+        if (Array.isArray(revData) && revData.length > 0) {
+          const revOptions = {
+            ...baseTheme,
+            chart: { ...baseTheme.chart, type: 'bar', height: 220 },
+            series: [{ name: 'Receitas', data: revData.map(d => parseFloat(d.faturamento) || 0) }],
+            xaxis: {
+              categories: revData.map(d => d.label),
+              axisBorder: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' },
+              axisTicks: { color: isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)' }
+            },
+            colors: ['#0284c7'],
+            plotOptions: {
+              bar: { borderRadius: 4, columnWidth: '50%' }
+            },
+            dataLabels: { enabled: false }
+          };
+          const chart = new ApexCharts(revTarget, revOptions);
+          chart.render();
+          activeCharts.push(chart);
+          if (revSvg) revSvg.style.display = 'none';
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar receitas:', e);
+      }
+    }
+  }
+
+  // Listener para alternância de tema ao vivo
+  window.addEventListener('vertyxThemeChanged', function(e) {
+    const isLight = e.detail && e.detail.theme === 'light';
+    const newTheme = getBaseTheme(isLight);
+    const axisColor = isLight ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.1)';
+
+    activeCharts.forEach(chart => {
+      try {
+        chart.updateOptions({
+          theme: newTheme.theme,
+          chart: { foreColor: newTheme.chart.foreColor },
+          grid: { borderColor: newTheme.grid.borderColor },
+          tooltip: { theme: newTheme.tooltip.theme },
+          xaxis: {
+            axisBorder: { color: axisColor },
+            axisTicks: { color: axisColor }
+          }
+        });
+      } catch(err) {
+        console.warn('Erro ao atualizar tema do gráfico:', err);
+      }
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCharts);
+  } else {
+    initCharts();
+  }
+})();
+</script>

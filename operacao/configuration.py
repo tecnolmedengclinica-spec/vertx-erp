@@ -11,8 +11,9 @@ from platform_core.access import require_erp
 from platform_core.forms import OrganizationForm
 from platform_core.audit import previous_values, record_write
 from ordens.storage import private_storage
-from .forms import ConfiguracaoForm
-from .models import Configuracao, Notificacao
+from .forms import ConfiguracaoForm, ConfiguracaoEmailForm
+from .models import Configuracao, Notificacao, ConfiguracaoNotificacaoEmail
+from .email_service import obter_configuracao_email, testar_smtp
 
 class CompanyForm(OrganizationForm):
     logo = forms.ImageField(required=False, help_text='PNG, JPEG ou WebP, até 2 MB.')
@@ -76,3 +77,38 @@ def notificacao_lida(request, pk):
     row.lida_em = timezone.now()
     row.save()
     return redirect('operacao:notificacoes')
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def configuracao_email(request):
+    require_erp(request.user, roles=['ADMIN', 'GESTOR'])
+    config = obter_configuracao_email(request.organization)
+    form = ConfiguracaoEmailForm(request.POST if request.method == 'POST' else None, instance=config)
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'salvar')
+        if action == 'testar':
+            email_teste = request.POST.get('email_teste') or request.user.email
+            if not email_teste:
+                messages.warning(request, 'Informe um e-mail de destino no campo de teste.')
+            else:
+                # Atualiza os parâmetros em memória para o teste sem exigir salvar primeiro
+                temp_config = form.save(commit=False) if form.is_valid() else config
+                ok, msg = testar_smtp(temp_config, email_teste)
+                if ok:
+                    messages.success(request, f'✓ {msg}')
+                else:
+                    messages.error(request, f'✗ {msg}')
+        elif action == 'salvar':
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Configurações de e-mail salvas com sucesso!')
+                return redirect('operacao:configuracao_email')
+            else:
+                messages.error(request, 'Por favor, corrija os campos obrigatórios destacados.')
+
+    return render(request, 'operacao/configuracao_email.html', {
+        'form': form,
+        'config': config,
+    })

@@ -580,86 +580,15 @@
     <!-- FILA DE ESPERA -->
     <div class="queue-panel">
       <div class="section-title">
-        <span>Fila de Atendimento · Consultório 03</span>
-        <span class="badge-count" style="background:#0284c7; color:#fff; font-size:0.8rem; padding:0.25rem 0.75rem; border-radius:99px;" id="queue-total">4 Pacientes</span>
+        <span>Fila de Atendimento · {{ branding.unidade_nome|default:"Unidade Municipal de Saúde" }}</span>
+        <span class="badge-count" style="background:#0284c7; color:#fff; font-size:0.8rem; padding:0.25rem 0.75rem; border-radius:99px;" id="queue-total">0 Pacientes</span>
       </div>
 
-      <div class="queue-table" id="doc-queue" style="margin-top: 1.25rem;">
-        <div class="queue-card">
-          <div class="patient-col">
-            <span class="ticket-badge">PRE-043</span>
-            <div class="patient-details">
-              <h4>Geraldo Moreira Sobrinho</h4>
-              <div class="patient-meta">
-                <span>Idoso 80+</span>
-                <span>Espera: 12 min</span>
-                <span>Queixa: Picos hipertensivos</span>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap: 1rem;">
-            <span class="triage-indicator yellow">Amarelo</span>
-            <button class="btn-row-call" onclick="callSpecific(this, 'PRE-043', 'Geraldo Moreira Sobrinho', 'yellow')">Chamar</button>
-          </div>
-        </div>
-
-        <div class="queue-card">
-          <div class="patient-col">
-            <span class="ticket-badge">G-015</span>
-            <div class="patient-details">
-              <h4>Juliana Mendonça Lima</h4>
-              <div class="patient-meta">
-                <span>Gestante (28 semanas)</span>
-                <span>Espera: 8 min</span>
-                <span>Queixa: Consulta Pré-natal habitual</span>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap: 1rem;">
-            <span class="triage-indicator yellow">Amarelo</span>
-            <button class="btn-row-call" onclick="callSpecific(this, 'G-015', 'Juliana Mendonça Lima', 'yellow')">Chamar</button>
-          </div>
-        </div>
-
-        <div class="queue-card">
-          <div class="patient-col">
-            <span class="ticket-badge">N-098</span>
-            <div class="patient-details">
-              <h4>Lucas Albuquerque Pinto</h4>
-              <div class="patient-meta">
-                <span>Geral</span>
-                <span>Espera: 15 min</span>
-                <span>Queixa: Avaliação de exames laboratoriais</span>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap: 1rem;">
-            <span class="triage-indicator green">Verde</span>
-            <button class="btn-row-call" onclick="callSpecific(this, 'N-098', 'Lucas Albuquerque Pinto', 'green')">Chamar</button>
-          </div>
-        </div>
-
-        <div class="queue-card">
-          <div class="patient-col">
-            <span class="ticket-badge">N-099</span>
-            <div class="patient-details">
-              <h4>Tereza Cristina Barbosa</h4>
-              <div class="patient-meta">
-                <span>Geral</span>
-                <span>Espera: 18 min</span>
-                <span>Queixa: Renovação de receita contínua</span>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap: 1rem;">
-            <span class="triage-indicator green">Verde</span>
-            <button class="btn-row-call" onclick="callSpecific(this, 'N-099', 'Tereza Cristina Barbosa', 'green')">Chamar</button>
-          </div>
-        </div>
-      </div>
+      <div class="queue-table" id="doc-queue" style="margin-top: 1.25rem;"></div>
     </div>
   </main>
 
+  {{ snapshot|json_script:"realtime-data" }}
   <script>
     // =========================================================
     // MOTOR DE ATENDIMENTO NOVO SGA (FLUXO REAL DE 3 ESTADOS)
@@ -732,118 +661,187 @@
       }
     }
 
-    // 1. CHAMAR PRÓXIMO DA FILA (ESTADO: CALLED)
-    function doctorCallNext() {
-      const queue = document.getElementById('doc-queue');
-      const first = queue.firstElementChild;
-      if (!first) {
-        alert('Não há pacientes aguardando na fila deste consultório.');
-        return;
+    const QUEUE_API_URL = "{% url 'rh_municipal_public:saude_queue_api' %}";
+    const QUEUE_ACTION_URL = "{% url 'rh_municipal_public:saude_queue_action_api' %}";
+    const INITIAL_SNAPSHOT = JSON.parse(document.getElementById("realtime-data").textContent);
+    let currentTicketPublicId = null;
+
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return m ? decodeURIComponent(m[2]) : '';
+    }
+
+    function triageCss(cor) {
+      const m = { VERMELHO: 'red', LARANJA: 'red', AMARELO: 'yellow', VERDE: 'green', AZUL: 'blue' };
+      return m[cor] || 'green';
+    }
+
+    function renderDoctorSnapshot(snapshot) {
+      if (!snapshot) return;
+      const activeTicket = snapshot.in_service || snapshot.in_service_now || snapshot.calling_now || null;
+      if (activeTicket) {
+        currentTicketPublicId = activeTicket.public_id;
+        currentTicket = activeTicket.codigo;
+        currentPatient = activeTicket.cidadao_nome || activeTicket.servico_nome || 'Cidadão';
+        currentTriage = triageCss(activeTicket.manchester_cor);
+        document.getElementById('doc-ticket').textContent = currentTicket;
+        document.getElementById('doc-name').textContent = currentPatient;
+        document.getElementById('doc-triage-label').textContent = activeTicket.manchester_label || (activeTicket.prioritaria ? 'Prioritário' : 'Normal');
+        const nextStatus = activeTicket.status === 'EM_ATENDIMENTO' ? 'IN_SERVICE' : 'CALLED';
+        if (attendanceState !== nextStatus) {
+          setAttendanceState(nextStatus);
+        }
+      } else if (attendanceState !== 'IDLE') {
+        currentTicketPublicId = null;
+        setAttendanceState('IDLE');
       }
 
-      const ticket = first.querySelector('.ticket-badge').textContent;
-      const name = first.querySelector('.patient-details h4').textContent;
-      const triageEl = first.querySelector('.triage-indicator');
-      const color = triageEl.classList.contains('yellow') ? 'yellow' : triageEl.classList.contains('red') ? 'red' : 'green';
+      const waiting = Array.isArray(snapshot.waiting) ? snapshot.waiting : [];
+      const queue = document.getElementById('doc-queue');
+      queue.innerHTML = '';
+      waiting.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'queue-card';
+        const tCss = triageCss(item.manchester_cor || (item.prioritaria ? 'AMARELO' : 'VERDE'));
+        const tText = item.manchester_label || (item.prioritaria ? 'Prioritário' : 'Normal');
 
-      currentTicket = ticket;
-      currentPatient = name;
-      currentTriage = color;
+        const col = document.createElement('div');
+        col.className = 'patient-col';
+        const badge = document.createElement('span');
+        badge.className = 'ticket-badge';
+        badge.textContent = item.codigo;
+        const details = document.createElement('div');
+        details.className = 'patient-details';
+        const h4 = document.createElement('h4');
+        h4.textContent = item.cidadao_nome || item.servico_nome;
+        const meta = document.createElement('div');
+        meta.className = 'patient-meta';
+        [
+          item.servico_nome,
+          item.detalhe_prioridade || (item.prioritaria ? 'Prioridade legal' : 'Demanda geral'),
+          item.queixa_principal || item.manchester_discriminador || 'Aguardando chamada',
+        ].forEach((txt) => {
+          const sp = document.createElement('span');
+          sp.textContent = txt;
+          meta.appendChild(sp);
+        });
+        details.appendChild(h4);
+        details.appendChild(meta);
+        col.appendChild(badge);
+        col.appendChild(details);
 
-      document.getElementById('doc-ticket').textContent = ticket;
-      document.getElementById('doc-name').textContent = name;
-      document.getElementById('doc-triage-label').textContent = triageEl.textContent;
+        const right = document.createElement('div');
+        right.style.cssText = 'display:flex; align-items:center; gap: 1rem;';
+        const ind = document.createElement('span');
+        ind.className = `triage-indicator ${tCss}`;
+        ind.textContent = tText;
+        const btn = document.createElement('button');
+        btn.className = 'btn-row-call';
+        btn.textContent = 'Chamar';
+        btn.onclick = () => callSpecificTicket(item.public_id);
+        right.appendChild(ind);
+        right.appendChild(btn);
 
-      first.remove();
+        card.appendChild(col);
+        card.appendChild(right);
+        queue.appendChild(card);
+      });
       updateQueueTotal();
+    }
 
-      setAttendanceState('CALLED');
-      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, `Classificação Manchester: ${triageEl.textContent}`);
+    async function postQueueAction(payload) {
+      const res = await fetch(QUEUE_ACTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.error || 'Falha na operação de fila.');
+        return null;
+      }
+      if (data.snapshot) renderDoctorSnapshot(data.snapshot);
+      return data;
+    }
+
+    async function callSpecificTicket(publicId) {
+      const data = await postQueueAction({ action: 'CALL', public_id: publicId });
+      if (data && data.ticket) {
+        dispatchCallEvent(data.ticket.codigo, data.ticket.cidadao_nome || data.ticket.servico_nome, data.ticket.local_nome || 'Consultório', data.ticket.profissional_nome || 'Profissional', triageCss(data.ticket.manchester_cor), `Classificação Manchester: ${data.ticket.manchester_label || 'Normal'}`);
+      }
+    }
+
+    // 1. CHAMAR PRÓXIMO DA FILA (ESTADO: CALLED)
+    async function doctorCallNext() {
+      const data = await postQueueAction({ action: 'CALL_NEXT' });
+      if (data && data.ticket) {
+        dispatchCallEvent(data.ticket.codigo, data.ticket.cidadao_nome || data.ticket.servico_nome, data.ticket.local_nome || 'Consultório', data.ticket.profissional_nome || 'Profissional', triageCss(data.ticket.manchester_cor), `Classificação Manchester: ${data.ticket.manchester_label || 'Normal'}`);
+      }
     }
 
     // 2. INICIAR ATENDIMENTO (ESTADO: IN_SERVICE)
-    function startAttendance() {
-      if (!currentTicket) return;
-      setAttendanceState('IN_SERVICE');
+    async function startAttendance() {
+      if (!currentTicketPublicId) return;
+      await postQueueAction({ action: 'START', public_id: currentTicketPublicId });
     }
 
     // 3. RECHAMAR NO PAINEL
-    function doctorRepeat() {
-      if (!currentTicket) return;
-      dispatchCallEvent(currentTicket, currentPatient, "Consultório 03", "Dra. Beatriz Carvalho", currentTriage, "Rechamada de Atendimento");
+    async function doctorRepeat() {
+      if (!currentTicketPublicId) return;
+      const data = await postQueueAction({ action: 'RECALL', public_id: currentTicketPublicId });
+      if (data && data.ticket) {
+        dispatchCallEvent(data.ticket.codigo, data.ticket.cidadao_nome || data.ticket.servico_nome, data.ticket.local_nome || 'Consultório', data.ticket.profissional_nome || 'Profissional', currentTriage, 'Rechamada de Atendimento');
+      }
     }
 
     // 4. NÃO COMPARECEU (RETORNA A IDLE)
-    function markNoShow() {
-      if (!currentTicket) return;
+    async function markNoShow() {
+      if (!currentTicketPublicId) return;
       if (confirm(`Confirmar ausência do paciente ${currentPatient} (${currentTicket})? A senha será registrada como Não Compareceu.`)) {
-        queueChannel.postMessage({
-          type: 'NO_SHOW',
-          ticket: currentTicket,
-          room: "Consultório 03"
-        });
-        setAttendanceState('IDLE');
+        await postQueueAction({ action: 'NO_SHOW', public_id: currentTicketPublicId });
+        queueChannel.postMessage({ type: 'NO_SHOW', ticket: currentTicket });
       }
     }
 
     // 5. ENCERRAR ATENDIMENTO
-    function finishAttendance() {
-      if (!currentTicket) return;
-      alert(`Consulta do paciente ${currentPatient} (${currentTicket}) encerrada com sucesso no e-SUS APS! Tempo de atendimento: ${document.getElementById('elapsed-time').textContent}`);
-      setAttendanceState('IDLE');
+    async function finishAttendance() {
+      if (!currentTicketPublicId) return;
+      const data = await postQueueAction({ action: 'FINISH', public_id: currentTicketPublicId });
+      if (data) {
+        alert(`Atendimento ${currentTicket} encerrado e registrado no banco municipal.`);
+      }
     }
 
-    // 6. ENCERRAR E CHAMAR PRÓXIMO (O PODEROSO ATALHO DO NOVO SGA)
-    function finishAndCallNext() {
-      if (!currentTicket) {
-        doctorCallNext();
-        return;
+    // 6. ENCERRAR E CHAMAR PRÓXIMO
+    async function finishAndCallNext() {
+      if (currentTicketPublicId) {
+        await postQueueAction({ action: 'FINISH', public_id: currentTicketPublicId });
       }
-      finishAttendance();
-      setTimeout(doctorCallNext, 300);
+      await doctorCallNext();
     }
 
     // 7. ENCAMINHAR / TRANSFERIR SETOR
-    function transferPatient() {
-      if (!currentTicket) return;
-      const dest = prompt("Selecione o setor de destino para transferir a senha:\n1 - Sala de Vacinas\n2 - Farmácia Básica\n3 - Coleta e Exames\n4 - Regulação / Marcação", "2");
+    async function transferPatient() {
+      if (!currentTicketPublicId) return;
+      const dest = prompt("Selecione o serviço de destino:\nVAC - Sala de Vacinas\nFAR - Farmácia Básica\nODO - Odontologia\nTRI - Triagem de Enfermagem\nGER - Clínica Médica Geral", "FAR");
       if (dest) {
-        const sectors = { "1": "Sala de Vacinas", "2": "Farmácia Básica", "3": "Coleta e Exames", "4": "Regulação e Exames" };
-        const target = sectors[dest] || "Farmácia Básica";
-        alert(`Paciente ${currentPatient} transferido(a) com sucesso para a fila da ${target}!`);
-        setAttendanceState('IDLE');
+        await postQueueAction({ action: 'TRANSFER', public_id: currentTicketPublicId, destino_codigo: dest.trim().toUpperCase() });
       }
     }
 
     // 8. CHAMAR PRIORITÁRIO
-    function doctorCallPriority() {
-      const queue = document.getElementById('doc-queue');
-      const priorityCard = Array.from(queue.children).find(card => card.querySelector('.triage-indicator.yellow') || card.querySelector('.ticket-badge').textContent.startsWith('PRE'));
-      if (priorityCard) {
-        const btn = priorityCard.querySelector('.btn-row-call');
-        btn.click();
-      } else {
-        doctorCallNext();
+    async function doctorCallPriority() {
+      const data = await postQueueAction({ action: 'CALL_NEXT_PRIORITY' });
+      if (data && data.ticket) {
+        dispatchCallEvent(data.ticket.codigo, data.ticket.cidadao_nome || data.ticket.servico_nome, data.ticket.local_nome || 'Consultório', data.ticket.profissional_nome || 'Profissional', triageCss(data.ticket.manchester_cor), `Atendimento Prioritário · ${data.ticket.servico_nome}`);
       }
     }
 
     function callSpecific(btn, ticket, name, triage) {
-      currentTicket = ticket;
-      currentPatient = name;
-      currentTriage = triage;
-
-      document.getElementById('doc-ticket').textContent = ticket;
-      document.getElementById('doc-name').textContent = name;
-      document.getElementById('doc-triage-label').textContent = triage.toUpperCase();
-
-      const card = btn.closest('.queue-card');
-      if (card) card.remove();
-      updateQueueTotal();
-
-      setAttendanceState('CALLED');
-      const color = triage === 'red' ? 'red' : triage === 'yellow' ? 'yellow' : 'green';
-      const label = `Classificação Manchester: ${triage.toUpperCase()}`;
-      dispatchCallEvent(ticket, name, "Consultório 03", "Dra. Beatriz Carvalho", color, label);
+      doctorCallNext();
     }
 
     function dispatchCallEvent(ticket, name, room, doctor, color, label) {
@@ -858,48 +856,27 @@
       });
     }
 
-    function addNewTicketToDoctorQueue(data) {
-      const queue = document.getElementById('doc-queue');
-      const card = document.createElement('div');
-      card.className = 'queue-card';
-      card.style.borderColor = '#38bdf8';
-      card.style.boxShadow = '0 0 15px rgba(56, 189, 248, 0.3)';
-
-      const isPriority = data.prefix === 'PRE';
-      const triageClass = isPriority ? 'yellow' : 'green';
-      const triageText = isPriority ? 'Amarelo' : 'Verde';
-
-      card.innerHTML = `
-        <div class="patient-col">
-          <span class="ticket-badge" style="color:#38bdf8; border-color:#38bdf8;">${data.ticket}</span>
-          <div class="patient-details">
-            <h4>${data.service}</h4>
-            <div class="patient-meta">
-              <span>Emitido no Totem</span>
-              <span>Horário: ${data.time}</span>
-              <span>Aguardando Chamada</span>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; gap: 1rem;">
-          <span class="triage-indicator ${triageClass}">${triageText}</span>
-          <button class="btn-row-call" onclick="callSpecific(this, '${data.ticket}', '${data.service}', '${triageClass}')">Chamar</button>
-        </div>
-      `;
-
-      if (isPriority) {
-        queue.insertBefore(card, queue.firstChild);
-      } else {
-        queue.appendChild(card);
-      }
-      updateQueueTotal();
+    async function refreshDoctorQueue() {
+      try {
+        const res = await fetch(QUEUE_API_URL, { headers: { 'Accept': 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok) {
+            const snap = data.snapshot || data;
+            if (Array.isArray(snap.waiting)) renderDoctorSnapshot(snap);
+          }
+        }
+      } catch (e) {}
     }
+
+    renderDoctorSnapshot(INITIAL_SNAPSHOT);
+    setInterval(refreshDoctorQueue, 4000);
 
     queueChannel.onmessage = (event) => {
       const data = event.data;
       if (!data) return;
-      if (data.type === 'NEW_TICKET') {
-        addNewTicketToDoctorQueue(data);
+      if (data.type === 'NEW_TICKET' || data.type === 'CALL_TICKET') {
+        refreshDoctorQueue();
       }
     };
 

@@ -1,0 +1,46 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Validação de Certidão Tributária (CND) · {{ organization.display_name }}</title>
+  <link rel="stylesheet" href="{% static 'css/gestao-publica.css' %}">
+</head>
+<body class="gp-body">
+  <main class="gp-public-wrap">
+    <section class="gp-panel gp-public-panel">
+      <span class="gp-eyebrow">AUTENTICAÇÃO TRIBUTÁRIA MUNICIPAL</span>
+      <h1>{{ organization.display_name }}</h1>
+      <p>Confira a autenticidade de Certidão Negativa (CND), Positiva com Efeitos de Negativa (CPEN) ou acesse a Central do Cidadão gov.br.</p>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <a class="gp-button" href="{% url 'rh_municipal_public:public_citizen_central' organization.slug %}">Ir para Central do Cidadão (gov.br)</a>
+        <a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:public_citizen_portal' organization.slug %}">Voltar ao Portal</a>
+      </div>
+    </section>
+
+    <section class="gp-panel">
+      <h2>Validar Código de Autenticidade</h2>
+      <form method="get" class="gp-form" style="max-width:520px">
+        <label class="gp-field"><span>Número da Certidão</span><input class="gp-input" name="numero" value="{{ numero }}" placeholder="Ex.: CND-2026-1234ABCD"></label>
+        <label class="gp-field"><span>Chave / Código de Autenticidade</span><input class="gp-input" name="codigo" value="{{ codigo }}" placeholder="Ex.: 8F3A-92BC-4410-EF01"></label>
+        <button class="gp-button" type="submit">Validar Certidão</button>
+      </form>
+
+      {% if result %}
+        <hr style="margin:1.25rem 0;border:none;border-top:1px solid #e2e8f0">
+        {% if result.encontrada %}
+          <div style="padding:1rem;border-radius:12px;border:1px solid {% if result.valida %}#86efac;background:#f0fdf4;color:#166534{% else %}#fca5a5;background:#fef2f2;color:#991b1b{% endif %}">
+            <h3 style="margin:0 0 .5rem">{{ result.status }}</h3>
+            <p style="margin:.2rem 0"><strong>Número:</strong> {{ result.numero }} · <strong>Tipo:</strong> {{ result.tipo }}</p>
+            <p style="margin:.2rem 0"><strong>Contribuinte:</strong> {{ result.contribuinte_nome }} ({{ result.contribuinte_documento_mascarado }})</p>
+            <p style="margin:.2rem 0"><strong>Emitida em:</strong> {{ result.emitida_em }} · <strong>Válida até:</strong> {{ result.valida_ate }}</p>
+            <p style="margin:.2rem 0"><strong>Chave:</strong> <code>{{ result.codigo_autenticacao }}</code></p>
+          </div>
+        {% else %}
+          <div class="gp-error">Nenhuma certidão encontrada nesta Prefeitura com o número e código informados.</div>
+        {% endif %}
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>

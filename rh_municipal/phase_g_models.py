@@ -116,10 +116,19 @@ class CidadaoSaudeMunicipal(HealthRecord):
 class FamiliaTerritorialSaude(HealthRecord):
     codigo = models.CharField(max_length=36)
     referencia = models.CharField(max_length=160, blank=True)
+    responsavel_nome = models.CharField(max_length=140, blank=True)
     endereco = models.CharField(max_length=220)
     microarea = models.CharField(max_length=30, blank=True)
     equipe = models.ForeignKey(EquipeSaudeMunicipal, null=True, blank=True, on_delete=models.PROTECT, related_name='familias')
     unidade_saude = models.ForeignKey(UnidadeSaudeMunicipal, on_delete=models.PROTECT, related_name='familias')
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    risco_territorial = models.CharField(
+        max_length=12,
+        choices=[('BAIXO', 'Baixo'), ('MEDIO', 'Médio'), ('ALTO', 'Alto'), ('CRITICO', 'Crítico')],
+        default='BAIXO',
+    )
+    condicoes_sentinelas = models.JSONField(default=list, blank=True)
     ativo = models.BooleanField(default=True)
 
     class Meta:
@@ -166,6 +175,7 @@ class AtendimentoSaudeMunicipal(HealthRecord):
     concluido_em = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.AGENDADO)
     codigo_procedimento = models.CharField(max_length=32, blank=True)
+    queixa_portal_cifrada = models.BinaryField(blank=True, default=bytes)
     criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
 
@@ -228,6 +238,14 @@ class VisitaTerritorialSaude(HealthRecord):
     agente = models.ForeignKey(ProfissionalSaudeMunicipal, on_delete=models.PROTECT, related_name='visitas')
     realizada_em = models.DateTimeField(default=timezone.now)
     observacoes_cifradas = models.BinaryField(blank=True, default=bytes)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    pa_sistolica = models.PositiveIntegerField(null=True, blank=True)
+    pa_diastolica = models.PositiveIntegerField(null=True, blank=True)
+    glicemia = models.PositiveIntegerField(null=True, blank=True)
+    peso_kg = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    condicao_acompanhada = models.CharField(max_length=32, blank=True)
+    alerta_epidemiologico = models.CharField(max_length=180, blank=True)
     status = models.CharField(max_length=16, choices=[('REALIZADA', 'Realizada'), ('PENDENTE', 'Pendente'), ('CANCELADA', 'Cancelada')], default='REALIZADA')
 
 
@@ -465,6 +483,7 @@ class ClassificacaoManchester(HealthRecord):
     peso_kg = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     altura_cm = models.PositiveIntegerField(null=True, blank=True)
     queixa_principal = models.CharField(max_length=255, blank=True)
+    queixa_principal_cifrada = models.BinaryField(blank=True, default=bytes)
     avaliada_em = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -488,3 +507,136 @@ class RegistroProducaoSUS(HealthRecord):
     criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     criado_em = models.DateTimeField(default=timezone.now, editable=False)
     status_transmissao = models.CharField(max_length=18, default='NAO_TRANSMITIDO')
+
+
+class AlaEnfermariaSaude(HealthRecord):
+    """Alas hospitalares, observação UPA, enfermarias e UTIs municipais."""
+    class Tipo(models.TextChoices):
+        OBSERVACAO = 'OBSERVACAO', 'Observação / Pronto Atendimento'
+        SALA_VERMELHA = 'SALA_VERMELHA', 'Sala Vermelha / Estabilização'
+        ENFERMARIA = 'ENFERMARIA', 'Enfermaria Clínica'
+        UTI_ADULTO = 'UTI_ADULTO', 'UTI Adulto'
+        UTI_PEDIATRICA = 'UTI_PEDIATRICA', 'UTI Pediátrica / Neo'
+        OBSTETRICIA = 'OBSTETRICIA', 'Obstetrícia / Parto'
+        ISOLAMENTO = 'ISOLAMENTO', 'Isolamento Respiratório / Contato'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    unidade_saude = models.ForeignKey(UnidadeSaudeMunicipal, on_delete=models.PROTECT, related_name='alas')
+    codigo = models.CharField(max_length=24)
+    nome = models.CharField(max_length=120)
+    tipo = models.CharField(max_length=24, choices=Tipo.choices, default=Tipo.OBSERVACAO)
+    capacidade_planejada = models.PositiveSmallIntegerField(default=8)
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['unidade_saude', 'codigo']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'unidade_saude', 'codigo'], name='rhmun_ala_saude_org_unit_cod'),
+        ]
+
+
+class LeitoSaudeMunicipal(HealthRecord):
+    """Mapa de leitos hospitalares e observação municipal integrado ao prontuário e monitor."""
+    class Status(models.TextChoices):
+        DISPONIVEL = 'DISPONIVEL', 'Disponível'
+        OCUPADO = 'OCUPADO', 'Ocupado'
+        HIGIENIZACAO = 'HIGIENIZACAO', 'Em Higienização'
+        MANUTENCAO = 'MANUTENCAO', 'Manutenção'
+        RESERVADO = 'RESERVADO', 'Reservado / Regulação'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    unidade_saude = models.ForeignKey(UnidadeSaudeMunicipal, on_delete=models.PROTECT, related_name='leitos')
+    ala = models.ForeignKey(AlaEnfermariaSaude, on_delete=models.PROTECT, related_name='leitos')
+    codigo = models.CharField(max_length=24)
+    descricao = models.CharField(max_length=120, blank=True)
+    tipo_leito = models.CharField(max_length=24, choices=AlaEnfermariaSaude.Tipo.choices, default=AlaEnfermariaSaude.Tipo.OBSERVACAO)
+    status = models.CharField(max_length=18, choices=Status.choices, default=Status.DISPONIVEL)
+    paciente_atual = models.ForeignKey(CidadaoSaudeMunicipal, null=True, blank=True, on_delete=models.SET_NULL, related_name='leitos_ocupados')
+    atendimento_atual = models.ForeignKey(AtendimentoSaudeMunicipal, null=True, blank=True, on_delete=models.SET_NULL, related_name='leitos')
+    profissional_responsavel = models.ForeignKey(ProfissionalSaudeMunicipal, null=True, blank=True, on_delete=models.SET_NULL, related_name='leitos_responsaveis')
+    admitido_em = models.DateTimeField(null=True, blank=True)
+    alta_prevista_em = models.DateField(null=True, blank=True)
+    precaucao_isolamento = models.CharField(max_length=60, blank=True)
+    ativo = models.BooleanField(default=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['ala', 'codigo']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'unidade_saude', 'codigo'], name='rhmun_leito_saude_org_unit_cod'),
+        ]
+
+
+class EquipamentoMonitorSaude(HealthRecord):
+    """Monitor multiparamétrico conectado à rede da unidade (Wi-Fi/HL7/HTTP Gateway)."""
+    class Protocolo(models.TextChoices):
+        HTTP_JSON = 'HTTP_JSON', 'Gateway HTTP/Wi-Fi JSON'
+        HL7_V2 = 'HL7_V2', 'Ponte HL7 v2 / MLLP'
+        MQTT_TLS = 'MQTT_TLS', 'Broker MQTT TLS'
+        SIMULADOR = 'SIMULADOR', 'Simulador Clínico Local'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    unidade_saude = models.ForeignKey(UnidadeSaudeMunicipal, on_delete=models.PROTECT, related_name='monitores')
+    leito = models.OneToOneField(LeitoSaudeMunicipal, null=True, blank=True, on_delete=models.SET_NULL, related_name='monitor')
+    serial_dispositivo = models.CharField(max_length=64)
+    modelo = models.CharField(max_length=100, default='Monitor Multiparamétrico 5 Parâmetros')
+    protocolo = models.CharField(max_length=20, choices=Protocolo.choices, default=Protocolo.HTTP_JSON)
+    endpoint_ou_ip = models.CharField(max_length=120, blank=True)
+    bateria_percentual = models.PositiveSmallIntegerField(default=100)
+    online = models.BooleanField(default=False)
+    ultimo_heartbeat = models.DateTimeField(null=True, blank=True)
+    token_ingestao = models.CharField(max_length=64, blank=True)
+
+    class Meta:
+        ordering = ['serial_dispositivo']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'serial_dispositivo'], name='rhmun_monitor_saude_serial_org'),
+        ]
+
+
+class TelemetriaMonitorLeito(HealthRecord):
+    """Aferições em tempo real dos sinais vitais enviadas pelo monitor multiparamétrico."""
+    class NivelAlerta(models.TextChoices):
+        NORMAL = 'NORMAL', 'Estável / Normal'
+        ATENCAO = 'ATENCAO', 'Atenção'
+        CRITICO = 'CRITICO', 'Crítico / Alarme'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    equipamento = models.ForeignKey(EquipamentoMonitorSaude, on_delete=models.PROTECT, related_name='telemetrias')
+    leito = models.ForeignKey(LeitoSaudeMunicipal, on_delete=models.PROTECT, related_name='telemetrias')
+    cidadao = models.ForeignKey(CidadaoSaudeMunicipal, null=True, blank=True, on_delete=models.SET_NULL, related_name='telemetrias_leito')
+    coletado_em = models.DateTimeField(default=timezone.now)
+    fc_bpm = models.PositiveSmallIntegerField(null=True, blank=True)
+    spo2_percent = models.PositiveSmallIntegerField(null=True, blank=True)
+    pa_sistolica = models.PositiveSmallIntegerField(null=True, blank=True)
+    pa_diastolica = models.PositiveSmallIntegerField(null=True, blank=True)
+    pam_mmhg = models.PositiveSmallIntegerField(null=True, blank=True)
+    fr_irpm = models.PositiveSmallIntegerField(null=True, blank=True)
+    temperatura_c = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
+    etco2_mmhg = models.PositiveSmallIntegerField(null=True, blank=True)
+    ritmo_ecg = models.CharField(max_length=40, default='SINUSAL')
+    nivel_alerta = models.CharField(max_length=12, choices=NivelAlerta.choices, default=NivelAlerta.NORMAL)
+    alertas_detectados = models.JSONField(default=list, blank=True)
+    origem_leitura = models.CharField(max_length=24, default='TELEMETRIA_REAL')
+
+    class Meta:
+        ordering = ['-coletado_em', '-pk']
+
+
+class EventoAlertaMonitorSaude(HealthRecord):
+    """Histórico auditado de alarmes clínicos do monitor e reconhecimento pela equipe."""
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    leito = models.ForeignKey(LeitoSaudeMunicipal, on_delete=models.PROTECT, related_name='alertas')
+    telemetria = models.ForeignKey(TelemetriaMonitorLeito, null=True, blank=True, on_delete=models.SET_NULL, related_name='eventos_alerta')
+    severidade = models.CharField(max_length=12, choices=[('ATENCAO', 'Atenção'), ('CRITICO', 'Crítico')], default='CRITICO')
+    parametro = models.CharField(max_length=40)
+    valor_aferido = models.CharField(max_length=40)
+    mensagem = models.CharField(max_length=240)
+    ocorrido_em = models.DateTimeField(default=timezone.now)
+    reconhecido = models.BooleanField(default=False)
+    reconhecido_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='alertas_monitor_reconhecidos')
+    reconhecido_em = models.DateTimeField(null=True, blank=True)
+    conduta = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ['-ocorrido_em', '-pk']

@@ -579,3 +579,56 @@ class AuditoriaProcessoDigitalMunicipal(PhaseEImmutable):
 
 def tracking_digest(raw):
     return hashlib.sha256(raw.encode('utf-8')).hexdigest()
+
+
+class ConfiguracaoGovBrMunicipal(MunicipalRecord):
+    """Parametrização OIDC Login Único gov.br por Prefeitura (Homologação e Produção)."""
+    class Ambiente(models.TextChoices):
+        HOMOLOGACAO = 'HOMOLOGACAO', 'Homologação gov.br (sso.staging.acesso.gov.br)'
+        PRODUCAO = 'PRODUCAO', 'Produção gov.br (sso.acesso.gov.br)'
+
+    class NivelMinimo(models.TextChoices):
+        BRONZE = 'BRONZE', 'Bronze'
+        PRATA = 'PRATA', 'Prata'
+        OURO = 'OURO', 'Ouro'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    ambiente = models.CharField(max_length=14, choices=Ambiente.choices, default=Ambiente.HOMOLOGACAO)
+    client_id = models.CharField(max_length=120, blank=True)
+    issuer_url = models.URLField(max_length=300, default='https://sso.staging.acesso.gov.br')
+    redirect_uri = models.URLField(max_length=400, blank=True)
+    escopos = models.CharField(max_length=180, default='openid email profile govbr_confiabilidades')
+    referencia_secret = models.CharField(max_length=80, blank=True)
+    nivel_minimo = models.CharField(max_length=10, choices=NivelMinimo.choices, default=NivelMinimo.PRATA)
+    modo_homologacao_local = models.BooleanField(default=True)
+    ativo = models.BooleanField(default=True)
+    atualizada_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['organization'], name='rhmun_govbr_config_org'),
+        ]
+
+
+class SessaoCidadaoGovBr(MunicipalRecord):
+    """Sessão verificada de cidadão autenticado via Login Único gov.br (ou Homologação)."""
+    class Nivel(models.TextChoices):
+        BRONZE = 'BRONZE', 'Bronze'
+        PRATA = 'PRATA', 'Prata'
+        OURO = 'OURO', 'Ouro'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    cpf = models.CharField(max_length=11)
+    nome = models.CharField(max_length=180)
+    email = models.EmailField(blank=True)
+    telefone = models.CharField(max_length=30, blank=True)
+    nivel_confiabilidade = models.CharField(max_length=10, choices=Nivel.choices, default=Nivel.PRATA)
+    selos = models.JSONField(default=list, blank=True)
+    origem_autenticacao = models.CharField(max_length=30, default='GOVBR_HOMOLOGACAO_LOCAL')
+    sub_govbr = models.CharField(max_length=120, blank=True)
+    autenticado_em = models.DateTimeField(default=timezone.now, editable=False)
+    expira_em = models.DateTimeField(null=True, blank=True)
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-autenticado_em', '-pk']

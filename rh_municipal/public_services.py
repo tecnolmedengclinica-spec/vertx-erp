@@ -275,6 +275,10 @@ def _object_scope_values(record):
         return {'secretaria': record.setor.departamento.secretaria_id, 'departamento': record.setor.departamento_id, 'setor': record.setor_id, 'unidade': record.pk}
     if model == 'unidadesaudemunicipal':
         return _object_scope_values(record.unidade)
+    if model in {'senhafilaatendimento', 'servicofilasaude', 'localatendimentosaude', 'classificacaomanchester', 'alaenfermariasaude', 'leitosaudemunicipal', 'equipamentomonitorsaude'}:
+        return _object_scope_values(record.unidade_saude)
+    if model in {'telemetriamonitorleito', 'eventoalertamonitorsaude'}:
+        return _object_scope_values(record.leito)
     if model in {
         'equipesaudemunicipal', 'profissionalsaudemunicipal', 'agendasaudemunicipal',
         'atendimentosaudemunicipal', 'lotemedicamentomunicipal', 'dispensacaomedicamentomunicipal',
@@ -691,6 +695,11 @@ for _health_model in (
     'registroproducaosus',
 ):
     SCOPE_PATHS[_health_model] = _health_unit_scope
+for _health_model in ('senhafilaatendimento', 'servicofilasaude', 'localatendimentosaude', 'classificacaomanchester', 'alaenfermariasaude', 'leitosaudemunicipal', 'equipamentomonitorsaude', 'telemetriamonitorleito'):
+    SCOPE_PATHS[_health_model] = _health_unit_scope
+SCOPE_PATHS['eventoalertamonitorsaude'] = {
+    key: 'leito__' + path for key, path in _health_unit_scope.items()
+}
 SCOPE_PATHS['evolucaoclinicamunicipal'] = {
     key: path.replace('unidade_saude', 'atendimento__unidade_saude') for key, path in _health_unit_scope.items()
 }

@@ -489,22 +489,22 @@
     <!-- PAINEL DA TABELA DE MÉDICOS ATIVOS -->
     <section class="table-panel">
       <div class="card-title">
-        <span>Corpo Clínico Alocado · Unidade Municipal de Saúde</span>
-        <span class="crm-badge" id="total-doctors-badge">5 Profissionais Ativos</span>
+        <span>Corpo Clínico Alocado · {{ branding.unidade_nome|default:"Unidade Municipal de Saúde" }}</span>
+        <span class="crm-badge" id="total-doctors-badge">{{ professionals|length }} Profissionais Cadastrados</span>
       </div>
 
       <div class="roster-summary">
         <div class="summary-item">
-          <span class="summary-label">Médicos em Atendimento</span>
-          <span class="summary-val" id="active-count">4</span>
+          <span class="summary-label">Profissionais Listados</span>
+          <span class="summary-val" id="active-count">{{ professionals|length }}</span>
         </div>
         <div class="summary-item">
-          <span class="summary-label">Consultórios Ocupados</span>
-          <span class="summary-val">4 de 6</span>
+          <span class="summary-label">Consultórios / Salas</span>
+          <span class="summary-val">{{ locals|length }}</span>
         </div>
         <div class="summary-item">
           <span class="summary-label">Pacientes em Espera</span>
-          <span class="summary-val" style="color:#fbbf24;">12</span>
+          <span class="summary-val" style="color:#fbbf24;">{{ queue_snapshot.waiting|length|default:"0" }}</span>
         </div>
       </div>
 
@@ -514,97 +514,32 @@
             <tr>
               <th>Profissional</th>
               <th>Registro Conselho</th>
-              <th>Especialidade</th>
-              <th>Consultório</th>
+              <th>Especialidade / CBO</th>
+              <th>Unidade</th>
               <th>Status</th>
               <th>Ação</th>
             </tr>
           </thead>
           <tbody id="doctors-tbody">
-            <!-- MÉDICO 1 -->
+            {% for prof in professionals %}
             <tr>
               <td>
                 <div class="doc-name-cell">
-                  <strong>Dra. Beatriz Carvalho</strong>
-                  <span>ESF 01 · 40h Semanais</span>
+                  <strong>{{ prof.servidor.nome }}</strong>
+                  <span>{{ prof.unidade_saude.unidade.nome|default:"Atenção Primária / Municipal" }}</span>
                 </div>
               </td>
-              <td><span class="crm-badge">CRM/SE 4.821</span></td>
-              <td>Clínica Médica Geral / APS</td>
-              <td><span class="room-badge">Consultório 03</span></td>
-              <td><span class="status-badge badge-active">● Ativo na Fila</span></td>
+              <td><span class="crm-badge">{{ prof.conselho }} {{ prof.registro_conselho|default:"Sem conselho" }}</span></td>
+              <td>{{ prof.especialidade|default:prof.ocupacao|default:"Saúde Pública" }}</td>
+              <td><span class="room-badge">{{ prof.unidade_saude.unidade.nome|default:"Rede SUS" }}</span></td>
+              <td><span class="status-badge {% if prof.ativo %}badge-active{% else %}badge-pause{% endif %}">{% if prof.ativo %}● Ativo na Fila{% else %}⏸ Inativo{% endif %}</span></td>
               <td>
-                <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
+                <a href="{% url 'rh_municipal_public:saude_call_panel' %}" class="btn-table-action">Abrir Console</a>
               </td>
             </tr>
-
-            <!-- MÉDICO 2 -->
-            <tr>
-              <td>
-                <div class="doc-name-cell">
-                  <strong>Dr. Marcos Vinícius Melo</strong>
-                  <span>ESF 02 · 40h Semanais</span>
-                </div>
-              </td>
-              <td><span class="crm-badge">CRM/SE 5.120</span></td>
-              <td>Medicina de Família</td>
-              <td><span class="room-badge">Consultório 01</span></td>
-              <td><span class="status-badge badge-active">● Ativo na Fila</span></td>
-              <td>
-                <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
-              </td>
-            </tr>
-
-            <!-- MÉDICO 3 -->
-            <tr>
-              <td>
-                <div class="doc-name-cell">
-                  <strong>Dra. Camila Nogueira Ramos</strong>
-                  <span>Especialidades · 20h</span>
-                </div>
-              </td>
-              <td><span class="crm-badge">CRM/SE 6.304</span></td>
-              <td>Pediatria</td>
-              <td><span class="room-badge">Consultório 02</span></td>
-              <td><span class="status-badge badge-pause">⏸ Em Pausa</span></td>
-              <td>
-                <button class="btn-table-action" onclick="toggleDoctorStatus(this)">Ativar</button>
-              </td>
-            </tr>
-
-            <!-- DENTISTA -->
-            <tr>
-              <td>
-                <div class="doc-name-cell">
-                  <strong>Dr. Fernando Diniz Rocha</strong>
-                  <span>Saúde Bucal · 40h</span>
-                </div>
-              </td>
-              <td><span class="crm-badge">CRO/SE 2.891</span></td>
-              <td>Odontologia Geral</td>
-              <td><span class="room-badge">Sala Odonto</span></td>
-              <td><span class="status-badge badge-active">● Ativo na Fila</span></td>
-              <td>
-                <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
-              </td>
-            </tr>
-
-            <!-- ENFERMEIRA -->
-            <tr>
-              <td>
-                <div class="doc-name-cell">
-                  <strong>Enfª. Mariana Alcântara</strong>
-                  <span>Triagem & Acolhimento</span>
-                </div>
-              </td>
-              <td><span class="crm-badge">COREN/SE 142.890</span></td>
-              <td>Enfermagem / Manchester</td>
-              <td><span class="room-badge">Sala de Triagem</span></td>
-              <td><span class="status-badge badge-active">● Ativo na Fila</span></td>
-              <td>
-                <a href="/gestao-publica/saude/painel-chamadas/" class="btn-table-action">Abrir Console</a>
-              </td>
-            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:1.5rem;">Nenhum profissional vinculado ainda nesta organização.</td></tr>
+            {% endfor %}
           </tbody>
         </table>
       </div>

@@ -601,76 +601,7 @@
 
       <div class="side-content">
         <!-- ABA 1: AGENTES ACS -->
-        <div class="tab-pane active" id="pane-agents">
-          <div class="acs-agent-card selected" onclick="focusAgent('jose')">
-            <div class="acs-card-top">
-              <div class="acs-name-group">
-                <div class="acs-avatar">JS</div>
-                <div>
-                  <div class="acs-name">José Santos da Silva</div>
-                  <div class="acs-microarea">Microárea 01 · Setor Central</div>
-                </div>
-              </div>
-              <span class="acs-status-pill status-online">Em Campo</span>
-            </div>
-            <div class="acs-stats-grid">
-              <div class="stat-pair"><span>Bateria Tablet:</span><strong>92% (4G)</strong></div>
-              <div class="stat-pair"><span>Distância:</span><strong>4.8 km</strong></div>
-              <div class="stat-pair"><span>Visitas:</span><strong>22 de 25</strong></div>
-              <div class="stat-pair"><span>Última Visita:</span><strong>10:24</strong></div>
-            </div>
-            <div class="progress-bar-wrap">
-              <div class="progress-label"><span>Meta Diária</span><span>88%</span></div>
-              <div class="progress-track"><div class="progress-fill" style="width: 88%;"></div></div>
-            </div>
-          </div>
-
-          <div class="acs-agent-card" onclick="focusAgent('ana')">
-            <div class="acs-card-top">
-              <div class="acs-name-group">
-                <div class="acs-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">AP</div>
-                <div>
-                  <div class="acs-name">Ana Paula Mendonça</div>
-                  <div class="acs-microarea">Microárea 02 · Povoado Brejão</div>
-                </div>
-              </div>
-              <span class="acs-status-pill status-online">Em Campo</span>
-            </div>
-            <div class="acs-stats-grid">
-              <div class="stat-pair"><span>Bateria Tablet:</span><strong>85% (4G)</strong></div>
-              <div class="stat-pair"><span>Distância:</span><strong>3.9 km</strong></div>
-              <div class="stat-pair"><span>Visitas:</span><strong>19 de 20</strong></div>
-              <div class="stat-pair"><span>Última Visita:</span><strong>10:18</strong></div>
-            </div>
-            <div class="progress-bar-wrap">
-              <div class="progress-label"><span>Meta Diária</span><span>95%</span></div>
-              <div class="progress-track"><div class="progress-fill" style="width: 95%;"></div></div>
-            </div>
-          </div>
-
-          <div class="acs-agent-card" onclick="focusAgent('carlos')">
-            <div class="acs-card-top">
-              <div class="acs-name-group">
-                <div class="acs-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">CE</div>
-                <div>
-                  <div class="acs-name">Carlos Eduardo Lima</div>
-                  <div class="acs-microarea">Microárea 03 · Zona Rural</div>
-                </div>
-              </div>
-              <span class="acs-status-pill status-online">Em Campo</span>
-            </div>
-            <div class="acs-stats-grid">
-              <div class="stat-pair"><span>Bateria Tablet:</span><strong>78% (Satélite)</strong></div>
-              <div class="stat-pair"><span>Distância:</span><strong>5.4 km</strong></div>
-              <div class="stat-pair"><span>Visitas:</span><strong>14 de 20</strong></div>
-              <div class="stat-pair"><span>Última Visita:</span><strong>10:10</strong></div>
-            </div>
-            <div class="progress-bar-wrap">
-              <div class="progress-label"><span>Meta Diária</span><span>70%</span></div>
-              <div class="progress-track"><div class="progress-fill" style="width: 70%;"></div></div>
-            </div>
-          </div>
-        </div>
+        <div class="tab-pane active" id="pane-agents"></div>
 
         <!-- ABA 2: CAMADAS & RISCOS -->
         <div class="tab-pane" id="pane-layers">
@@ -789,19 +720,34 @@
         </div>
       </div>
 
-      <div style="font-size: 0.8rem; color: var(--text-dim);">
-        Última visita registrada pelo ACS <strong>José Santos</strong> hoje às 10:24. Dados sincronizados com o prontuário eletrônico e-SUS APS.
+      <div style="font-size: 0.8rem; color: var(--text-dim);" id="drawer-visit-note">
+        Registro territorial conectado ao banco municipal.
       </div>
 
-      <a href="#" class="btn-pec-action" onclick="alert('Abrindo Prontuário Eletrônico do Cidadão (PEC e-SUS) integrado ao Vertyx Saúde!')">
-        Abrir Ficha de Família e-SUS APS
-      </a>
+      <form id="acs-visit-form" onsubmit="submitAcsVisit(event)" style="display:flex; flex-direction:column; gap:0.5rem; background:rgba(11,17,32,0.85); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:0.75rem;">
+        <div style="font-size:0.72rem; font-weight:800; color:#38bdf8; text-transform:uppercase;">Registrar Nova Visita Domiciliar</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.4rem;">
+          <input type="number" id="visit-pa-sis" placeholder="PAS (mmHg)" style="background:#0f172a;color:#fff;border:1px solid #334155;border-radius:6px;padding:0.35rem;font-size:0.78rem;">
+          <input type="number" id="visit-pa-dia" placeholder="PAD (mmHg)" style="background:#0f172a;color:#fff;border:1px solid #334155;border-radius:6px;padding:0.35rem;font-size:0.78rem;">
+          <input type="number" id="visit-glicemia" placeholder="Glicemia" style="background:#0f172a;color:#fff;border:1px solid #334155;border-radius:6px;padding:0.35rem;font-size:0.78rem;">
+        </div>
+        <select id="visit-cond" style="background:#0f172a;color:#fff;border:1px solid #334155;border-radius:6px;padding:0.4rem;font-size:0.8rem;">
+          <option value="ROTINA">Visita de Rotina e-SUS</option>
+          <option value="HIPERTENSAO">Hipertensão Arterial</option>
+          <option value="DIABETES">Diabetes Mellitus</option>
+          <option value="GESTANTE">Gestante / Pré-Natal</option>
+          <option value="DENGUE">Alerta Epidemiológico / Arbovirose</option>
+        </select>
+        <input type="text" id="visit-obs" placeholder="Observações clínicas da visita..." style="background:#0f172a;color:#fff;border:1px solid #334155;border-radius:6px;padding:0.4rem;font-size:0.8rem;">
+        <button type="submit" class="btn-pec-action" style="border:none;cursor:pointer;">Salvar Visita no Banco Municipal</button>
+      </form>
     </div>
   </div>
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
+  {{ map_data|json_script:"realtime-data" }}
   <script>
     // 1. INICIALIZAÇÃO DO MAPA LEAFLET EM BREJO GRANDE / SE
     const bgCenter = [-10.4285, -36.4715];
@@ -898,36 +844,93 @@
     const agentMarker = L.marker(routeCoords[routeCoords.length - 1], { icon: acsIcon }).addTo(map)
       .bindPopup('<strong>ACS José Santos</strong><br>Status: Em atendimento agora<br>Bateria: 92% (4G)');
 
-    // 4. CASAS MONITORADAS (DOMICÍLIOS COM DADOS CLÍNICOS)
+    // 4. DADOS TERRITORIAIS REAIS DO BANCO DE DADOS
+    const ACS_API_URL = "{% url 'rh_municipal_public:saude_acs_map_api' %}";
+    const INITIAL_MAP_DATA = JSON.parse(document.getElementById("realtime-data").textContent);
+    let activeMapData = INITIAL_MAP_DATA || {};
+    let selectedFamilyId = null;
+
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return m ? decodeURIComponent(m[2]) : '';
+    }
+
     const housesGroup = L.layerGroup().addTo(map);
+    const riskCirclesGroup = L.layerGroup().addTo(map);
 
-    const housesData = [
-      { coords: [-10.4268, -36.4730], name: 'Família Silva Oliveira', resp: 'Maria da Conceição Santos', cns: '704.8910.3847.192', alert: 'Hipertensão descompensada e Gestante de 28 semanas', risk: 'yellow', pa: '150/95', glicemia: '142', peso: '74.2' },
-      { coords: [-10.4275, -36.4725], name: 'Família Rocha Bezerra', resp: 'Sebastião Rocha', cns: '890.1234.5678.901', alert: 'Criança de 6 meses com vacina de pólio pendente', risk: 'yellow', pa: '125/80', glicemia: '89', peso: '68.0' },
-      { coords: [-10.4282, -36.4720], name: 'Família Albuquerque Lima', resp: 'Clara Albuquerque', cns: '712.3456.7890.123', alert: 'Foco potencial de Aedes aegypti identificado no quintal', risk: 'red', pa: '130/85', glicemia: '104', peso: '61.5' },
-      { coords: [-10.4290, -36.4715], name: 'Família Dantas Cavalcante', resp: 'Antonio Dantas', cns: '801.2345.6789.012', alert: 'Diabético tipo 2 com glicemia controlada após visita', risk: 'green', pa: '120/75', glicemia: '112', peso: '82.1' }
-    ];
+    function renderMapData(data) {
+      activeMapData = data || {};
+      if (Array.isArray(data.center) && data.center.length === 2) {
+        map.setView(data.center, 15);
+      }
 
-    housesData.forEach(h => {
-      const color = h.risk === 'red' ? '#ef4444' : h.risk === 'yellow' ? '#f59e0b' : '#10b981';
-      const m = L.circleMarker(h.coords, {
-        radius: 8,
-        fillColor: color,
-        color: '#fff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.9
-      }).addTo(housesGroup);
-
-      m.on('click', () => {
-        openHouseDrawer(h);
+      const agentsPane = document.getElementById('pane-agents');
+      agentsPane.innerHTML = '';
+      const agents = Array.isArray(data.agents) ? data.agents : [];
+      if (agents.length === 0) {
+        agentsPane.innerHTML = '<div style="padding:1rem;color:#94a3b8;font-size:0.85rem;">Nenhum agente ACS vinculado ainda neste município.</div>';
+      }
+      agents.forEach((ag, idx) => {
+        const card = document.createElement('div');
+        card.className = 'acs-agent-card' + (idx === 0 ? ' selected' : '');
+        const pct = Math.min(100, Math.round(((ag.visits_today || 0) / 10) * 100));
+        card.onclick = () => {
+          document.querySelectorAll('.acs-agent-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          focusAgent(ag.id);
+        };
+        card.innerHTML = `
+          <div class="acs-card-top">
+            <div class="acs-name-group">
+              <div class="acs-avatar">${String(ag.initials || 'AC').replace(/[^a-zA-ZÀ-ÿ]/g, '').slice(0, 2)}</div>
+              <div>
+                <div class="acs-name"></div>
+                <div class="acs-microarea"></div>
+              </div>
+            </div>
+            <span class="acs-status-pill status-online">Ativo</span>
+          </div>
+          <div class="acs-stats-grid">
+            <div class="stat-pair"><span>Microárea:</span><strong>${ag.microarea || 'Geral'}</strong></div>
+            <div class="stat-pair"><span>Visitas Hoje:</span><strong>${ag.visits_today || 0}</strong></div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-label"><span>Cobertura Diária</span><span>${pct}%</span></div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>
+        `;
+        card.querySelector('.acs-name').textContent = ag.name;
+        card.querySelector('.acs-microarea').textContent = `${ag.team || 'ESF'} · Microárea ${ag.microarea || '--'}`;
+        agentsPane.appendChild(card);
       });
-    });
 
-    // 5. CÍRCULOS DE CALOR / RISCO EPIDEMIOLÓGICO
-    const riskDengue = L.circle([-10.4282, -36.4720], { radius: 110, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.22, weight: 1.5 }).addTo(map);
-    const riskHipertensao = L.circle([-10.4268, -36.4730], { radius: 95, color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.22, weight: 1.5 }).addTo(map);
-    const riskGestante = L.circle([-10.4290, -36.4715], { radius: 80, color: '#a855f7', fillColor: '#a855f7', fillOpacity: 0.22, weight: 1.5 }).addTo(map);
+      housesGroup.clearLayers();
+      riskCirclesGroup.clearLayers();
+      const houses = Array.isArray(data.houses) ? data.houses : [];
+      houses.forEach((h) => {
+        if (!Array.isArray(h.coords) || h.coords.some(v => v === null || !Number.isFinite(Number(v)))) return;
+        const color = h.risk === 'red' ? '#ef4444' : h.risk === 'yellow' ? '#f59e0b' : '#10b981';
+        const m = L.circleMarker(h.coords, {
+          radius: 8,
+          fillColor: color,
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9
+        }).addTo(housesGroup);
+        m.on('click', () => openHouseDrawer(h));
+
+        if (h.risk === 'red' || h.risk === 'yellow') {
+          L.circle(h.coords, {
+            radius: h.risk === 'red' ? 110 : 85,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.18,
+            weight: 1.5
+          }).addTo(riskCirclesGroup);
+        }
+      });
+    }
 
     // FUNÇÕES DE CONTROLE DE INTERFACE
     function switchTab(tabId) {
@@ -957,26 +960,26 @@
       if (document.getElementById('chk-houses').checked) housesGroup.addTo(map);
       else map.removeLayer(housesGroup);
 
-      if (document.getElementById('chk-dengue').checked) riskDengue.addTo(map);
-      else map.removeLayer(riskDengue);
-
-      if (document.getElementById('chk-hipertensao').checked) riskHipertensao.addTo(map);
-      else map.removeLayer(riskHipertensao);
-
-      if (document.getElementById('chk-gestantes').checked) riskGestante.addTo(map);
-      else map.removeLayer(riskGestante);
+      const showRisk = document.getElementById('chk-dengue').checked || document.getElementById('chk-hipertensao').checked || document.getElementById('chk-gestantes').checked;
+      if (showRisk) riskCirclesGroup.addTo(map);
+      else map.removeLayer(riskCirclesGroup);
     }
 
     function openHouseDrawer(house) {
-      document.getElementById('drawer-family-name').textContent = house.name;
-      document.getElementById('drawer-resp').textContent = house.resp;
-      document.getElementById('drawer-cns').textContent = house.cns;
-      document.getElementById('drawer-alert-desc').textContent = house.alert;
+      selectedFamilyId = house.id;
+      document.getElementById('drawer-family-name').textContent = house.name || 'Família';
+      document.getElementById('drawer-address').textContent = `${house.address || ''} · Microárea ${house.microarea || '--'}`;
+      document.getElementById('drawer-resp').textContent = house.resp || '--';
+      document.getElementById('drawer-cns').textContent = house.cns || 'Não informado';
+      document.getElementById('drawer-alert-desc').textContent = house.alert || 'Sem alertas epidemiológicos recentes.';
       if (document.getElementById('drawer-pa')) {
-        document.getElementById('drawer-pa').textContent = house.pa || '120/80';
-        document.getElementById('drawer-glicemia').textContent = house.glicemia || '96';
-        document.getElementById('drawer-peso').textContent = house.peso || '68.5';
+        document.getElementById('drawer-pa').textContent = house.pa || '--/--';
+        document.getElementById('drawer-glicemia').textContent = house.glicemia || '--';
+        document.getElementById('drawer-peso').textContent = house.peso || '--';
       }
+      document.getElementById('drawer-visit-note').textContent = house.last_visit
+        ? `Última visita: ${new Date(house.last_visit).toLocaleString('pt-BR')} · ${house.last_condition || 'Rotina'}`
+        : 'Nenhuma visita registrada ainda para esta família.';
       document.getElementById('house-drawer').classList.add('open');
     }
 
@@ -984,10 +987,42 @@
       document.getElementById('house-drawer').classList.remove('open');
     }
 
-    function focusAgent(name) {
-      map.setView(bgCenter, 16);
-      agentMarker.openPopup();
+    async function submitAcsVisit(e) {
+      e.preventDefault();
+      if (!selectedFamilyId) return;
+      const cond = document.getElementById('visit-cond').value;
+      const payload = {
+        familia_id: selectedFamilyId,
+        pa_sistolica: document.getElementById('visit-pa-sis').value || null,
+        pa_diastolica: document.getElementById('visit-pa-dia').value || null,
+        glicemia: document.getElementById('visit-glicemia').value || null,
+        condicao: cond,
+        observacoes: document.getElementById('visit-obs').value || 'Visita domiciliar registrada no mapa territorial.',
+        alerta: cond === 'DENGUE' ? 'Foco suspeito de Dengue' : ''
+      };
+      const res = await fetch(ACS_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.error || 'Erro ao registrar visita.');
+        return;
+      }
+      if (data.map) renderMapData(data.map);
+      document.getElementById('acs-visit-form').reset();
+      alert('Visita domiciliar salva no banco municipal e sincronizada no mapa!');
     }
+
+    function focusAgent(name) {
+      map.setView((activeMapData && activeMapData.center) || bgCenter, 15);
+    }
+
+    renderMapData(INITIAL_MAP_DATA);
 
     // PLAYBACK SIMULATOR
     let playbackInterval = null;

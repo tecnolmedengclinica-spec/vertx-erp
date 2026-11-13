@@ -1,0 +1,187 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Leitos & Monitor Multiparamétrico{% endblock %}
+{% block head_extra %}
+<style>
+  .bed-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;margin-bottom:1.25rem}
+  .bed-card{background:#0b1220;color:#e2e8f0;border:1px solid #1e293b;border-radius:14px;padding:1rem;box-shadow:0 10px 24px rgba(2,6,23,.25)}
+  .bed-card.CRITICO{border-color:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,.35)}
+  .bed-card.ATENCAO{border-color:#f59e0b}
+  .bed-head{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.65rem}
+  .bed-code{font-weight:800;font-size:1.05rem;letter-spacing:.04em}
+  .bed-pill{font-size:.72rem;font-weight:700;padding:.2rem .55rem;border-radius:999px;text-transform:uppercase}
+  .st-OCUPADO{background:#1d4ed8;color:#fff}.st-DISPONIVEL{background:#15803d;color:#fff}.st-HIGIENIZACAO{background:#b45309;color:#fff}.st-MANUTENCAO{background:#475569;color:#fff}
+  .vitals-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem;background:#020617;border-radius:10px;padding:.6rem;margin:.6rem 0;font-family:ui-monospace,monospace}
+  .vital-box span{display:block;font-size:.66rem;color:#94a3b8}
+  .vital-box strong{font-size:1.15rem}
+  .v-fc strong{color:#4ade80}.v-spo2 strong{color:#38bdf8}.v-pa strong{color:#f87171}.v-temp strong{color:#facc15}
+  .ecg-canvas{width:100%;height:42px;background:#020617;border-radius:8px;display:block;margin:.4rem 0}
+  .alert-banner{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:.85rem 1rem;margin-bottom:1rem;color:#991b1b}
+  .bed-actions{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.65rem}
+  .bed-btn{padding:.35rem .65rem;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#f8fafc;font-size:.76rem;font-weight:600;cursor:pointer}
+  .bed-btn:hover{background:#334155}.bed-btn.primary{background:#0284c7;border-color:#0284c7}
+</style>
+{% endblock %}
+{% block content %}
+<section class="gp-page-head">
+  <div>
+    <span class="gp-eyebrow">HOSPITALAR / UPA · {{ branding.nome_institucional|default:organization.display_name|upper }}</span>
+    <h1>Leitos & Monitor Multiparamétrico em Tempo Real</h1>
+    <p>Controle de ocupação por ala, ingestão Wi-Fi/HL7/HTTP de sinais vitais (FC, SpO2, PA/PAM, Temp, FR) e alarmes clínicos auditados.</p>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_bi_panel' %}">Painel BI Saúde</a>
+    <a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Voltar à Saúde</a>
+  </div>
+</section>
+
+<section class="gp-card-grid" style="margin-bottom:1rem">
+  <article class="gp-metric"><span class="gp-metric-label">Total de Leitos</span><strong id="kpi-total">{{ snapshot.summary.total_leitos }}</strong></article>
+  <article class="gp-metric"><span class="gp-metric-label">Leitos Ocupados</span><strong id="kpi-ocupados">{{ snapshot.summary.ocupados }}</strong></article>
+  <article class="gp-metric"><span class="gp-metric-label">Disponíveis</span><strong id="kpi-disp">{{ snapshot.summary.disponiveis }}</strong></article>
+  <article class="gp-metric"><span class="gp-metric-label">Alarmes Ativos</span><strong id="kpi-alertas" style="color:#dc2626">{{ snapshot.summary.alertas_ativos }}</strong></article>
+</section>
+
+<div id="alerts-container">
+  {% if snapshot.alerts %}
+  <div class="alert-banner">
+    <strong>Alarmes Clínicos Ativos ({{ snapshot.alerts|length }})</strong>
+    <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.5rem">
+      {% for al in snapshot.alerts %}
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+        <span><strong>[{{ al.leito_codigo }} · {{ al.ala }}]</strong> {{ al.mensagem }} ({{ al.ocorrido_em }})</span>
+        <form method="post" style="display:inline-flex;gap:.35rem">{% csrf_token %}<input type="hidden" name="action" value="ack_alert"><input type="hidden" name="alert_public_id" value="{{ al.public_id }}"><button class="gp-button gp-button-small" type="submit">Reconhecer Alarme</button></form>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<section class="bed-grid" id="beds-grid">
+  {% for bed in snapshot.beds %}
+  <article class="bed-card {% if bed.telemetria %}{{ bed.telemetria.nivel_alerta }}{% endif %}" data-bed-id="{{ bed.public_id }}">
+    <div class="bed-head">
+      <div>
+        <div class="bed-code">{{ bed.codigo }} · {{ bed.ala }}</div>
+        <small style="color:#94a3b8">{{ bed.tipo_leito }}{% if bed.monitor %} · Monitor {{ bed.monitor.serial }} ({% if bed.monitor.online %}ONLINE{% else %}STANDBY{% endif %}){% endif %}</small>
+      </div>
+      <span class="bed-pill st-{{ bed.status }}">{{ bed.status_label }}</span>
+    </div>
+
+    {% if bed.paciente %}
+      <div style="font-size:.9rem;font-weight:700;color:#fff">{{ bed.paciente.nome }}</div>
+      <div style="font-size:.76rem;color:#94a3b8">CNS: {{ bed.paciente.cns|default:"Não informado" }} · Admissão: {{ bed.admitido_em }}</div>
+    {% else %}
+      <div style="font-size:.85rem;color:#94a3b8">Leito sem paciente admitido</div>
+    {% endif %}
+
+    <canvas class="ecg-canvas" height="42" data-fc="{% if bed.telemetria and bed.telemetria.fc_bpm %}{{ bed.telemetria.fc_bpm }}{% else %}75{% endif %}" data-active="{% if bed.telemetria %}1{% else %}0{% endif %}"></canvas>
+
+    <div class="vitals-strip">
+      <div class="vital-box v-fc"><span>FC (bpm)</span><strong>{% if bed.telemetria and bed.telemetria.fc_bpm %}{{ bed.telemetria.fc_bpm }}{% else %}--{% endif %}</strong></div>
+      <div class="vital-box v-spo2"><span>SpO2 (%)</span><strong>{% if bed.telemetria and bed.telemetria.spo2_percent %}{{ bed.telemetria.spo2_percent }}%{% else %}--{% endif %}</strong></div>
+      <div class="vital-box v-pa"><span>PA (mmHg)</span><strong>{% if bed.telemetria and bed.telemetria.pa_sistolica %}{{ bed.telemetria.pa_sistolica }}/{{ bed.telemetria.pa_diastolica }}{% else %}--/--{% endif %}</strong></div>
+      <div class="vital-box v-temp"><span>Temp (°C)</span><strong>{% if bed.telemetria and bed.telemetria.temperatura_c %}{{ bed.telemetria.temperatura_c }}{% else %}--{% endif %}</strong></div>
+    </div>
+
+    <div class="bed-actions">
+      {% if bed.monitor %}
+      <button type="button" class="bed-btn primary" onclick="sendClinicalPulse('{{ bed.monitor.serial }}', false)">Simular Telemetria Normal</button>
+      <button type="button" class="bed-btn" style="border-color:#ef4444;color:#fca5a5" onclick="sendClinicalPulse('{{ bed.monitor.serial }}', true)">Simular Alarme Crítico</button>
+      {% endif %}
+      {% if bed.status == 'OCUPADO' %}
+      <form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="status"><input type="hidden" name="bed_public_id" value="{{ bed.public_id }}"><input type="hidden" name="new_status" value="HIGIENIZACAO"><button type="submit" class="bed-btn">Alta / Higienizar</button></form>
+      {% elif bed.status == 'HIGIENIZACAO' %}
+      <form method="post" style="display:inline">{% csrf_token %}<input type="hidden" name="action" value="status"><input type="hidden" name="bed_public_id" value="{{ bed.public_id }}"><input type="hidden" name="new_status" value="DISPONIVEL"><button type="submit" class="bed-btn">Liberar Leito</button></form>
+      {% endif %}
+    </div>
+  </article>
+  {% empty %}
+  <article class="gp-panel" style="grid-column:1/-1"><p>Nenhum leito cadastrado nesta unidade ainda. Utilize o painel abaixo para cadastrar a primeira ala, leito e monitor multiparamétrico.</p></article>
+  {% endfor %}
+</section>
+
+<section class="gp-content-grid">
+  <article class="gp-panel">
+    <div class="gp-panel-head"><div><span class="gp-eyebrow">EXPANSÃO DE LEITOS</span><h2>Cadastrar Leito & Monitor Wi-Fi/HL7</h2></div></div>
+    <form method="post" class="gp-form">{% csrf_token %}<input type="hidden" name="action" value="create_bed">
+      <label class="gp-field"><span>Unidade de Saúde</span><select name="unidade_saude" class="gp-input" required>{% for u in units %}<option value="{{ u.pk }}">{{ u.unidade.nome }} ({{ u.tipo }})</option>{% endfor %}</select></label>
+      <label class="gp-field"><span>Código da Ala</span><input name="ala_codigo" class="gp-input" value="OBS-01" required></label>
+      <label class="gp-field"><span>Nome da Ala / Enfermaria</span><input name="ala_nome" class="gp-input" value="Observação e Estabilização" required></label>
+      <label class="gp-field"><span>Código do Leito</span><input name="leito_codigo" class="gp-input" placeholder="Ex.: LEITO-01" required></label>
+      <label class="gp-field"><span>Tipo de Leito</span><select name="tipo_leito" class="gp-input"><option value="OBSERVACAO">Observação</option><option value="ESTABILIZACAO">Sala Vermelha / Estabilização</option><option value="ENFERMARIA">Enfermaria</option><option value="UTI_ADULTO">UTI Adulto</option><option value="ISOLAMENTO">Isolamento</option></select></label>
+      <label class="gp-field"><span>Serial do Monitor Multiparamétrico</span><input name="serial_monitor" class="gp-input" placeholder="Ex.: MON-BG-001"></label>
+      <label class="gp-field"><span>Protocolo de Integração</span><select name="protocolo" class="gp-input"><option value="HTTP_JSON">Gateway HTTP/Wi-Fi JSON</option><option value="HL7_V2">HL7 v2 / MLLP Bridge</option><option value="MQTT_TLS">MQTT Broker TLS</option><option value="MODO_TREINO">Simulador Clínico Local</option></select></label>
+      <button type="submit" class="gp-button">Salvar Leito & Monitor</button>
+    </form>
+  </article>
+
+  <article class="gp-panel">
+    <div class="gp-panel-head"><div><span class="gp-eyebrow">INTERNAÇÃO / OBSERVAÇÃO</span><h2>Admitir Paciente em Leito</h2></div></div>
+    <form method="post" class="gp-form">{% csrf_token %}<input type="hidden" name="action" value="admit">
+      <label class="gp-field"><span>Leito Disponível</span><select name="bed_public_id" class="gp-input" required>{% for b in snapshot.beds %}{% if b.status == 'DISPONIVEL' or b.status == 'RESERVADO' %}<option value="{{ b.public_id }}">{{ b.codigo }} · {{ b.ala }}</option>{% endif %}{% endfor %}</select></label>
+      <label class="gp-field"><span>Paciente / Cidadão</span><select name="cidadao_id" class="gp-input" required>{% for c in citizens %}<option value="{{ c.pk }}">{{ c.nome }} {% if c.cns %}(CNS {{ c.cns }}){% endif %}</option>{% endfor %}</select></label>
+      <label class="gp-field"><span>Médico / Enfermeiro Responsável</span><select name="profissional_id" class="gp-input"><option value="">Selecionar...</option>{% for p in professionals %}<option value="{{ p.pk }}">{{ p.servidor.nome }} ({{ p.ocupacao }})</option>{% endfor %}</select></label>
+      <label class="gp-field"><span>Precaução / Isolamento</span><input name="precaucao" class="gp-input" placeholder="Ex.: Padrão / Respiratório"></label>
+      <button type="submit" class="gp-button">Admitir Paciente</button>
+    </form>
+  </article>
+</section>
+
+<script>
+  function getCsrfToken() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  async function sendClinicalPulse(serial, critical) {
+    const payload = critical ? {
+      monitor_serial: serial,
+      fc_bpm: 148, spo2_percent: 87, pa_sistolica: 192, pa_diastolica: 112,
+      fr_irpm: 29, temperatura_c: '38.9', ritmo_ecg: 'TAQUICARDIA SINUSAL', origem_leitura: 'SIMULADOR_TREINO'
+    } : {
+      monitor_serial: serial,
+      fc_bpm: 74 + Math.floor(Math.random()*8), spo2_percent: 98, pa_sistolica: 120, pa_diastolica: 78,
+      fr_irpm: 16, temperatura_c: '36.6', ritmo_ecg: 'SINUSAL', origem_leitura: 'SIMULADOR_TREINO'
+    };
+    const res = await fetch('{% url "rh_municipal_public:saude_beds_telemetry_api" %}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken()},
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) window.location.reload();
+  }
+
+  // Animated ECG wave per active monitor canvas
+  const canvases = document.querySelectorAll('.ecg-canvas');
+  let phase = 0;
+  function drawECG() {
+    phase += 0.14;
+    canvases.forEach(c => {
+      const ctx = c.getContext('2d');
+      const w = c.width = c.clientWidth || 300;
+      const h = c.height = 42;
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, w, h);
+      const active = c.dataset.active === '1';
+      ctx.strokeStyle = active ? '#22c55e' : '#334155';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (let x = 0; x < w; x += 2) {
+        let y = h / 2;
+        if (active) {
+          const t = ((x * 0.08 + phase) % (Math.PI * 2));
+          if (t > 2.6 && t < 2.8) y -= 6;
+          else if (t >= 2.8 && t < 3.0) y += 14;
+          else if (t >= 3.0 && t < 3.2) y -= 18;
+          else if (t >= 3.2 && t < 3.4) y += 8;
+        }
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    });
+    requestAnimationFrame(drawECG);
+  }
+  if (canvases.length) drawECG();
+</script>
+{% endblock %}

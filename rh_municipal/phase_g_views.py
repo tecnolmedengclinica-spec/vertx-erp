@@ -5,14 +5,17 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
-from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import HttpResponse
+from django.core.exceptions import BadRequest, PermissionDenied, ValidationError
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_http_methods
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from platform_core.context import current_organization
+from platform_core.context import current_organization, tenant_context
 from . import phase_g_services as svc
+from . import saude_realtime_services as rt
 from .phase_g_forms import (
     ClinicalEntryActionForm, HealthAgendaForm, HealthAppointmentForm, HealthFieldVisitForm,
     HealthEpidemiologyNotificationForm, HealthEpidemiologyTransitionForm,
@@ -948,77 +951,157 @@ def health_system_customization(request):
     return render(request, 'rh_municipal/health_system_customization.html', {'branding': branding})
 
 
+def _parse_json_body(request):
+    try:
+        data = json.loads(request.body.decode('utf-8')) if request.content_type == 'application/json' else request.POST.dict()
+    except (ValueError, UnicodeDecodeError):
+        raise BadRequest('Corpo da requisição inválido.')
+    if not isinstance(data, dict):
+        raise BadRequest('Informe um objeto JSON.')
+    return data
+
+
+def _kiosk_org_and_unit(request):
+    svc._require(request.user, 'saude.appointments.view')
+    org = rt.resolve_health_organization(request)
+    if not org or not public_module_available(org, 'saude_sus'):
+        raise PermissionDenied('Saúde SUS não está contratada e ativa para esta Prefeitura.')
+    unit_id = request.GET.get('unidade_id') or request.POST.get('unidade_id')
+    unit = rt.resolve_health_unit(org, unit_id=unit_id, user=request.user)
+    return org, unit
+
+
+@never_cache
 @login_required
+@ensure_csrf_cookie
 @require_GET
 def health_call_panel_tv(request):
-    """Tela Fullscreen para SmartTV de sala de espera com sintetizador de voz nativo e branding dinâmico."""
-    svc._require(request.user, 'saude.appointments.view')
+    """Tela Fullscreen para SmartTV de sala de espera conectada à fila real no banco."""
+    org, unit = _kiosk_org_and_unit(request)
     branding = get_tenant_branding(request)
-    return render(request, 'rh_municipal/health_call_panel_tv.html', {'branding': branding})
+    snapshot = rt.list_queue_snapshot(org, unit, include_citizen_details=False)
+    return render(request, 'rh_municipal/health_call_panel_tv.html', {
+        'branding': branding,
+        'organization': org,
+        'snapshot': snapshot,
+        'snapshot_json': json.dumps(snapshot, ensure_ascii=False),
+    })
 
 
+@never_cache
 @login_required
+@ensure_csrf_cookie
 @require_GET
 def health_totem(request):
-    """Totem Touchscreen de Autoatendimento para emissão de senhas de pacientes com branding dinâmico."""
-    svc._require(request.user, 'saude.appointments.view')
+    """Totem Touchscreen de Autoatendimento para emissão de senhas reais no banco."""
+    org, unit = _kiosk_org_and_unit(request)
     branding = get_tenant_branding(request)
-    return render(request, 'rh_municipal/health_totem.html', {'branding': branding})
+    snapshot = rt.list_queue_snapshot(org, unit, include_citizen_details=False)
+    return render(request, 'rh_municipal/health_totem.html', {
+        'branding': branding,
+        'organization': org,
+        'services': snapshot['services'],
+        'snapshot_json': json.dumps(snapshot, ensure_ascii=False),
+    })
 
 
 @login_required
-@require_GET
+@require_http_methods(['GET', 'POST'])
 def health_professionals_screen(request):
-    """Tela Institucional de Gestão e Cadastro de Médicos e Profissionais de Saúde com branding dinâmico."""
-    svc._require(request.user, 'saude.professionals.view')
+    """Tela de Gestão de Médicos e Profissionais de Saúde conectada ao cadastro real."""
+    if not (_can(request.user, 'saude.professionals.view') or _can(request.user, 'saude.professionals.manage') or _can(request.user, 'saude.dashboard.view')):
+        raise PermissionDenied('Acesso a profissionais de saúde não autorizado.')
+    org = current_organization()
     branding = get_tenant_branding(request)
-    return render(request, 'rh_municipal/health_professionals.html', {'branding': branding})
+    profs = scoped_queryset(
+        request.user,
+        health.ProfissionalSaudeMunicipal.objects.filter(organization=org),
+    ).select_related('servidor', 'unidade_saude__unidade', 'equipe').order_by('servidor__nome')[:100]
+    context = _context(
+        request, can_health_dashboard=True,
+        can_health_professionals=True,
+    )
+    context.update({
+        'branding': branding,
+        'professionals': profs,
+        'title': 'Profissionais de Saúde',
+        'subtitle': 'Corpo clínico e equipes vinculados às Unidades de Saúde',
+    })
+    return render(request, 'rh_municipal/health_professionals.html', context)
 
 
+@never_cache
 @login_required
+@ensure_csrf_cookie
 @require_GET
 def health_call_panel(request):
-    """Console de Operação do Médico e Recepção da UBS (Fila em Tempo Real) com branding dinâmico."""
-    svc._require(request.user, 'saude.appointments.view')
+    """Console de Operação do Médico e Recepção da UBS sincronizado com banco real."""
+    if not (_can(request.user, 'saude.dashboard.view') or _can(request.user, 'saude.appointments.view')):
+        raise PermissionDenied('Acesso ao console de chamadas não autorizado.')
+    org, unit = _kiosk_org_and_unit(request)
     branding = get_tenant_branding(request)
-    context = _context(
-        request,
-        can_health_dashboard=True,
-    ) if request.user.is_authenticated else {}
+    snapshot = rt.list_queue_snapshot(org, unit, include_citizen_details=_can(request.user, 'saude.records.sensitive'))
+    context = _context(request, can_health_dashboard=True, can_health_appointments=True)
     context.update({
         'title': 'Console de Chamadas UBS',
-        'subtitle': 'Gerenciamento de fila e sincronização com SmartTV',
+        'subtitle': 'Gerenciamento de fila em tempo real sincronizado com Banco de Dados e SmartTV',
         'branding': branding,
+        'snapshot': snapshot,
+        'snapshot_json': json.dumps(snapshot, ensure_ascii=False),
     })
     return render(request, 'rh_municipal/health_call_panel.html', context)
 
 
+@never_cache
 @login_required
+@ensure_csrf_cookie
 @require_GET
 def health_acs_map(request):
-    """Georreferenciamento territorial e visitas dos ACS com Leaflet.js e branding dinâmico."""
-    svc._require(request.user, 'saude.field.view')
+    """Georreferenciamento territorial e visitas dos ACS com dados reais do banco."""
+    if not (_can(request.user, 'saude.field.view') or _can(request.user, 'saude.dashboard.view')):
+        raise PermissionDenied('Acesso ao georreferenciamento ACS não autorizado.')
+    org = current_organization()
     branding = get_tenant_branding(request)
-    context = _context(
-        request,
-        can_health_dashboard=True,
-        can_health_field=True,
-    ) if request.user.is_authenticated else {}
+    map_data = rt.get_acs_map_snapshot(
+        request.user, org,
+        microarea=request.GET.get('microarea', ''),
+        condition=request.GET.get('condicao', ''),
+    )
+    context = _context(request, can_health_dashboard=True, can_health_field=True)
     context.update({
         'title': 'Georreferenciamento ACS',
-        'subtitle': 'Monitoramento territorial de visitas domiciliares da Atenção Primária',
+        'subtitle': 'Monitoramento territorial real de visitas domiciliares da Atenção Primária',
         'branding': branding,
+        'map_data': map_data,
+        'map_data_json': json.dumps(map_data, ensure_ascii=False),
     })
     return render(request, 'rh_municipal/health_acs_map.html', context)
 
 
+@never_cache
 @login_required
+@ensure_csrf_cookie
 @require_GET
 def health_triage_manchester(request):
-    """Estação de Triagem e Classificação de Risco Manchester (Enfermagem e-SUS APS) com branding dinâmico."""
+    """Estação de Triagem e Classificação de Risco Manchester conectada à fila real."""
+    if not (_can(request.user, 'saude.records.view') or _can(request.user, 'saude.appointments.view') or _can(request.user, 'saude.dashboard.view')):
+        raise PermissionDenied('Acesso à estação de triagem Manchester não autorizado.')
     svc._require(request.user, 'saude.records.sensitive')
+    org, unit = _kiosk_org_and_unit(request)
     branding = get_tenant_branding(request)
-    return render(request, 'rh_municipal/health_triage_manchester.html', {'branding': branding})
+    snapshot = rt.list_queue_snapshot(org, unit, include_citizen_details=_can(request.user, 'saude.records.sensitive'))
+    citizens = scoped_queryset(
+        request.user,
+        health.CidadaoSaudeMunicipal.objects.filter(organization=org, situacao='ATIVO'),
+    ).order_by('nome')[:100]
+    context = _context(request, can_health_dashboard=True, can_health_records=True)
+    context.update({
+        'branding': branding,
+        'snapshot': snapshot,
+        'snapshot_json': json.dumps(snapshot, ensure_ascii=False),
+        'citizens': citizens,
+    })
+    return render(request, 'rh_municipal/health_triage_manchester.html', context)
 
 
 @login_required
@@ -1037,3 +1120,348 @@ def health_pharmacy_dispensation(request):
     svc._require(request.user, 'saude.pharmacy.view')
     branding = get_tenant_branding(request)
     return render(request, 'rh_municipal/health_pharmacy_dispensation.html', {'branding': branding})
+
+
+@never_cache
+@login_required
+@require_GET
+def saude_queue_api(request):
+    """JSON live polling endpoint for Totem, SmartTV, Medical Console and Manchester Triage."""
+    org, unit = _kiosk_org_and_unit(request)
+    snapshot = rt.list_queue_snapshot(org, unit, include_citizen_details=_can(request.user, 'saude.records.sensitive'))
+    response = JsonResponse({'ok': True, 'organization': org.slug, **snapshot})
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
+@never_cache
+@login_required
+@require_POST
+def saude_queue_issue_api(request):
+    """Persist new queue ticket in DB from Kiosk Totem or reception."""
+    org, unit = _kiosk_org_and_unit(request)
+    svc._require(request.user, 'saude.appointments.manage')
+    data = _parse_json_body(request)
+    try:
+        ticket = rt.issue_queue_ticket(
+            org, unit,
+            service_code=data.get('prefix') or data.get('servico') or 'CLN',
+            priority_type='PRIORITARIA' if data.get('prioritaria') or (data.get('prefix') == 'PRE') else 'CONVENCIONAL',
+            priority_detail=data.get('detalhe_prioridade', ''),
+            cpf_cns=data.get('cpf_cns', ''),
+            citizen_id=data.get('cidadao_id'),
+            actor=request.user,
+        )
+    except (PermissionDenied, ValidationError) as exc:
+        msg = '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc)
+        return JsonResponse({'ok': False, 'error': msg}, status=400)
+    snapshot = rt.list_queue_snapshot(org, unit, include_citizen_details=_can(request.user, 'saude.records.sensitive'))
+    return JsonResponse({
+        'ok': True,
+        'ticket': rt._serialize_ticket(ticket, include_citizen_details=_can(request.user, 'saude.records.sensitive')),
+        'snapshot': snapshot,
+    }, status=201)
+
+
+@never_cache
+@login_required
+@require_POST
+def saude_queue_action_api(request):
+    """Authenticated transition endpoint for Console Médico & Recepção (CALL/RECALL/START/FINISH/NO_SHOW/TRANSFER)."""
+    if not _can(request.user, 'saude.appointments.manage'):
+        raise PermissionDenied('Permissão insuficiente para operar a fila clínica.')
+    org, unit = _kiosk_org_and_unit(request)
+    data = _parse_json_body(request)
+    try:
+        ticket = rt.transition_queue_ticket(
+            request.user, org,
+            action=data.get('action', ''),
+            ticket_public_id=data.get('public_id'),
+            local_id=data.get('local_id'),
+            professional_id=data.get('profissional_id'),
+            target_service_code=data.get('destino_codigo'),
+        )
+    except (PermissionDenied, ValidationError) as exc:
+        msg = '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc)
+        return JsonResponse({'ok': False, 'error': msg}, status=400)
+    snapshot = rt.list_queue_snapshot(org, unit, include_citizen_details=_can(request.user, 'saude.records.sensitive'))
+    return JsonResponse({
+        'ok': True,
+        'ticket': rt._serialize_ticket(ticket, include_citizen_details=_can(request.user, 'saude.records.sensitive')),
+        'snapshot': snapshot,
+    })
+
+
+@never_cache
+@login_required
+@require_POST
+def saude_triage_save_api(request):
+    """Save real Manchester Classification to DB and re-prioritize medical queue."""
+    if not (_can(request.user, 'saude.records.create') and _can(request.user, 'saude.records.sensitive')):
+        raise PermissionDenied('Permissão insuficiente para classificar risco Manchester.')
+    org, unit = _kiosk_org_and_unit(request)
+    data = _parse_json_body(request)
+    try:
+        tri = rt.save_manchester_triage(
+            request.user, org,
+            ticket_public_id=data.get('ticket_public_id'),
+            citizen_id=data.get('cidadao_id'),
+            nurse_id=data.get('enfermeiro_id'),
+            flowchart=data.get('fluxograma', ''),
+            discriminator=data.get('discriminador', ''),
+            color=data.get('cor', 'VERDE'),
+            vitals=data.get('vitals') or data,
+            complaint=data.get('queixa_principal', ''),
+        )
+    except (PermissionDenied, ValidationError, ValueError) as exc:
+        msg = '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc)
+        return JsonResponse({'ok': False, 'error': msg}, status=400)
+    snapshot = rt.list_queue_snapshot(org, unit, include_citizen_details=_can(request.user, 'saude.records.sensitive'))
+    return JsonResponse({
+        'ok': True,
+        'manchester_id': str(tri.public_id),
+        'cor': tri.cor,
+        'sla_min': tri.tempo_alvo_minutos,
+        'snapshot': snapshot,
+    }, status=201)
+
+
+@never_cache
+@login_required
+@require_http_methods(['GET', 'POST'])
+def saude_acs_map_api(request):
+    """Real database endpoint for ACS Georeferencing map & quick field visit logging."""
+    if not (_can(request.user, 'saude.field.view') or _can(request.user, 'saude.dashboard.view')):
+        raise PermissionDenied('Acesso territorial ACS não autorizado.')
+    org = current_organization()
+    if request.method == 'POST':
+        svc._require(request.user, 'saude.field.manage')
+        data = _parse_json_body(request)
+        raw_cond = data.get('condicao') or data.get('condicao_acompanhada') or ''
+        raw_alert = data.get('alerta') if data.get('alerta') is not None else data.get('alerta_epidemiologico', '')
+        if isinstance(raw_alert, bool):
+            alert_text = f'Alerta epidemiológico ({raw_cond or "Campo"})' if raw_alert else ''
+        else:
+            alert_text = str(raw_alert or '')
+        raw_notes = data.get('observacoes') or data.get('observacao') or ''
+        agent_id = data.get('agente_id')
+        if not agent_id:
+            with tenant_context(org):
+                agent_id = (
+                    health.ProfissionalSaudeMunicipal.objects.filter(
+                        organization=org, servidor__usuario=request.user, ativo=True,
+                    ).values_list('pk', flat=True).first()
+                )
+        try:
+            visit = rt.register_acs_map_visit(
+                request.user, org,
+                family_id=data.get('familia_id'),
+                agent_id=agent_id,
+                condition=raw_cond,
+                alert_text=alert_text,
+                pa_sys=data.get('pa_sistolica'),
+                pa_dia=data.get('pa_diastolica'),
+                glicemia=data.get('glicemia'),
+                peso=data.get('peso_kg'),
+                lat=data.get('latitude'),
+                lng=data.get('longitude'),
+                notes=raw_notes,
+            )
+        except (PermissionDenied, ValidationError, ValueError) as exc:
+            msg = '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc)
+            return JsonResponse({'ok': False, 'error': msg}, status=400)
+        return JsonResponse({
+            'ok': True,
+            'visit_id': str(visit.public_id),
+            'map': rt.get_acs_map_snapshot(request.user, org),
+        }, status=201)
+
+    snapshot = rt.get_acs_map_snapshot(
+        request.user, org,
+        microarea=request.GET.get('microarea', ''),
+        condition=request.GET.get('condicao', ''),
+    )
+    return JsonResponse({'ok': True, **snapshot})
+
+
+@never_cache
+@login_required
+@require_GET
+def health_bi_panel(request):
+    """Painel BI Saúde Municipal — Portaria GM/MS 3.493/2024 & Portaria 161 (dados reais agregados)."""
+    org = current_organization()
+    unit_id = request.GET.get('unidade_id')
+    days = int(request.GET.get('dias') or 30)
+    bi = rt.compute_health_bi_panel(request.user, org, unit_id=unit_id, days=days)
+
+    fmt = (request.GET.get('format') or '').lower()
+    if fmt == 'json':
+        return JsonResponse({'ok': True, **bi})
+    if fmt == 'csv':
+        import csv
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="painel_bi_saude_3493.csv"'
+        writer = csv.writer(response, delimiter=';')
+        writer.writerow(['Indicador', 'Meta', 'Valor Atual', 'Status', 'Detalhamento'])
+        for row in bi['portaria_3493']:
+            writer.writerow([f"{row['codigo']} - {row['indicador']}", row['meta'], row['valor_atual'], row['status'], row['detalhe']])
+        return response
+
+    branding = get_tenant_branding(request)
+    context = _context(request, can_health_dashboard=True)
+    context.update({
+        'title': 'Painel BI Saúde SUS (Portaria 3.493 / 161)',
+        'subtitle': 'Indicadores agregados da Atenção Primária, Fila/Triagem Manchester, Farmácia e Leitos',
+        'branding': branding,
+        'bi': bi,
+        'selected_unit_id': unit_id or '',
+        'selected_days': days,
+    })
+    return render(request, 'rh_municipal/health_bi_panel.html', context)
+
+
+@never_cache
+@login_required
+@ensure_csrf_cookie
+@require_http_methods(['GET', 'POST'])
+def health_beds_monitor(request):
+    """Gestão de Leitos Hospitalares / UPA & Monitor Multiparamétrico em Tempo Real."""
+    org = current_organization()
+    if not (_can(request.user, 'saude.dashboard.view') or _can(request.user, 'saude.records.view')):
+        raise PermissionDenied('Acesso ao mapa de leitos e monitor multiparamétrico não autorizado.')
+
+    unit_id = request.GET.get('unidade_id') or request.POST.get('unidade_id')
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        try:
+            if action == 'create_bed':
+                rt.create_ward_bed_and_monitor(
+                    request.user, org,
+                    unit_id=request.POST.get('unidade_saude'),
+                    ala_codigo=request.POST.get('ala_codigo', 'OBS'),
+                    ala_nome=request.POST.get('ala_nome', 'Observação / Urgência'),
+                    ala_tipo=request.POST.get('ala_tipo', 'OBSERVACAO'),
+                    bed_codigo=request.POST.get('leito_codigo', ''),
+                    bed_tipo=request.POST.get('tipo_leito', 'OBSERVACAO'),
+                    serial_monitor=request.POST.get('serial_monitor', ''),
+                    modelo_monitor=request.POST.get('modelo_monitor', 'Monitor Multiparamétrico 5P'),
+                    protocolo=request.POST.get('protocolo', 'HTTP_JSON'),
+                    endpoint_ip=request.POST.get('endpoint_ip', ''),
+                )
+                messages.success(request, 'Leito e monitor multiparamétrico cadastrados.')
+            elif action == 'admit':
+                rt.admit_patient_to_bed(
+                    request.user, org,
+                    bed_public_id=request.POST.get('bed_public_id'),
+                    citizen_id=request.POST.get('cidadao_id'),
+                    professional_id=request.POST.get('profissional_id') or None,
+                    precaution=request.POST.get('precaucao', ''),
+                )
+                messages.success(request, 'Paciente admitido no leito com sucesso.')
+            elif action == 'status':
+                rt.transition_bed_status(
+                    request.user, org,
+                    bed_public_id=request.POST.get('bed_public_id'),
+                    new_status=request.POST.get('new_status'),
+                )
+                messages.success(request, 'Situação do leito atualizada.')
+            elif action == 'ack_alert':
+                rt.acknowledge_monitor_alert(
+                    request.user, org,
+                    alert_public_id=request.POST.get('alert_public_id'),
+                    conduta=request.POST.get('conduta', ''),
+                )
+                messages.success(request, 'Alarme clínico reconhecido e auditado.')
+        except (PermissionDenied, ValidationError) as exc:
+            messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
+        return redirect('rh_municipal_public:saude_beds_monitor')
+
+    snapshot = rt.get_beds_monitor_snapshot(request.user, org, unit_id=unit_id)
+    units = scoped_queryset(request.user, health.UnidadeSaudeMunicipal.objects.filter(organization=org, ativo=True)).select_related('unidade')
+    citizens = scoped_queryset(request.user, health.CidadaoSaudeMunicipal.objects.filter(organization=org, situacao='ATIVO')).order_by('nome')[:100]
+    profs = scoped_queryset(request.user, health.ProfissionalSaudeMunicipal.objects.filter(organization=org, ativo=True)).select_related('servidor')[:50]
+    branding = get_tenant_branding(request)
+    context = _context(request, can_health_dashboard=True, can_health_records=True, can_health_appointments=True)
+    context.update({
+        'title': 'Mapa de Leitos & Monitor Multiparamétrico',
+        'subtitle': 'Monitoramento em tempo real de internação, observação UPA, sinais vitais e alarmes clínicos',
+        'branding': branding,
+        'snapshot': snapshot,
+        'snapshot_json': json.dumps(snapshot, ensure_ascii=False),
+        'units': units,
+        'citizens': citizens,
+        'professionals': profs,
+    })
+    return render(request, 'rh_municipal/health_beds_monitor.html', context)
+
+
+@never_cache
+@login_required
+@require_GET
+def saude_beds_monitor_api(request):
+    """Live polling JSON endpoint for bedside monitor wallboard."""
+    org = current_organization()
+    snapshot = rt.get_beds_monitor_snapshot(request.user, org, unit_id=request.GET.get('unidade_id'))
+    response = JsonResponse({'ok': True, **snapshot})
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
+@never_cache
+@require_POST
+def saude_beds_telemetry_api(request):
+    """Ingest vital-signs telemetry via authenticated operator OR monitor gateway token."""
+    data = _parse_json_body(request)
+    auth_header = (request.headers.get('Authorization') or '').strip()
+    bearer = auth_header[7:].strip() if auth_header.lower().startswith('bearer ') else ''
+    token = (request.headers.get('X-Monitor-Token') or bearer or data.get('token_ingestao') or '').strip()
+    org = current_organization()
+    actor = request.user if request.user.is_authenticated else None
+
+    if actor is not None:
+        if not org or not public_module_available(org, 'saude_sus'):
+            raise PermissionDenied('Módulo Saúde SUS inativo.')
+        if not (_can(actor, 'saude.records.create') and _can(actor, 'saude.records.sensitive')):
+            raise PermissionDenied('Permissão insuficiente para telemetria clínica.')
+    elif token:
+        if not getattr(settings, 'MUNICIPAL_MONITOR_GATEWAY_ENABLED', False):
+            raise PermissionDenied('Gateway externo de monitores desabilitado.')
+        mon = health.EquipamentoMonitorSaude.all_objects.filter(token_ingestao=rt.monitor_token_digest(token)).select_related('organization').first()
+        if mon is None:
+            return JsonResponse({'ok': False, 'error': 'Token de monitor inválido.'}, status=403)
+        org = mon.organization
+        data['monitor_serial'] = mon.serial_dispositivo
+    else:
+        return JsonResponse({'ok': False, 'error': 'Autenticação ou X-Monitor-Token obrigatório.'}, status=401)
+
+    try:
+        if data.get('action') == 'ack_alert' and actor is not None:
+            al = rt.acknowledge_monitor_alert(actor, org, alert_public_id=data.get('alert_public_id'), conduta=data.get('conduta', ''))
+            return JsonResponse({'ok': True, 'reconhecido': al.reconhecido})
+
+        telem = rt.ingest_monitor_telemetry(
+            org,
+            monitor_id_or_serial=data.get('monitor_serial') or data.get('serial_dispositivo') or data.get('monitor_id'),
+            fc_bpm=int(data['fc_bpm']) if data.get('fc_bpm') not in (None, '') else None,
+            spo2_percent=int(data['spo2_percent']) if data.get('spo2_percent') not in (None, '') else None,
+            pa_sistolica=int(data['pa_sistolica']) if data.get('pa_sistolica') not in (None, '') else None,
+            pa_diastolica=int(data['pa_diastolica']) if data.get('pa_diastolica') not in (None, '') else None,
+            fr_irpm=int(data['fr_irpm']) if data.get('fr_irpm') not in (None, '') else None,
+            temperatura_c=data.get('temperatura_c'),
+            etco2_mmhg=int(data['etco2_mmhg']) if data.get('etco2_mmhg') not in (None, '') else None,
+            ritmo_ecg=data.get('ritmo_ecg', 'SINUSAL'),
+            battery=data.get('bateria'),
+            origin=data.get('origem_leitura', 'TELEMETRIA_REAL'),
+            actor=actor,
+        )
+    except (PermissionDenied, ValidationError, ValueError) as exc:
+        msg = '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc)
+        return JsonResponse({'ok': False, 'error': msg}, status=400)
+
+    return JsonResponse({
+        'ok': True,
+        'telemetria_id': str(telem.public_id),
+        'nivel_alerta': telem.nivel_alerta,
+        'pam_mmhg': telem.pam_mmhg,
+        'alertas': telem.alertas_detectados,
+    }, status=201)

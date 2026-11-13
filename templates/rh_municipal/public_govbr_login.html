@@ -1,0 +1,51 @@
+{% load static %}<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Entrar com gov.br · {{ organization.display_name }}</title>
+  <style>
+    body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;background:#f4f7fb;color:#0f172a;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:1.25rem}
+    .card{width:100%;max-width:440px;background:#fff;border:1px solid #dbe4f0;border-radius:16px;padding:1.75rem;box-shadow:0 12px 32px rgba(15,23,42,.08)}
+    .gov-brand{display:flex;align-items:center;gap:.65rem;margin-bottom:1rem}
+    .gov-badge{font-weight:900;font-size:1.55rem;color:#1351b4;letter-spacing:-.04em}
+    .env-pill{font-size:.72rem;font-weight:700;padding:.2rem .55rem;border-radius:999px;background:#e0f2fe;color:#0369a1}
+    label{display:block;font-size:.82rem;font-weight:700;margin:.75rem 0 .25rem;color:#334155}
+    input,select{width:100%;box-sizing:border-box;padding:.65rem .75rem;border:1px solid #cbd5e1;border-radius:10px;font-size:.92rem}
+    .btn{width:100%;margin-top:1rem;padding:.8rem;border:none;border-radius:999px;background:#1351b4;color:#fff;font-weight:700;font-size:.95rem;cursor:pointer}
+    .btn:hover{background:#0c326f}
+    .err{background:#fee2e2;color:#991b1b;padding:.65rem;border-radius:10px;font-size:.84rem;margin-bottom:.75rem}
+    .note{font-size:.78rem;color:#64748b;margin-top:.85rem;line-height:1.45}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <p class="err"><strong>SIMULAÇÃO LOCAL</strong> — utilize somente dados fictícios. Esta tela não verifica identidade no gov.br.</p>
+    <div class="gov-brand">
+      <span class="gov-badge">gov.br</span>
+      <span class="env-pill">{{ govbr_config.get_ambiente_display }}</span>
+    </div>
+    <h1 style="font-size:1.15rem;margin:0 0 .25rem">{{ organization.display_name }}</h1>
+    <p style="font-size:.86rem;color:#475569;margin:0 0 1rem">Autenticação Unificada do Cidadão para Protocolos Digitais, Tributos (DAM/CND) e Serviços SUS.</p>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="state" value="{{ state }}">
+      <label for="id_cpf">CPF (11 dígitos)</label>
+      <input id="id_cpf" name="cpf" required maxlength="14" placeholder="Ex.: 123.456.789-01">
+      <label for="id_nome">Nome Completo</label>
+      <input id="id_nome" name="nome" required placeholder="Nome conforme Receita Federal">
+      <label for="id_email">E-mail (opcional)</label>
+      <input id="id_email" type="email" name="email" placeholder="cidadao@email.com">
+      <label for="id_nivel">Selo de Confiabilidade (Homologação)</label>
+      <select id="id_nivel" name="nivel">
+        <option value="OURO">Nível Ouro (ICP-Brasil / Biometria)</option>
+        <option value="PRATA" selected>Nível Prata (Validação Bancária)</option>
+        <option value="BRONZE">Nível Bronze (Cadastro Básico)</option>
+      </select>
+      <button type="submit" class="btn">Autorizar e Entrar com gov.br</button>
+    </form>
+    <p class="note">Ambiente configurado com fluxo OIDC PKCE (<code>{{ govbr_config.issuer_url }}</code>). Em homologação local, a sessão assinada vincula seu CPF exclusivamente aos registros desta Prefeitura.</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,89 @@
+{% extends 'rh_municipal/public_base.html' %}
+{% block title %}Painel BI Saúde · Portaria 3.493 / 161{% endblock %}
+{% block head_extra %}
+<style>
+  .bi-hero{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:1rem;margin-bottom:1.25rem}
+  .bi-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:.85rem;margin-bottom:1.25rem}
+  .bi-kpi{background:#fff;border:1px solid #dbe4f0;border-radius:12px;padding:1rem;box-shadow:0 2px 8px rgba(15,23,42,.04)}
+  .bi-kpi span{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:700}
+  .bi-kpi strong{display:block;font-size:1.65rem;color:#0f172a;margin:.25rem 0}
+  .bi-kpi small{color:#475569;font-size:.78rem}
+  .bi-grid{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.25rem}
+  @media (max-width:960px){.bi-grid{grid-template-columns:1fr}}
+  .bi-badge{display:inline-flex;align-items:center;padding:.2rem .6rem;border-radius:999px;font-size:.75rem;font-weight:700}
+  .bi-META{background:#dcfce7;color:#166534}.bi-ATENCAO{background:#fef3c7;color:#92400e}.bi-CRITICO{background:#fee2e2;color:#991b1b}
+  .bi-bar-wrap{height:10px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:.35rem}
+  .bi-bar{height:100%;border-radius:999px}
+  .bi-filter{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
+</style>
+{% endblock %}
+{% block content %}
+<p role="note">Indicadores operacionais para homologação. Fórmulas e exportações ainda não validadas para prestação de contas oficial ao SUS.</p>
+<section class="bi-hero">
+  <div>
+    <span class="gp-eyebrow">SAÚDE DIGITAL · {{ branding.nome_institucional|default:organization.display_name|upper }}</span>
+    <h1>Painel BI Saúde · Portaria GM/MS 3.493 & 161</h1>
+    <p>Indicadores agregados em tempo real direto do banco de dados da Atenção Primária, Fila/Manchester, Farmácia Hórus e Leitos.</p>
+  </div>
+  <form method="get" class="bi-filter">
+    <select name="unidade_id" class="gp-input" style="min-width:190px">
+      <option value="">Todas as Unidades</option>
+      {% for u in bi.unidades %}
+        <option value="{{ u.id }}" {% if selected_unit_id|stringformat:'s' == u.id|stringformat:'s' %}selected{% endif %}>{{ u.unidade__nome }} ({{ u.tipo }})</option>
+      {% endfor %}
+    </select>
+    <select name="dias" class="gp-input">
+      <option value="30" {% if selected_days == 30 %}selected{% endif %}>Últimos 30 dias</option>
+      <option value="90" {% if selected_days == 90 %}selected{% endif %}>Últimos 90 dias</option>
+      <option value="180" {% if selected_days == 180 %}selected{% endif %}>Semestre (180d)</option>
+    </select>
+    <button type="submit" class="gp-button">Atualizar BI</button>
+    <a class="gp-button gp-button-light" href="?unidade_id={{ selected_unit_id }}&dias={{ selected_days }}&format=csv">Exportar CSV</a>
+    <a class="gp-button gp-button-light" href="{% url 'rh_municipal_public:saude_home' %}">Voltar à Saúde</a>
+  </form>
+</section>
+
+<section class="bi-kpis">
+  <article class="bi-kpi"><span>Cidadãos / Famílias</span><strong>{{ bi.cards.cidadaos_ativos }} / {{ bi.cards.familias_cadastradas }}</strong><small>{{ bi.cards.equipes_ativas }} equipes · {{ bi.cards.unidades_ativas }} unidades</small></article>
+  <article class="bi-kpi"><span>Visitas ACS ({{ bi.periodo_dias }}d)</span><strong>{{ bi.cards.visitas_acs_periodo }}</strong><small>Cobertura territorial: {{ bi.cards.cobertura_territorial_pct }}%</small></article>
+  <article class="bi-kpi"><span>Senhas / Tempo Espera</span><strong>{{ bi.cards.senhas_emitidas_periodo }}</strong><small>Espera média na fila: {{ bi.cards.tempo_medio_espera_min }} min</small></article>
+  <article class="bi-kpi"><span>Farmácia Básica</span><strong>{{ bi.cards.dispensacoes_periodo }}</strong><small>{{ bi.cards.lotes_estoque_critico }} estoque crítico · {{ bi.cards.lotes_vencendo_60d }} venc. 60d</small></article>
+  <article class="bi-kpi"><span>Leitos & Ocupação</span><strong>{{ bi.cards.leitos_ocupados }}/{{ bi.cards.leitos_total }}</strong><small>Ocupação: {{ bi.cards.ocupacao_hospitalar_pct }}% · {{ bi.cards.alertas_monitor_abertos }} alarmes</small></article>
+</section>
+
+<section class="bi-grid">
+  <article class="gp-panel">
+    <div class="gp-panel-head"><div><span class="gp-eyebrow">NOVO FINANCIAMENTO APS · PORTARIA 3.493/2024</span><h2>Componentes & Indicadores Municipais</h2></div></div>
+    <div class="gp-table-wrap">
+      <table class="gp-table">
+        <thead><tr><th>Comp.</th><th>Indicador</th><th>Meta</th><th>Resultado</th><th>Status</th><th>Base Real</th></tr></thead>
+        <tbody>
+          {% for row in bi.portaria_3493 %}
+          <tr>
+            <td><strong>{{ row.codigo }}</strong></td>
+            <td>{{ row.indicador }}</td>
+            <td>{{ row.meta }}</td>
+            <td><strong>{{ row.valor_atual }}</strong></td>
+            <td><span class="bi-badge bi-{{ row.status }}">{{ row.status }}</span></td>
+            <td><small>{{ row.detalhe }}</small></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="gp-panel">
+    <div class="gp-panel-head"><div><span class="gp-eyebrow">CLASSIFICAÇÃO DE RISCO</span><h2>Perfil Manchester ({{ bi.periodo_dias }}d)</h2></div></div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;margin-top:.5rem">
+      <div><div style="display:flex;justify-content:space-between"><span>Vermelho (Emergência)</span><strong>{{ bi.manchester_dist.VERMELHO }}</strong></div><div class="bi-bar-wrap"><div class="bi-bar" style="width:{% if bi.manchester_dist.VERMELHO %}100{% else %}4{% endif %}%;background:#dc2626"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between"><span>Laranja (Muito Urgente)</span><strong>{{ bi.manchester_dist.LARANJA }}</strong></div><div class="bi-bar-wrap"><div class="bi-bar" style="width:{% if bi.manchester_dist.LARANJA %}85{% else %}4{% endif %}%;background:#ea580c"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between"><span>Amarelo (Urgente)</span><strong>{{ bi.manchester_dist.AMARELO }}</strong></div><div class="bi-bar-wrap"><div class="bi-bar" style="width:{% if bi.manchester_dist.AMARELO %}70{% else %}4{% endif %}%;background:#eab308"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between"><span>Verde (Pouco Urgente)</span><strong>{{ bi.manchester_dist.VERDE }}</strong></div><div class="bi-bar-wrap"><div class="bi-bar" style="width:{% if bi.manchester_dist.VERDE %}60{% else %}4{% endif %}%;background:#16a34a"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between"><span>Azul (Não Urgente)</span><strong>{{ bi.manchester_dist.AZUL }}</strong></div><div class="bi-bar-wrap"><div class="bi-bar" style="width:{% if bi.manchester_dist.AZUL %}40{% else %}4{% endif %}%;background:#2563eb"></div></div></div>
+    </div>
+    <hr style="margin:1rem 0;border:none;border-top:1px solid #e2e8f0">
+    <p style="font-size:.82rem;color:#475569"><strong>Regulação pendente:</strong> {{ bi.cards.regulacao_pendente }} solicitações · <strong>Produção SUS local:</strong> {{ bi.cards.producao_sus_registros }} registros.</p>
+  </article>
+</section>
+{% endblock %}

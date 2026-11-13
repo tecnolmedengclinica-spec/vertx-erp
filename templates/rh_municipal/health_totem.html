@@ -722,31 +722,60 @@
     setInterval(updateKioskClock, 1000);
     updateKioskClock();
 
-    // 2. SINCRONISMO CROSS-TAB (BROADCASTCHANNEL)
+    // 2. SINCRONISMO REAL COM BANCO + CROSS-TAB (BROADCASTCHANNEL)
     const queueChannel = new BroadcastChannel('vertyx_health_queue');
-
-    const counters = { GER: 100, PRE: 42, VAC: 14, ODO: 8, FAR: 25, TRI: 19 };
+    const QUEUE_ISSUE_API = "{% url 'rh_municipal_public:saude_queue_issue_api' %}";
     let autoTimer = null;
 
-    function issueTicket(prefix, title, desc) {
-      counters[prefix] = (counters[prefix] || 0) + 1;
-      const numStr = String(counters[prefix]).padStart(3, '0');
-      const fullTicket = `${prefix}-${numStr}`;
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return m ? decodeURIComponent(m[2]) : '';
+    }
 
+    async function issueTicket(prefix, title, desc) {
+      let fullTicket = `${prefix}-001`;
+      let serviceLabel = title;
       const now = new Date();
-      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      let timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      let ticketData = null;
+
+      try {
+        const res = await fetch(QUEUE_ISSUE_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+            prefix: prefix,
+            prioritaria: prefix === 'PRE',
+            detalhe_prioridade: prefix === 'PRE' ? 'Prioritário Lei 10.048' : ''
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.ticket) {
+            ticketData = data.ticket;
+            fullTicket = data.ticket.codigo;
+            serviceLabel = data.ticket.servico_nome || title;
+            if (data.ticket.emitida_em) {
+              const dt = new Date(data.ticket.emitida_em);
+              timeStr = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}:${String(dt.getSeconds()).padStart(2, '0')}`;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Falha ao persistir senha no servidor:', err);
+      }
 
       document.getElementById('receipt-num').textContent = fullTicket;
-      document.getElementById('receipt-type').textContent = title;
+      document.getElementById('receipt-type').textContent = serviceLabel;
       document.getElementById('receipt-date').textContent = now.toLocaleDateString('pt-BR');
       document.getElementById('receipt-time').textContent = timeStr;
 
       document.getElementById('print-modal').classList.add('open');
-
-      // Toca som mecânico de corte térmico
       playPrintSound();
 
-      // Fala confirmação por voz
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(`Senha ${fullTicket} emitida. Por favor, retire seu comprovante.`);
@@ -755,11 +784,11 @@
         window.speechSynthesis.speak(utter);
       }
 
-      // Dispara para o Console do Médico e SmartTV
       queueChannel.postMessage({
         type: 'NEW_TICKET',
+        public_id: ticketData ? ticketData.public_id : '',
         ticket: fullTicket,
-        service: title,
+        service: serviceLabel,
         prefix: prefix,
         time: timeStr,
         timestamp: Date.now()

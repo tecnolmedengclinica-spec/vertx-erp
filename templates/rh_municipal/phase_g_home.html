@@ -45,6 +45,12 @@
     {% if can_health_tfd %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_tfd' %}"><span>⇄</span><strong>TFD</strong><small>Solicitações protegidas e decisões auditadas</small><b>›</b></a>{% endif %}
     {% if can_health_production %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_production' %}"><span>▥</span><strong>Produção SUS</strong><small>Registros locais sem transmissão oficial</small><b>›</b></a>{% endif %}
     {% if can_health_regulation %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_regulation' %}"><span>⇄</span><strong>Regulação</strong><small>Fila, vagas, agendamento e atendimento</small><b>›</b></a>{% endif %}
+    {% if can_health_dashboard %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_bi_panel' %}"><span>▤</span><strong>Painel BI Saúde</strong><small>Indicadores Portaria GM/MS 3.493/2024 e 161</small><b>›</b></a>{% endif %}
+    {% if can_health_dashboard %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_beds_monitor' %}"><span>✚</span><strong>Leitos & Monitorização</strong><small>UPA/Hospital e telemetria multiparamétrica em tempo real</small><b>›</b></a>{% endif %}
+    {% if can_health_appointments or can_health_records %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_triage_manchester' %}"><span>⚑</span><strong>Triagem Manchester</strong><small>Classificação de risco clínico integrada à fila</small><b>›</b></a>{% endif %}
+    {% if can_health_appointments or can_health_records %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_call_panel' %}"><span>▶</span><strong>Console Médico / Fila</strong><small>Chamada, consultórios e atendimento em tempo real</small><b>›</b></a>{% endif %}
+    {% if can_health_appointments or can_health_dashboard %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_totem' %}"><span>▣</span><strong>Totem de Senhas</strong><small>Auto-atendimento com prioridade legal</small><b>›</b></a><a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_call_panel_tv' %}"><span>▥</span><strong>SmartTV Chamadas</strong><small>Painel de recepção sincronizado ao banco</small><b>›</b></a>{% endif %}
+    {% if can_health_field %}<a class="gp-shortcut" href="{% url 'rh_municipal_public:saude_acs_map' %}"><span>⌖</span><strong>Mapa Territorial ACS</strong><small>Famílias, sentinelas e visitas georreferenciadas</small><b>›</b></a>{% endif %}
   </div>
 </section>
 {% endblock %}

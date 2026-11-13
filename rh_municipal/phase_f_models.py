@@ -82,6 +82,19 @@ class ContribuinteMunicipal(PhaseFRecord):
     bairro = models.CharField(max_length=100, blank=True)
     municipio = models.CharField(max_length=100, blank=True)
     uf = models.CharField(max_length=2, blank=True)
+    inscricao_municipal = models.CharField(max_length=32, blank=True)
+    cnae_principal = models.CharField(max_length=16, blank=True)
+    regime_iss = models.CharField(
+        max_length=20,
+        choices=[
+            ('HOMOLOGADO', 'ISS Homologado (Variável)'),
+            ('FIXO', 'ISS Fixo Anual'),
+            ('SIMPLES', 'Simples Nacional / DAS'),
+            ('MEI', 'MEI'),
+            ('ISENTO', 'Isento / Imune'),
+        ],
+        blank=True,
+    )
     atividades = models.JSONField(default=list, blank=True)
     situacao = models.CharField(max_length=10, choices=Situacao.choices, default=Situacao.ATIVO)
     criado_em = models.DateTimeField(default=timezone.now, editable=False)
@@ -156,7 +169,10 @@ class RegraTributariaMunicipal(PhaseFRecord):
     class Tributo(models.TextChoices):
         IPTU = 'IPTU', 'IPTU'
         ISS = 'ISS', 'ISS'
+        ITBI = 'ITBI', 'ITBI'
+        ALVARA = 'ALVARA', 'Alvará e Licença'
         TAXA = 'TAXA', 'Taxa municipal'
+        CONTRIB = 'CONTRIB', 'Contribuição / CIP'
     codigo = models.CharField(max_length=40)
     tributo = models.CharField(max_length=8, choices=Tributo.choices)
     versao = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
@@ -337,3 +353,95 @@ class AuditoriaTributariaMunicipal(PhaseFRecord):
 
     class Meta:
         ordering = ['-criado_em', '-pk']
+
+
+class GuiaArrecadacaoDAM(PhaseFRecord):
+    """Documento de Arrecadação Municipal (DAM) com código de barras FEBRABAN Segmento 8 e Pix."""
+    class Status(models.TextChoices):
+        EMITIDA = 'EMITIDA', 'Emitida / Aberta'
+        PAGA = 'PAGA', 'Paga / Baixada'
+        CANCELADA = 'CANCELADA', 'Cancelada'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    numero_dam = models.CharField(max_length=40)
+    contribuinte = models.ForeignKey(ContribuinteMunicipal, on_delete=models.PROTECT, related_name='guias_dam')
+    lancamento = models.ForeignKey(LancamentoTributarioMunicipal, on_delete=models.PROTECT, related_name='guias_dam')
+    parcela = models.ForeignKey(ParcelaTributariaMunicipal, null=True, blank=True, on_delete=models.PROTECT, related_name='guias_dam')
+    vencimento = models.DateField()
+    valor_principal = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    valor_acrescimos = models.DecimalField(max_digits=15, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    valor_desconto = models.DecimalField(max_digits=15, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    valor_total = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    codigo_barras = models.CharField(max_length=48)
+    linha_digitavel = models.CharField(max_length=60)
+    pix_copia_cola = models.TextField(blank=True)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.EMITIDA)
+    emitida_em = models.DateTimeField(default=timezone.now, editable=False)
+    emitida_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT)
+
+    class Meta:
+        ordering = ['-emitida_em', '-pk']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'numero_dam'], name='rhmun_dam_num_org'),
+        ]
+
+
+class CertidaoTributariaMunicipal(PhaseFRecord):
+    """Certidão Negativa (CND), Positiva com Efeito de Negativa (CPEN) ou Positiva Municipal."""
+    class Tipo(models.TextChoices):
+        CND = 'CND', 'Certidão Negativa de Débitos (CND)'
+        CPEN = 'CPEN', 'Certidão Positiva com Efeitos de Negativa (CPEN)'
+        POSITIVA = 'POSITIVA', 'Certidão Positiva de Débitos'
+
+    class Status(models.TextChoices):
+        VALIDA = 'VALIDA', 'Válida'
+        REVOGADA = 'REVOGADA', 'Revogada'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    numero = models.CharField(max_length=40)
+    tipo = models.CharField(max_length=12, choices=Tipo.choices)
+    contribuinte = models.ForeignKey(ContribuinteMunicipal, on_delete=models.PROTECT, related_name='certidoes')
+    imovel = models.ForeignKey(ImovelMunicipal, null=True, blank=True, on_delete=models.PROTECT, related_name='certidoes')
+    codigo_autenticacao = models.CharField(max_length=32)
+    finalidade = models.CharField(max_length=140, blank=True)
+    situacao_snapshot = models.JSONField(default=dict, blank=True)
+    emitida_em = models.DateTimeField(default=timezone.now, editable=False)
+    valida_ate = models.DateField()
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.VALIDA)
+    emitida_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT)
+
+    class Meta:
+        ordering = ['-emitida_em', '-pk']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'numero'], name='rhmun_certidao_num_org'),
+            models.UniqueConstraint(fields=['organization', 'codigo_autenticacao'], name='rhmun_certidao_auth_org'),
+        ]
+
+
+class SolicitacaoITBIMunicipal(PhaseFRecord):
+    """Avaliação, cálculo parametrizado e guia de ITBI para transmissão imobiliária."""
+    class Status(models.TextChoices):
+        AVALIADO = 'AVALIADO', 'Avaliado / Guia Emitida'
+        QUITADO = 'QUITADO', 'Quitado / Liberado p/ Cartório'
+        CANCELADO = 'CANCELADO', 'Cancelado'
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    numero = models.CharField(max_length=40)
+    imovel = models.ForeignKey(ImovelMunicipal, on_delete=models.PROTECT, related_name='solicitacoes_itbi')
+    transmitente = models.ForeignKey(ContribuinteMunicipal, on_delete=models.PROTECT, related_name='itbi_transmitidos')
+    adquirente = models.ForeignKey(ContribuinteMunicipal, on_delete=models.PROTECT, related_name='itbi_adquiridos')
+    valor_venal = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    valor_transacao = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    regra = models.ForeignKey(RegraTributariaMunicipal, on_delete=models.PROTECT, related_name='avaliacoes_itbi')
+    valor_itbi = models.DecimalField(max_digits=15, decimal_places=2, validators=[MinValueValidator(0)])
+    cartorio_matricula = models.CharField(max_length=100, blank=True)
+    lancamento = models.OneToOneField(LancamentoTributarioMunicipal, null=True, blank=True, on_delete=models.PROTECT, related_name='itbi_origem')
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.AVALIADO)
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    criado_em = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ['-criado_em', '-pk']
+        constraints = [
+            models.UniqueConstraint(fields=['organization', 'numero'], name='rhmun_itbi_num_org'),
+        ]

@@ -722,7 +722,8 @@ from .phase_d_models import (  # noqa: E402,F401
 
 # Phase E: digital process, public transparency, ombudsman and E-SIC records.
 from .phase_e_models import (  # noqa: E402,F401
-    AuditoriaProcessoDigitalMunicipal, ContadorExpedienteMunicipal,
+    AuditoriaProcessoDigitalMunicipal, ConfiguracaoGovBrMunicipal,
+    ContadorExpedienteMunicipal,
     DespachoProcessoMunicipal, DocumentoProcessoMunicipal,
     EventoAssinaturaMunicipal, EventoEsicMunicipal, EventoOuvidoriaMunicipal,
     ManifestacaoOuvidoriaMunicipal, ParecerProcessoMunicipal,
@@ -730,6 +731,7 @@ from .phase_e_models import (  # noqa: E402,F401
     ProcessoDigitalMunicipal, ProtocoloMunicipal,
     PublicacaoTransparenciaMunicipal, RecursoEsicMunicipal,
     RespostaEsicMunicipal, RespostaOuvidoriaMunicipal,
+    SessaoCidadaoGovBr,
     SignatarioMunicipal, SolicitacaoAssinaturaMunicipal,
     TarefaProcessoMunicipal, TramiteProcessoMunicipal,
     VersaoDocumentoProcessoMunicipal,
@@ -737,23 +739,25 @@ from .phase_e_models import (  # noqa: E402,F401
 
 # Phase F: one municipal property record is shared by territorial data and IPTU.
 from .phase_f_models import (  # noqa: E402,F401
-    AuditoriaTributariaMunicipal, ContribuinteMunicipal,
+    AuditoriaTributariaMunicipal, CertidaoTributariaMunicipal,
+    ContribuinteMunicipal,
+    GuiaArrecadacaoDAM,
     ImovelMunicipal, InscricaoDividaAtivaMunicipal,
     LancamentoTributarioMunicipal, NotaServicoMunicipal,
     PagamentoArrecadacaoMunicipal, ParcelaTributariaMunicipal,
-    RegraTributariaMunicipal,
+    RegraTributariaMunicipal, SolicitacaoITBIMunicipal,
 )
 
 # Phase G: municipal health records reuse municipal units, staff and fleet.
 from .phase_g_models import (  # noqa: E402,F401
-    AgendaSaudeMunicipal, AtendimentoSaudeMunicipal, AuditoriaAcessoSaude,
-    CidadaoSaudeMunicipal, DispensacaoMedicamentoMunicipal,
-    EquipeSaudeMunicipal, EstabelecimentoSanitarioMunicipal,
+    AgendaSaudeMunicipal, AlaEnfermariaSaude, AtendimentoSaudeMunicipal, AuditoriaAcessoSaude,
+    CidadaoSaudeMunicipal, DispensacaoMedicamentoMunicipal, EquipamentoMonitorSaude,
+    EquipeSaudeMunicipal, EstabelecimentoSanitarioMunicipal, EventoAlertaMonitorSaude,
     EvolucaoClinicaMunicipal, FamiliaTerritorialSaude, InspecaoSanitariaMunicipal,
-    ItemDispensacaoSaude, ItemPrescricaoSaude, LoteMedicamentoMunicipal, MedicamentoMunicipal,
-    NotificacaoEpidemiologicaMunicipal, PrescricaoSaudeMunicipal,
+    ItemDispensacaoSaude, ItemPrescricaoSaude, LeitoSaudeMunicipal, LoteMedicamentoMunicipal,
+    MedicamentoMunicipal, NotificacaoEpidemiologicaMunicipal, PrescricaoSaudeMunicipal,
     ProfissionalSaudeMunicipal, RegistroProducaoSUS, SolicitacaoRegulacaoSaude,
-    TFDMunicipal, UnidadeSaudeMunicipal, VeiculoSanitarioMunicipal,
+    TelemetriaMonitorLeito, TFDMunicipal, UnidadeSaudeMunicipal, VeiculoSanitarioMunicipal,
     VagaRegulacaoSaude, VisitaTerritorialSaude, VinculoFamiliaSaude,
     ServicoFilaSaude, LocalAtendimentoSaude, SenhaFilaAtendimento, ClassificacaoManchester,
 )

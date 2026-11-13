@@ -601,7 +601,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Aguardando Triagem
         </h3>
-        <span class="queue-badge" id="badge-triage-count">3 Pacientes</span>
+        <span class="queue-badge" id="badge-triage-count">0 Pacientes</span>
       </div>
 
       <button class="btn-call-next" onclick="callNextForTriage()">
@@ -609,37 +609,7 @@
         CHAMAR PRÓXIMO (Espaço)
       </button>
 
-      <div class="triage-queue-list" id="queue-list">
-        <!-- PACIENTE 1 -->
-        <div class="triage-patient-card active" onclick="selectPatient(this, 'TRI-019', 'Maria Santos da Silva', '48 anos · Mulher', '704.8910.3847.192', 'Triagem de Enfermagem', true)">
-          <div class="triage-card-top">
-            <span class="triage-ticket-code">TRI-019</span>
-            <span class="triage-time-wait">Espera: 4 min</span>
-          </div>
-          <div class="triage-patient-name">Maria Santos da Silva</div>
-          <div class="triage-patient-service">Queixa: Cefaleia intensa e picos pressóricos</div>
-        </div>
-
-        <!-- PACIENTE 2 -->
-        <div class="triage-patient-card" onclick="selectPatient(this, 'GER-101', 'Sebastião Rocha Filho', '64 anos · Homem', '890.1234.5678.901', 'Atendimento Clínico Geral', false)">
-          <div class="triage-card-top">
-            <span class="triage-ticket-code">GER-101</span>
-            <span class="triage-time-wait">Espera: 7 min</span>
-          </div>
-          <div class="triage-patient-name">Sebastião Rocha Filho</div>
-          <div class="triage-patient-service">Queixa: Tosse produtiva e febre há 3 dias</div>
-        </div>
-
-        <!-- PACIENTE 3 -->
-        <div class="triage-patient-card" onclick="selectPatient(this, 'PRE-044', 'Dona Francisca de Jesus', '82 anos · Idosa 80+', '712.3456.7890.123', 'Atendimento Prioritário', true)">
-          <div class="triage-card-top">
-            <span class="triage-ticket-code" style="color: #fbbf24;">PRE-044</span>
-            <span class="triage-time-wait">Espera: 2 min</span>
-          </div>
-          <div class="triage-patient-name">Francisca de Jesus</div>
-          <div class="triage-patient-service">Queixa: Desconforto torácico e tontura</div>
-        </div>
-      </div>
+      <div class="triage-queue-list" id="queue-list"></div>
     </aside>
 
     <!-- ESTAÇÃO CENTRAL DE TRIAGEM -->
@@ -647,13 +617,13 @@
       <!-- 1. IDENTIFICAÇÃO DO PACIENTE ATUAL -->
       <div class="patient-hero-banner">
         <div class="hero-info">
-          <div class="hero-ticket-box" id="cur-ticket">TRI-019</div>
+          <div class="hero-ticket-box" id="cur-ticket">--</div>
           <div class="hero-details">
-            <h2 id="cur-name">Maria Santos da Silva</h2>
+            <h2 id="cur-name">Selecione uma senha na fila</h2>
             <div class="hero-meta-row">
-              <span id="cur-meta">48 anos · Feminino</span>
-              <span>CNS: <strong id="cur-cns">704.8910.3847.192</strong></span>
-              <span class="hero-tag-prio" id="cur-prio">Prioridade Triagem</span>
+              <span id="cur-meta">Aguardando seleção</span>
+              <span>CNS: <strong id="cur-cns">--</strong></span>
+              <span class="hero-tag-prio" id="cur-prio" style="display:none;">Prioridade</span>
             </div>
           </div>
         </div>
@@ -773,6 +743,7 @@
     </section>
   </main>
 
+  {{ snapshot|json_script:"realtime-data" }}
   <script>
     // 1. SINCRONISMO COM A REDE HOSPITALAR
     const queueChannel = new BroadcastChannel('vertyx_health_queue');
@@ -880,101 +851,155 @@
       }
     }
 
-    function selectPatient(card, ticket, name, meta, cns, service, isPrio) {
+    const TRIAGE_SAVE_URL = "{% url 'rh_municipal_public:saude_triage_save_api' %}";
+    const INITIAL_SNAPSHOT = JSON.parse(document.getElementById("realtime-data").textContent);
+    let selectedTicketPublicId = null;
+
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return m ? decodeURIComponent(m[2]) : '';
+    }
+
+    function colorToManchesterEnum(c) {
+      const m = { red: 'VERMELHO', orange: 'LARANJA', yellow: 'AMARELO', green: 'VERDE', blue: 'AZUL' };
+      return m[c] || 'VERDE';
+    }
+
+    function renderTriageQueue(snapshot) {
+      const waiting = (snapshot && Array.isArray(snapshot.waiting)) ? snapshot.waiting : [];
+      const list = document.getElementById('queue-list');
+      list.innerHTML = '';
+      document.getElementById('badge-triage-count').textContent = `${waiting.length} Pacientes`;
+      if (waiting.length === 0) {
+        selectedTicketPublicId = null;
+        document.getElementById('cur-ticket').textContent = '--';
+        document.getElementById('cur-name').textContent = 'Nenhum paciente aguardando triagem';
+        list.innerHTML = '<div style="padding:1rem;color:#94a3b8;font-size:0.85rem;">Fila vazia no momento.</div>';
+        return;
+      }
+      waiting.forEach((item, idx) => {
+        const card = document.createElement('div');
+        const isActive = selectedTicketPublicId ? (item.public_id === selectedTicketPublicId) : idx === 0;
+        card.className = 'triage-patient-card' + (isActive ? ' active' : '');
+        card.innerHTML = `
+          <div class="triage-card-top">
+            <span class="triage-ticket-code"></span>
+            <span class="triage-time-wait">${item.prioritaria ? 'Prioritário' : 'Normal'}</span>
+          </div>
+          <div class="triage-patient-name"></div>
+          <div class="triage-patient-service"></div>
+        `;
+        card.querySelector('.triage-ticket-code').textContent = item.codigo;
+        card.querySelector('.triage-patient-name').textContent = item.cidadao_nome || item.servico_nome;
+        card.querySelector('.triage-patient-service').textContent = item.queixa_principal || item.servico_nome || 'Aguardando classificação';
+        card.onclick = () => selectPatientFromItem(card, item);
+        list.appendChild(card);
+        if (isActive) selectPatientFromItem(card, item);
+      });
+    }
+
+    function selectPatientFromItem(card, item) {
       document.querySelectorAll('.triage-patient-card').forEach(c => c.classList.remove('active'));
       card.classList.add('active');
-
-      document.getElementById('cur-ticket').textContent = ticket;
-      document.getElementById('cur-name').textContent = name;
-      document.getElementById('cur-meta').textContent = meta;
-      document.getElementById('cur-cns').textContent = cns;
-
+      selectedTicketPublicId = item.public_id;
+      document.getElementById('cur-ticket').textContent = item.codigo;
+      document.getElementById('cur-name').textContent = item.cidadao_nome || item.servico_nome || 'Cidadão';
+      document.getElementById('cur-meta').textContent = item.servico_nome || 'Atendimento SUS';
+      document.getElementById('cur-cns').textContent = item.detalhe_prioridade || 'Sem CNS vinculado';
       const prioTag = document.getElementById('cur-prio');
-      if (isPrio) {
+      if (item.prioritaria) {
         prioTag.style.display = 'inline-block';
-        prioTag.textContent = 'Prioridade por Lei';
+        prioTag.textContent = item.detalhe_prioridade || 'Prioridade por Lei';
       } else {
         prioTag.style.display = 'none';
       }
+    }
 
-      loadDiscriminators();
+    function selectPatient(card, ticket, name, meta, cns, service, isPrio) {
+      selectPatientFromItem(card, { public_id: selectedTicketPublicId, codigo: ticket, cidadao_nome: name, servico_nome: service, detalhe_prioridade: cns, prioritaria: isPrio });
     }
 
     function callNextForTriage() {
       const first = document.querySelector('.triage-patient-card');
-      if (first) {
-        first.click();
-        const ticket = document.getElementById('cur-ticket').textContent;
-        const name = document.getElementById('cur-name').textContent;
-
-        // Emite som de chamada na sala de espera
-        queueChannel.postMessage({
-          type: 'DOCTOR_CALLED',
-          ticket: ticket,
-          patient: name,
-          room: 'Sala de Triagem 01',
-          doctor: 'Enfª. Juliana Mendonça',
-          specialty: 'Acolhimento & Classificação de Risco',
-          triage: 'yellow',
-          timestamp: Date.now()
-        });
-
-        alert(`Chamando ${name} (${ticket}) para a Sala de Triagem 01.`);
-      }
+      if (first) first.click();
     }
 
     function recallTriagePatient() {
       const ticket = document.getElementById('cur-ticket').textContent;
       const name = document.getElementById('cur-name').textContent;
       queueChannel.postMessage({
-        type: 'DOCTOR_CALLED',
+        type: 'CALL_TICKET',
         ticket: ticket,
         patient: name,
         room: 'Sala de Triagem 01',
-        doctor: 'Enfª. Juliana Mendonça',
-        specialty: 'Acolhimento & Classificação de Risco',
-        triage: currentColor,
-        timestamp: Date.now()
+        doctor: 'Enfermagem / Acolhimento',
+        triageColor: currentColor,
+        triageLabel: `Classificação Manchester: ${currentColor.toUpperCase()}`
       });
-      alert(`Rechamando ${ticket} no painel da SmartTV.`);
     }
 
-    function dispatchToDoctorQueue() {
-      const ticket = document.getElementById('cur-ticket').textContent;
-      const name = document.getElementById('cur-name').textContent;
-      const pa = document.getElementById('v-pa').value;
-      const gli = document.getElementById('v-gli').value;
-      const dor = document.getElementById('v-dor').value;
+    async function dispatchToDoctorQueue() {
+      if (!selectedTicketPublicId) {
+        alert('Selecione ou emita uma senha primeiro para salvar a triagem.');
+        return;
+      }
+      const paRaw = (document.getElementById('v-pa').value || '').split('/');
+      const paSis = parseInt(paRaw[0], 10) || null;
+      const paDia = parseInt(paRaw[1], 10) || null;
+      const fc = parseInt(document.getElementById('v-fc').value, 10) || null;
+      const fr = parseInt(document.getElementById('v-fr').value, 10) || null;
+      const temp = parseFloat(document.getElementById('v-temp').value) || null;
+      const spo2 = parseInt(document.getElementById('v-spo2').value, 10) || null;
+      const gli = parseInt(document.getElementById('v-gli').value, 10) || null;
+      const dor = parseInt(document.getElementById('v-dor').value, 10) || 0;
+      const flowSel = document.getElementById('flowchart-select');
+      const flowLabel = flowSel ? flowSel.options[flowSel.selectedIndex].text : 'Acolhimento';
+      const activeDisc = document.querySelector('.disc-item.selected span');
+      const discriminador = activeDisc ? activeDisc.textContent : flowLabel;
+      const notes = document.getElementById('nurse-notes').value || discriminador;
 
-      // Dispara para o Console do Médico (Novo SGA)
+      const res = await fetch(TRIAGE_SAVE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+          ticket_public_id: selectedTicketPublicId,
+          fluxograma: flowLabel,
+          discriminador: discriminador,
+          cor: colorToManchesterEnum(currentColor),
+          pa_sistolica: paSis,
+          pa_diastolica: paDia,
+          frequencia_cardiaca: fc,
+          frequencia_respiratoria: fr,
+          temperatura: temp,
+          saturacao_o2: spo2,
+          glicemia: gli,
+          escala_dor: dor,
+          queixa_principal: notes
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data.error || 'Erro ao gravar triagem Manchester.');
+        return;
+      }
+
       queueChannel.postMessage({
-        type: 'TRIAGE_COMPLETED',
-        ticket: ticket,
-        patient: name,
-        triage: currentColor,
-        vitals: { pa, gli, dor },
-        timestamp: Date.now()
+        type: 'CALL_TICKET',
+        ticket: data.classification ? document.getElementById('cur-ticket').textContent : '',
+        patient: document.getElementById('cur-name').textContent,
+        triageColor: currentColor
       });
 
-      alert(`Classificação Manchester concluída com sucesso!\n\nPaciente: ${name}\nSenha: ${ticket}\nClassificação: ${currentColor.toUpperCase()}\n\nO paciente foi encaminhado e já aparece na fila priorizada do Consultório Médico 03.`);
-
-      // Remove da fila da triagem
-      const activeCard = document.querySelector('.triage-patient-card.active');
-      if (activeCard) {
-        activeCard.remove();
-        const remaining = document.querySelectorAll('.triage-patient-card').length;
-        document.getElementById('badge-triage-count').textContent = `${remaining} Pacientes`;
-        if (remaining > 0) {
-          document.querySelector('.triage-patient-card').click();
-        } else {
-          document.getElementById('cur-ticket').textContent = '---';
-          document.getElementById('cur-name').textContent = 'Nenhum paciente aguardando triagem';
-        }
-      }
+      if (data.snapshot) renderTriageQueue(data.snapshot);
+      alert('Classificação Manchester salva no banco e fila priorizada!');
     }
 
     // Inicialização
     loadDiscriminators();
+    renderTriageQueue(INITIAL_SNAPSHOT);
 
     // Atalhos de Teclado
     window.addEventListener('keydown', (e) => {

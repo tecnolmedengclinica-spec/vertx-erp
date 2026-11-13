@@ -612,18 +612,18 @@
   <main>
     <!-- CARD GIGANTE DE CHAMADA ATUAL -->
     <section class="hero-call-card" id="call-card">
-      <div class="triage-strip yellow" id="triage-banner">
-        <span id="triage-text">Classificação Manchester: Amarelo (Urgente)</span>
+      <div class="triage-strip blue" id="triage-banner">
+        <span id="triage-text">Aguardando próxima chamada de atendimento</span>
         <div class="triage-live-tag">
           <span class="live-dot"></span>
-          <span>Chamada Ativa</span>
+          <span>Painel em Tempo Real</span>
         </div>
       </div>
 
       <div class="ticket-center">
         <div class="ticket-label">Senha de Atendimento</div>
-        <div class="ticket-number" id="ticket-num">PRE-042</div>
-        <div class="patient-name-box" id="patient-name">Maria Santos da Silva</div>
+        <div class="ticket-number" id="ticket-num">--</div>
+        <div class="patient-name-box" id="patient-name">Aguardando chamada</div>
 
         <div class="sound-wave">
           <div class="sound-bar"></div>
@@ -637,13 +637,13 @@
       <div class="destination-row">
         <div class="dest-column">
           <h4>Destino / Encaminhamento</h4>
-          <strong id="dest-room">Consultório 03</strong>
-          <span id="dest-specialty">Clínica Médica Geral / APS</span>
+          <strong id="dest-room">Recepção / Acolhimento</strong>
+          <span id="dest-specialty">{{ branding.unidade_nome|default:"Unidade Municipal de Saúde" }}</span>
         </div>
         <div class="dest-column">
           <h4>Profissional Responsável</h4>
-          <strong id="dest-doctor">Dra. Beatriz Carvalho</strong>
-          <span>CRM/SE 4.821 · Equipe Saúde da Família 01</span>
+          <strong id="dest-doctor">Equipe de Plantão</strong>
+          <span id="dest-doctor-meta">{{ branding.nome_institucional|default:"Secretaria Municipal de Saúde" }}</span>
         </div>
       </div>
     </section>
@@ -657,54 +657,10 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Próximos na Fila
           </h3>
-          <span class="badge-count" id="queue-count">4 aguardando</span>
+          <span class="badge-count" id="queue-count">0 aguardando</span>
         </div>
 
-        <div class="queue-items" id="queue-list">
-          <div class="queue-row">
-            <div class="queue-info-left">
-              <span class="queue-pill">PRE-043</span>
-              <div class="queue-name-block">
-                <span class="queue-name">Geraldo Moreira Sobrinho</span>
-                <span class="queue-type">Idoso 80+ · Triagem Acolhimento</span>
-              </div>
-            </div>
-            <span class="queue-triage-tag tag-yellow">Amarelo</span>
-          </div>
-
-          <div class="queue-row">
-            <div class="queue-info-left">
-              <span class="queue-pill">G-015</span>
-              <div class="queue-name-block">
-                <span class="queue-name">Juliana Mendonça Lima</span>
-                <span class="queue-type">Gestante · Pré-Natal</span>
-              </div>
-            </div>
-            <span class="queue-triage-tag tag-yellow">Amarelo</span>
-          </div>
-
-          <div class="queue-row">
-            <div class="queue-info-left">
-              <span class="queue-pill">N-098</span>
-              <div class="queue-name-block">
-                <span class="queue-name">Lucas Albuquerque Pinto</span>
-                <span class="queue-type">Consulta Médica Geral</span>
-              </div>
-            </div>
-            <span class="queue-triage-tag tag-green">Verde</span>
-          </div>
-
-          <div class="queue-row">
-            <div class="queue-info-left">
-              <span class="queue-pill">N-099</span>
-              <div class="queue-name-block">
-                <span class="queue-name">Tereza Cristina Barbosa</span>
-                <span class="queue-type">Retorno de Exames</span>
-              </div>
-            </div>
-            <span class="queue-triage-tag tag-green">Verde</span>
-          </div>
-        </div>
+        <div class="queue-items" id="queue-list"></div>
       </div>
 
       <!-- HISTÓRICO DE RECENTES -->
@@ -717,23 +673,7 @@
           <span class="badge-count">Hoje</span>
         </div>
 
-        <div class="history-items" id="history-list">
-          <div class="history-row">
-            <strong>PRE-041</strong>
-            <span>Roberto Carlos Alves</span>
-            <small>Consultório 03 · 10:14</small>
-          </div>
-          <div class="history-row">
-            <strong>N-097</strong>
-            <span>Fernando Diniz Rocha</span>
-            <small>Odontologia · 10:06</small>
-          </div>
-          <div class="history-row">
-            <strong>VAC-012</strong>
-            <span>Sofia Helena de Jesus</span>
-            <small>Sala de Vacinas · 09:58</small>
-          </div>
-        </div>
+        <div class="history-items" id="history-list"></div>
       </div>
     </aside>
   </main>
@@ -751,6 +691,7 @@
     </div>
   </footer>
 
+  {{ snapshot|json_script:"realtime-data" }}
   <script>
     // 1. RELÓGIO E DATA AO VIVO
     function updateClock() {
@@ -878,7 +819,8 @@
       row.className = 'history-row';
       const now = new Date();
       const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      row.innerHTML = `<strong>${ticket}</strong><span>${name}</span><small>${room} · ${timeStr}</small>`;
+      row.replaceChildren();
+      ['strong', 'span', 'small'].forEach((tag, i) => { const el = document.createElement(tag); el.textContent = [ticket, name, `${room} · ${timeStr}`][i]; row.appendChild(el); });
       hist.insertBefore(row, hist.firstChild);
       if (hist.children.length > 4) hist.removeChild(hist.lastChild);
     }
@@ -888,59 +830,129 @@
       document.getElementById('queue-count').textContent = `${count} aguardando`;
     }
 
-    // 6. SINCRONISMO CROSS-TAB COM O TOTEM E CONSOLE DO MÉDICO
-    const queueChannel = new BroadcastChannel('vertyx_health_queue');
+    // 6. SINCRONISMO REAL COM BANCO + CROSS-TAB
+    const QUEUE_API_URL = "{% url 'rh_municipal_public:saude_queue_api' %}";
+    const INITIAL_SNAPSHOT = JSON.parse(document.getElementById("realtime-data").textContent);
+    let lastCalledSignature = null;
 
+    function triageCssFromCor(cor) {
+      const m = { VERMELHO: 'red', LARANJA: 'red', AMARELO: 'yellow', VERDE: 'green', AZUL: 'blue' };
+      return m[cor] || 'blue';
+    }
+    function tagCssFromCor(cor) {
+      const m = { VERMELHO: 'tag-red', LARANJA: 'tag-red', AMARELO: 'tag-yellow', VERDE: 'tag-green', AZUL: 'tag-blue' };
+      return m[cor] || 'tag-blue';
+    }
+    function triageLabelFromRow(item) {
+      if (!item) return 'Aguardando próxima chamada de atendimento';
+      if (item.manchester_label) return `Classificação Manchester: ${item.manchester_label}`;
+      return item.prioritaria ? `Atendimento Prioritário · ${item.servico_nome || ''}` : (item.servico_nome || 'Atendimento Geral');
+    }
+
+    function renderSnapshot(snapshot, allowAnnounce) {
+      if (!snapshot) return;
+      const calling = snapshot.calling_now || null;
+      const waiting = Array.isArray(snapshot.waiting) ? snapshot.waiting : [];
+      const history = Array.isArray(snapshot.history) ? snapshot.history : [];
+
+      if (calling) {
+        const sig = `${calling.public_id || ''}:${calling.chamada_em || ''}`;
+        const tColor = triageCssFromCor(calling.manchester_cor);
+        const tLabel = triageLabelFromRow(calling);
+        const patient = calling.cidadao_nome || calling.servico_nome || 'Cidadão';
+        const room = calling.local_nome || 'Consultório / Sala';
+        const doctor = calling.profissional_nome || 'Profissional de Plantão';
+        document.getElementById('dest-specialty').textContent = calling.servico_nome || 'Atendimento SUS';
+
+        if (allowAnnounce && sig !== lastCalledSignature) {
+          performCall(calling.codigo, patient, room, doctor, tColor, tLabel);
+        } else {
+          document.getElementById('ticket-num').textContent = calling.codigo || '--';
+          document.getElementById('patient-name').textContent = patient;
+          document.getElementById('dest-room').textContent = room;
+          document.getElementById('dest-doctor').textContent = doctor;
+          document.getElementById('triage-banner').className = `triage-strip ${tColor}`;
+          document.getElementById('triage-text').textContent = tLabel;
+        }
+        lastCalledSignature = sig;
+      }
+
+      const queueEl = document.getElementById('queue-list');
+      queueEl.innerHTML = '';
+      waiting.slice(0, 8).forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'queue-row';
+        const left = document.createElement('div');
+        left.className = 'queue-info-left';
+        const pill = document.createElement('span');
+        pill.className = 'queue-pill';
+        pill.textContent = item.codigo;
+        const nb = document.createElement('div');
+        nb.className = 'queue-name-block';
+        const nm = document.createElement('span');
+        nm.className = 'queue-name';
+        nm.textContent = item.cidadao_nome || item.servico_nome;
+        const tp = document.createElement('span');
+        tp.className = 'queue-type';
+        tp.textContent = `${item.servico_nome}${item.detalhe_prioridade ? ' · ' + item.detalhe_prioridade : ''}`;
+        nb.appendChild(nm);
+        nb.appendChild(tp);
+        left.appendChild(pill);
+        left.appendChild(nb);
+        const tag = document.createElement('span');
+        tag.className = `queue-triage-tag ${tagCssFromCor(item.manchester_cor)}`;
+        tag.textContent = item.manchester_label || (item.prioritaria ? 'Prioritário' : 'Normal');
+        row.appendChild(left);
+        row.appendChild(tag);
+        queueEl.appendChild(row);
+      });
+      document.getElementById('queue-count').textContent = `${waiting.length} aguardando`;
+
+      const histEl = document.getElementById('history-list');
+      histEl.innerHTML = '';
+      history.slice(0, 5).forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'history-row';
+        const s = document.createElement('strong');
+        s.textContent = item.codigo;
+        const sp = document.createElement('span');
+        sp.textContent = item.cidadao_nome || item.servico_nome;
+        const sm = document.createElement('small');
+        const hora = item.chamada_em ? new Date(item.chamada_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : '';
+        sm.textContent = `${item.local_nome || 'Atendimento'}${hora ? ' · ' + hora : ''}`;
+        row.appendChild(s);
+        row.appendChild(sp);
+        row.appendChild(sm);
+        histEl.appendChild(row);
+      });
+    }
+
+    renderSnapshot(INITIAL_SNAPSHOT, false);
+
+    async function refreshQueueFromServer() {
+      try {
+        const res = await fetch(QUEUE_API_URL, { headers: { 'Accept': 'application/json' } });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok) {
+            const snap = data.snapshot || data;
+            if (Array.isArray(snap.waiting) || snap.calling_now !== undefined) {
+              renderSnapshot(snap, true);
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    setInterval(refreshQueueFromServer, 3000);
+
+    const queueChannel = new BroadcastChannel('vertyx_health_queue');
     queueChannel.onmessage = (event) => {
       const data = event.data;
       if (!data) return;
-
-      if (data.type === 'CALL_TICKET') {
-        // Alguém chamou uma senha no Console do Médico!
-        addToHistory(
-          document.getElementById('ticket-num').textContent,
-          document.getElementById('patient-name').textContent,
-          document.getElementById('dest-room').textContent
-        );
-        performCall(
-          data.ticket,
-          data.patient || 'Paciente Chamado',
-          data.room || 'Consultório 03',
-          data.doctor || 'Dra. Beatriz Carvalho',
-          data.triageColor || 'yellow',
-          data.triageLabel || 'Classificação Manchester: Amarelo (Urgente)'
-        );
-      } else if (data.type === 'NEW_TICKET') {
-        // Alguém emitiu senha no Totem de entrada!
-        addNewTicketToQueueList(data);
-      } else if (data.type === 'NO_SHOW') {
-        const bannerTextEl = document.getElementById('triage-text');
-        bannerTextEl.textContent = `Atenção: Senha ${data.ticket} registrada como Não Compareceu`;
-        setTimeout(() => {
-          bannerTextEl.textContent = 'Aguardando próxima chamada de atendimento';
-        }, 6000);
+      if (data.type === 'CALL_TICKET' || data.type === 'NEW_TICKET' || data.type === 'NO_SHOW') {
+        refreshQueueFromServer();
       }
     };
-
-    function addNewTicketToQueueList(data) {
-      const list = document.getElementById('queue-list');
-      const row = document.createElement('div');
-      row.className = 'queue-row';
-      const tagClass = data.prefix === 'PRE' ? 'tag-yellow' : data.prefix === 'GER' ? 'tag-green' : 'tag-blue';
-      const tagLabel = data.prefix === 'PRE' ? 'Prioritário' : 'Normal';
-      row.innerHTML = `
-        <div class="queue-info-left">
-          <span class="queue-pill" style="border-color:#38bdf8; color:#38bdf8;">${data.ticket}</span>
-          <div class="queue-name-block">
-            <span class="queue-name">${data.service}</span>
-            <span class="queue-type">Emitido no Totem às ${data.time}</span>
-          </div>
-        </div>
-        <span class="queue-triage-tag ${tagClass}">${tagLabel}</span>
-      `;
-      list.appendChild(row);
-      updateQueueCount();
-    }
 
     // Inicia vozes quando prontas no browser
     if ('speechSynthesis' in window) {

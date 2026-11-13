@@ -3,6 +3,7 @@ import hashlib
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -10,10 +11,11 @@ from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from platform_core.context import current_organization, tenant_context
 from platform_core.models import Organization
+from . import cidadao_tributario_services as ct_svc
 from . import phase_e_models as m
 from . import phase_e_services as svc
 from .phase_e_forms import (
@@ -456,6 +458,8 @@ def public_citizen_portal(request, slug):
         {'code': 'transparencia', 'title': 'Transparência pública', 'description': 'Consulte publicações revisadas e liberadas pelo órgão.', 'url': reverse('rh_municipal_public:public_transparency', args=[slug])},
         {'code': 'ouvidoria', 'title': 'Ouvidoria', 'description': 'Envie manifestação e acompanhe o protocolo com sua chave privada.', 'url': reverse('rh_municipal_public:public_ombudsman_form', args=[slug])},
         {'code': 'esic', 'title': 'E-SIC', 'description': 'Registre pedido de acesso à informação e acompanhe a resposta.', 'url': reverse('rh_municipal_public:public_esic_form', args=[slug])},
+        {'code': 'processo_digital', 'title': 'Central do Cidadão (gov.br)', 'description': 'Acesse seus protocolos digitais, requerimentos e acompanhamento online via gov.br.', 'url': reverse('rh_municipal_public:public_citizen_central', args=[slug])},
+        {'code': 'tributos_municipais', 'title': 'Portal Tributário & CND', 'description': 'Consulte guias DAM (IPTU/ISS/ITBI) e valide a autenticidade de Certidões Negativas (CND).', 'url': reverse('rh_municipal_public:public_certificate_validate', args=[slug])},
     ]
     available = [row for row in services if svc.public_module_available(org, row['code'])]
     response = render(request, 'rh_municipal/phase_j_portal.html', {'organization': org, 'services': available})
@@ -554,13 +558,233 @@ def public_transparency(request, slug):
     return response
 
 
+def _resolve_citizen_org(request, slug=None):
+    explicit_slug = (slug or request.GET.get('org') or request.POST.get('org') or '').strip()
+    if explicit_slug:
+        return get_object_or_404(Organization.objects.filter(status=Organization.Status.ACTIVE), slug=explicit_slug)
+    org = current_organization()
+    if org:
+        return org
+    last_slug = request.session.get('citizen_last_org_slug') if hasattr(request, 'session') else None
+    if last_slug:
+        org = Organization.objects.filter(slug=last_slug, status=Organization.Status.ACTIVE).first()
+    return org
+
+
 @require_GET
-def citizen_portal_inbox(request):
-    """Central de Atendimento ao Cidadão e Inbox de Protocolos (Edital Poço Redondo)."""
-    from .phase_g_views import get_tenant_branding
-    branding = get_tenant_branding(request)
-    return render(request, 'rh_municipal/citizen_portal_inbox.html', {
-        'title': 'Central do Cidadão',
-        'subtitle': 'Atendimento Digital e Acompanhamento de Protocolos',
-        'branding': branding,
+def public_govbr_start(request, slug):
+    """Start Login Único gov.br OIDC + PKCE or local homologation login for municipality."""
+    org = get_object_or_404(Organization.objects.filter(status=Organization.Status.ACTIVE), slug=slug)
+    target_url, _is_local = ct_svc.build_govbr_authorize_flow(org, request)
+    return redirect(target_url)
+
+
+@require_http_methods(['GET', 'POST'])
+def public_govbr_homolog(request, slug):
+    """Homologation gov.br identity verification screen when Serpro client_id is in sandbox mode."""
+    org = get_object_or_404(Organization.objects.filter(status=Organization.Status.ACTIVE), slug=slug)
+    ct_svc.require_local_govbr_demo(request)
+    cfg = ct_svc.get_or_init_govbr_config(org)
+    if not cfg.ativo or not cfg.modo_homologacao_local or cfg.ambiente != 'HOMOLOGACAO':
+        raise PermissionDenied('Simulação gov.br indisponível.')
+    state = request.GET.get('state') or request.POST.get('state') or ''
+    if request.method == 'POST':
+        sess_oidc = request.session.get(f'govbr_oidc_{org.pk}', {})
+        if not state or not sess_oidc.get('state') or sess_oidc.get('state') != state:
+            return HttpResponse('Estado OIDC inválido ou expirado.', status=400)
+        try:
+            ct_svc.authenticate_govbr_citizen(
+                org, request,
+                cpf=request.POST.get('cpf', ''),
+                nome=request.POST.get('nome', ''),
+                email=request.POST.get('email', ''),
+                telefone=request.POST.get('telefone', ''),
+                nivel=request.POST.get('nivel', 'PRATA'),
+                origem='GOVBR_HOMOLOGACAO_LOCAL',
+            )
+        except ValidationError as exc:
+            return render(request, 'rh_municipal/public_govbr_login.html', {
+                'organization': org,
+                'govbr_config': cfg,
+                'state': state,
+                'error': '; '.join(exc.messages),
+            }, status=400)
+        request.session.pop(f'govbr_oidc_{org.pk}', None)
+        return redirect('rh_municipal_public:public_citizen_central', slug=org.slug)
+
+    return render(request, 'rh_municipal/public_govbr_login.html', {
+        'organization': org,
+        'govbr_config': cfg,
+        'state': state,
     })
+
+
+@require_GET
+def public_govbr_callback(request, slug):
+    # Fail closed until authorization-code exchange and JWT validation are implemented.
+    return HttpResponse('Integração oficial gov.br ainda não homologada.', status=503)
+
+
+@require_POST
+def public_govbr_logout(request, slug):
+    org = get_object_or_404(Organization.objects.filter(status=Organization.Status.ACTIVE), slug=slug)
+    ct_svc.clear_govbr_session(org, request)
+    messages.info(request, 'Sessão gov.br encerrada com segurança.')
+    return redirect('rh_municipal_public:public_citizen_central', slug=org.slug)
+
+
+@require_http_methods(['GET', 'POST'])
+def public_certificate_validate(request, slug):
+    """Validação pública de autenticidade de Certidão Tributária (CND / CPEN) e emissão rápida."""
+    org = get_object_or_404(Organization.objects.filter(status=Organization.Status.ACTIVE), slug=slug)
+    if not svc.public_module_available(org, 'tributos_municipais'):
+        raise Http404
+    numero = request.GET.get('numero') or request.POST.get('numero') or ''
+    codigo = request.GET.get('codigo') or request.POST.get('codigo') or ''
+    result = ct_svc.validate_tax_certificate_public(org, numero=numero, codigo_autenticacao=codigo) if (numero or codigo) else None
+    govbr_sess = ct_svc.get_active_govbr_session(org, request)
+    response = render(request, 'rh_municipal/public_cnd_validate.html', {
+        'organization': org,
+        'numero': numero,
+        'codigo': codigo,
+        'result': result,
+        'govbr_session': govbr_sess,
+    })
+    response['Cache-Control'] = 'private, no-store'
+    return response
+
+
+@require_http_methods(['GET', 'POST'])
+def public_citizen_central(request, slug):
+    return _render_citizen_portal_inbox(request, slug=slug)
+
+
+@require_http_methods(['GET', 'POST'])
+def citizen_portal_inbox(request):
+    """Central de Atendimento ao Cidadão e Caixa de Protocolos Gov.br conectada ao banco real."""
+    return _render_citizen_portal_inbox(request, slug=None)
+
+
+def _render_citizen_portal_inbox(request, slug=None):
+    import json
+    org = _resolve_citizen_org(request, slug=slug)
+    if not org or not any(svc.public_module_available(org, module) for module in ('processo_digital', 'saude_sus', 'tributos_municipais')):
+        raise Http404('Nenhuma Prefeitura ativa encontrada.')
+
+    request.session['citizen_last_org_slug'] = org.slug
+    govbr_sess = ct_svc.get_active_govbr_session(org, request)
+    govbr_cfg = ct_svc.get_or_init_govbr_config(org)
+
+    # Branding strictly reflecting the resolved tenant org
+    from .models import PerfilPrefeitura
+    perfil = PerfilPrefeitura.all_objects.filter(organization=org).first()
+    branding = {
+        'orgao_gestor': 'Atendimento ao Cidadão',
+        'unidade_nome': 'Portal do Cidadão',
+        'cor_primaria': '#0284c7',
+        'cor_secundaria': '#10b981',
+        'nome_institucional': (perfil.nome_institucional if perfil and perfil.nome_institucional else org.nome_fantasia or org.razao_social),
+        'municipio': org.cidade or 'Município',
+        'uf': org.uf or 'BR',
+        'municipio_uf': f'{org.cidade} - {org.uf}' if org.cidade and org.uf else (org.nome_fantasia or org.razao_social),
+    }
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        target_redirect = reverse('rh_municipal_public:public_citizen_central', args=[org.slug])
+        if not govbr_sess:
+            messages.error(request, 'Faça login com sua conta gov.br (CPF) antes de protocolar ou emitir documentos.')
+            return redirect(target_redirect)
+        try:
+            if action == 'create_protocol':
+                proc, _ = ct_svc.create_citizen_digital_protocol(
+                    org,
+                    cpf=govbr_sess.cpf,
+                    nome=govbr_sess.nome,
+                    email=govbr_sess.email,
+                    telefone=govbr_sess.telefone,
+                    assunto=request.POST.get('assunto', ''),
+                    descricao=request.POST.get('descricao', ''),
+                    secretaria_id=request.POST.get('secretaria_id') or None,
+                    user=request.user,
+                )
+                messages.success(request, f'Protocolo digital {proc.numero} aberto com sucesso no sistema da Prefeitura!')
+            elif action == 'book_appointment':
+                appt, ticket = ct_svc.book_citizen_sus_appointment(
+                    org,
+                    cpf=govbr_sess.cpf,
+                    nome=govbr_sess.nome,
+                    unit_id=request.POST.get('unidade_id'),
+                    procedure_code=request.POST.get('procedimento', '0301010064'),
+                    complaint=request.POST.get('queixa', ''),
+                    user=request.user,
+                )
+                messages.success(request, f'Consulta SUS agendada! Senha da fila na UBS: {ticket.codigo_formatado}.')
+            elif action == 'emit_cnd':
+                from platform_core.context import tenant_context
+                from .phase_f_models import ContribuinteMunicipal
+                with tenant_context(org):
+                    contrib = ContribuinteMunicipal.objects.filter(organization=org, documento=govbr_sess.cpf).first()
+                if contrib is None:
+                    raise ValidationError('CPF sem cadastro tributário no município para emissão de certidão.')
+                cert = ct_svc.issue_tax_certificate(
+                    org, contribuinte_id=contrib.pk,
+                    finalidade=request.POST.get('finalidade', 'Portal do Cidadão gov.br'),
+                    actor=request.user,
+                )
+                messages.success(request, f'Certidão {cert.numero} emitida! Chave: {cert.codigo_autenticacao}.')
+            elif action == 'emit_dam':
+                from .phase_f_models import LancamentoTributarioMunicipal
+                if not LancamentoTributarioMunicipal.all_objects.filter(organization=org, pk=request.POST.get('launch_id'), contribuinte__documento=govbr_sess.cpf).exists():
+                    raise PermissionDenied('Lançamento fora do cadastro autorizado.')
+                dam = ct_svc.emit_dam(
+                    org, launch_id=request.POST.get('launch_id'),
+                    installment_id=request.POST.get('installment_id') or None,
+                    actor=request.user,
+                )
+                messages.success(request, f'Guia DAM {dam.numero_dam} emitida com linha digitável e Pix!')
+            else:
+                messages.error(request, 'Ação do Portal do Cidadão desconhecida.')
+        except (PermissionDenied, ValidationError) as exc:
+            messages.error(request, '; '.join(exc.messages) if isinstance(exc, ValidationError) else str(exc))
+        return redirect(target_redirect)
+
+    portal_data = ct_svc.load_citizen_portal_data(org, citizen_cpf=govbr_sess.cpf if govbr_sess else None)
+    active_orgs = list(Organization.objects.filter(
+        status=Organization.Status.ACTIVE, erp_accesses__erp__code='gestao-publica',
+        erp_accesses__enabled=True,
+    ).distinct().order_by('nome_fantasia')[:30])
+
+    # Serialize timeline data safely for JS inspection modal
+    timeline_map = {}
+    for proc in portal_data['open_processes'] + portal_data['archived_processes']:
+        timeline_map[proc.numero] = {
+            'numero': proc.numero,
+            'titulo': proc.titulo,
+            'status': proc.get_status_display(),
+            'secretaria': proc.secretaria.nome if proc.secretaria else 'Protocolo Geral',
+            'tramites': [
+                {
+                    'acao': tr.get_acao_display(),
+                    'data': timezone.localtime(tr.ocorrido_em).strftime('%d/%m/%Y %H:%M'),
+                    'descricao': tr.descricao,
+                }
+                for tr in proc.tramitacoes.all().order_by('ocorrido_em')
+            ],
+        }
+
+    response = render(request, 'rh_municipal/citizen_portal_inbox.html', {
+        'title': 'Central do Cidadão',
+        'subtitle': 'Atendimento Digital, Tributos e Acompanhamento via gov.br',
+        'organization': org,
+        'active_orgs': active_orgs,
+        'branding': branding,
+        'govbr_session': govbr_sess,
+        'govbr_config': govbr_cfg,
+        'cpf_masked': ct_svc._mask_cpf(govbr_sess.cpf) if govbr_sess else '',
+        'initials': ''.join(part[0] for part in govbr_sess.nome.split()[:2]).upper() if govbr_sess else 'GB',
+        'timeline_json': json.dumps(timeline_map, ensure_ascii=False), 'timeline_data': timeline_map,
+        **portal_data,
+    })
+    response['Cache-Control'] = 'private, no-store'
+    return response

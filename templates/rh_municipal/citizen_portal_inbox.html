@@ -662,21 +662,40 @@
         </div>
       </div>
 
+      {% if govbr_session %}
       <div class="user-profile-badge">
-        <div class="user-avatar">GS</div>
+        <div class="user-avatar">{{ initials|default:"CD" }}</div>
         <div class="user-details">
-          <div class="user-name">Guilherme Silva Santos</div>
+          <div class="user-name">{{ govbr_session.nome|default:"Cidadão Autenticado" }}</div>
           <div class="user-meta">
-            <span>CPF: ***.842.195-**</span>
-            <span class="seal-gold">★ Nível Ouro</span>
+            <span>CPF: {{ cpf_masked }}</span>
+            <span class="seal-gold">★ Nível {{ govbr_session.get_nivel_confiabilidade_display }}</span>
+            <form method="post" action="{% url 'rh_municipal_public:public_govbr_logout' slug=organization.slug %}" style="display:inline;margin-left:0.5rem;">{% csrf_token %}<button type="submit" style="background:none;border:none;color:#dc2626;font-weight:700;cursor:pointer;font-size:0.75rem;">Sair</button></form>
           </div>
         </div>
       </div>
+      {% else %}
+      <div class="user-profile-badge">
+        <div class="user-details" style="text-align:right;">
+          <div class="user-name">Acesso Visitante</div>
+          <div class="user-meta">
+            <a href="{% url 'rh_municipal_public:public_govbr_start' slug=organization.slug %}" style="background:#1351b4;color:#fff;padding:0.4rem 0.9rem;border-radius:99px;font-weight:700;text-decoration:none;font-size:0.82rem;">Entrar com gov.br</a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
     </div>
   </header>
 
   <!-- 3. CONTAINER PRINCIPAL -->
   <main class="container" id="conteudo">
+    {% if messages %}
+    <div style="margin-bottom:1rem;display:flex;flex-direction:column;gap:0.5rem;">
+      {% for message in messages %}
+      <div style="padding:0.85rem 1.1rem;border-radius:10px;background:{% if 'error' in message.tags %}#fee2e2;color:#991b1b;border:1px solid #fecaca{% else %}#dcfce7;color:#166534;border:1px solid #bbf7d0{% endif %};font-weight:600;font-size:0.9rem;">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
     <!-- HERO DE GEOLOCALIZAÇÃO AUTOMÁTICA -->
     <section class="geo-banner">
@@ -690,14 +709,14 @@
       <button class="btn-change-city" onclick="openCityModal()">Alterar Município</button>
     </section>
 
-    <!-- GRADE DE ATALHOS RÁPIDOS -->
+      <!-- GRADE DE ATALHOS RÁPIDOS -->
     <section class="services-grid">
-      <div class="service-card" onclick="switchInboxTab('archived')">
+      <div class="service-card" onclick="document.getElementById('cnd-emit-form') ? document.getElementById('cnd-emit-form').submit() : (window.location.href='{% url 'rh_municipal_public:public_govbr_start' slug=organization.slug %}')">
         <div class="service-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         </div>
-        <strong>Emitir Certidão Negativa (CND)</strong>
-        <span>Autenticação ICP-Brasil</span>
+        <strong>Emitir Certidão Tributária</strong>
+        <span>{{ clearance.tipo_elegivel|default:"CND / CPEN Automática" }}</span>
       </div>
 
       <div class="service-card" onclick="openAppointmentModal()">
@@ -753,209 +772,152 @@
         </button>
       </div>
 
-      <!-- AS 2 ABAS EXIGIDAS NO EDITAL -->
+      <!-- AS 2 ABAS -->
       <nav class="tabs-nav">
         <button class="tab-button active" id="tab-open-btn" onclick="switchInboxTab('open')">
-          <span>Processos em Aberto</span>
-          <span class="tab-counter" id="badge-open">3</span>
+          <span>Processos, Tributos & Agendamentos</span>
+          <span class="tab-counter" id="badge-open">{{ open_processes|length|add:health_appointments|length|add:tax_launches|length }}</span>
         </button>
         <button class="tab-button" id="tab-arch-btn" onclick="switchInboxTab('archived')">
-          <span>Arquivados & Concluídos</span>
-          <span class="tab-counter" id="badge-arch">3</span>
+          <span>Certidões, DAMs & Arquivados</span>
+          <span class="tab-counter" id="badge-arch">{{ certificates|length|add:dams|length|add:archived_processes|length }}</span>
         </button>
       </nav>
 
+      {% if govbr_session %}
+      <form id="cnd-emit-form" method="post" style="display:none;">{% csrf_token %}<input type="hidden" name="action" value="emit_cnd"><input type="hidden" name="finalidade" value="Portal do Cidadão gov.br"></form>
+      {% endif %}
+
       <!-- ABA 1: EM ABERTO -->
       <div class="tab-pane active" id="pane-open">
-        <!-- PROCESSO 1 -->
+        {% if not govbr_session %}
         <article class="protocol-card">
           <div class="protocol-top">
             <div>
-              <span class="protocol-code">SEC-SAUDE-2026/0842</span>
+              <span class="protocol-code">GOV.BR · OIDC</span>
               <div class="protocol-title">
-                <h3>Solicitação de Transporte Sanitário (TFD) para Aracaju</h3>
-                <p>Secretaria Municipal de Saúde · Setor de Regulação e Transporte</p>
+                <h3>Entre com sua conta gov.br para consultar processos, boletos e agendamentos</h3>
+                <p>Os dados fiscais, protocolos e consultas são isolados ao CPF autenticado dentro de {{ organization.display_name }}.</p>
               </div>
             </div>
-            <span class="protocol-status status-running">● Em Análise Médica</span>
-          </div>
-
-          <!-- STEPPER VISUAL DE TRAMITAÇÃO -->
-          <div class="tramitation-stepper">
-            <div class="step-item completed">
-              <div class="step-circle">✓</div>
-              <div class="step-title">Protocolado</div>
-              <div class="step-time">08/11 às 09:15</div>
-            </div>
-            <div class="step-item completed">
-              <div class="step-circle">✓</div>
-              <div class="step-title">Triagem de Laudo</div>
-              <div class="step-time">09/11 às 14:30</div>
-            </div>
-            <div class="step-item active">
-              <div class="step-circle">3</div>
-              <div class="step-title">Análise Reguladora</div>
-              <div class="step-time">Em andamento (24h)</div>
-            </div>
-            <div class="step-item">
-              <div class="step-circle">4</div>
-              <div class="step-title">Emissão de Guia</div>
-              <div class="step-time">Pendente</div>
-            </div>
-          </div>
-
-          <div class="protocol-actions">
-            <button class="btn-action-ghost" onclick="alert('Exibindo histórico de despachos do processo SEC-SAUDE-2026/0842.')">Histórico Completo</button>
-            <button class="btn-action-ghost" onclick="alert('Selecione o arquivo do laudo complementar em PDF ou imagem.')">Anexar Documento</button>
-            <button class="btn-action-primary" onclick="alert('Canal de comunicação aberto com o analista da Secretaria de Saúde.')">Mensagem ao Atendente</button>
+            <a class="btn-action-primary" href="{% url 'rh_municipal_public:public_govbr_start' slug=organization.slug %}" style="text-decoration:none;">Entrar com gov.br</a>
           </div>
         </article>
-
-        <!-- PROCESSO 2 -->
-        <article class="protocol-card">
-          <div class="protocol-top">
-            <div>
-              <span class="protocol-code">SEMOB-2026/0119</span>
-              <div class="protocol-title">
-                <h3>Alvará de Funcionamento Comercial · Restaurante Sertanejo</h3>
-                <p>Secretaria de Obras e Urbanismo · Setor de Posturas Municipais</p>
+        {% else %}
+          {% for proc in open_processes %}
+          <article class="protocol-card">
+            <div class="protocol-top">
+              <div>
+                <span class="protocol-code">{{ proc.numero }}</span>
+                <div class="protocol-title">
+                  <h3>{{ proc.titulo }}</h3>
+                  <p>{{ proc.secretaria.nome|default:"Protocolo Geral" }} · {{ proc.criado_em|date:"d/m/Y H:i" }}</p>
+                </div>
               </div>
+              <span class="protocol-status status-running">● {{ proc.get_status_display }}</span>
             </div>
-            <span class="protocol-status status-running">● Aguardando Vistoria</span>
-          </div>
+            <div class="protocol-actions">
+              <button class="btn-action-ghost" onclick="openTimelineModal('{{ proc.numero|escapejs }}')">Histórico de Tramitação</button>
+            </div>
+          </article>
+          {% endfor %}
 
-          <div class="tramitation-stepper">
-            <div class="step-item completed">
-              <div class="step-circle">✓</div>
-              <div class="step-title">Protocolado</div>
-              <div class="step-time">05/11 às 11:20</div>
-            </div>
-            <div class="step-item active">
-              <div class="step-circle">2</div>
-              <div class="step-title">Agendamento Vistoria</div>
-              <div class="step-time">Agendado p/ 12/11</div>
-            </div>
-            <div class="step-item">
-              <div class="step-circle">3</div>
-              <div class="step-title">Parecer Técnico</div>
-              <div class="step-time">Pendente</div>
-            </div>
-            <div class="step-item">
-              <div class="step-circle">4</div>
-              <div class="step-title">Emissão Alvará</div>
-              <div class="step-time">Pendente</div>
-            </div>
-          </div>
-
-          <div class="protocol-actions">
-            <button class="btn-action-ghost" onclick="alert('Histórico da Secretaria de Obras exibido.')">Histórico Completo</button>
-            <button class="btn-action-primary" onclick="alert('Vistoria agendada para 12/11 às 14:00.')">Ver Detalhes da Vistoria</button>
-          </div>
-        </article>
-
-        <!-- PROCESSO 3 -->
-        <article class="protocol-card">
-          <div class="protocol-top">
-            <div>
-              <span class="protocol-code">SEMED-2026/1940</span>
-              <div class="protocol-title">
-                <h3>Vaga e Rota de Transporte Escolar Rural · Santa Rosa do Ermírio</h3>
-                <p>Secretaria Municipal de Educação · Transporte Escolar</p>
+          {% for app in health_appointments %}
+          <article class="protocol-card">
+            <div class="protocol-top">
+              <div>
+                <span class="protocol-code" style="background:#e0f2fe;color:#0369a1;">SUS · {{ app.status }}</span>
+                <div class="protocol-title">
+                  <h3>Consulta SUS: {{ app.unidade_saude.unidade.nome }}</h3>
+                  <p>{{ app.atendido_em|date:"d/m/Y H:i" }}{% if app.profissional %} · {{ app.profissional.servidor.nome }}{% endif %}{% if app.procedimento_codigo %} · SIGTAP {{ app.procedimento_codigo }}{% endif %}</p>
+                </div>
               </div>
+              <span class="protocol-status status-running">● {{ app.get_status_display }}</span>
             </div>
-            <span class="protocol-status status-running">● Parecer Emitido</span>
-          </div>
+          </article>
+          {% endfor %}
 
-          <div class="tramitation-stepper">
-            <div class="step-item completed">
-              <div class="step-circle">✓</div>
-              <div class="step-title">Protocolado</div>
-              <div class="step-time">01/11 às 08:30</div>
+          {% for lanc in tax_launches %}
+          <article class="protocol-card">
+            <div class="protocol-top">
+              <div>
+                <span class="protocol-code" style="background:#fef3c7;color:#92400e;">{{ lanc.tributo }} · {{ lanc.numero }}</span>
+                <div class="protocol-title">
+                  <h3>Lançamento Tributário {{ lanc.exercicio }} — R$ {{ lanc.valor_total|floatformat:2 }}</h3>
+                  <p>Vencimento: {{ lanc.vencimento|date:"d/m/Y" }} · Contribuinte: {{ lanc.contribuinte.nome }}</p>
+                </div>
+              </div>
+              <span class="protocol-status status-running">{{ lanc.get_status_display }}</span>
             </div>
-            <div class="step-item completed">
-              <div class="step-circle">✓</div>
-              <div class="step-title">Mapeamento de Linha</div>
-              <div class="step-time">03/11 às 16:00</div>
+            <div class="protocol-actions">
+              {% if lanc.status == 'ABERTO' %}
+              <form method="post" style="display:inline;">{% csrf_token %}<input type="hidden" name="action" value="emit_dam"><input type="hidden" name="launch_id" value="{{ lanc.pk }}"><button type="submit" class="btn-action-primary">Gerar 2ª Via DAM (FEBRABAN + Pix)</button></form>
+              {% endif %}
             </div>
-            <div class="step-item active">
-              <div class="step-circle">3</div>
-              <div class="step-title">Confirmação Cidadão</div>
-              <div class="step-time">Aguardando aceite</div>
-            </div>
-            <div class="step-item">
-              <div class="step-circle">4</div>
-              <div class="step-title">Carteirinha Escolar</div>
-              <div class="step-time">Pendente</div>
-            </div>
-          </div>
+          </article>
+          {% endfor %}
 
-          <div class="protocol-actions">
-            <button class="btn-action-ghost" onclick="alert('Histórico exibido.')">Ver Parecer</button>
-            <button class="btn-action-primary" onclick="alert('Rota Linha 04 Rural aceita com sucesso!')">Confirmar Rota e Vaga</button>
-          </div>
-        </article>
+          {% if not open_processes and not health_appointments and not tax_launches %}
+          <article class="protocol-card"><p style="color:var(--gov-text-dim);">Nenhum protocolo aberto, consulta SUS ou lançamento pendente encontrado para este CPF em {{ organization.display_name }}.</p></article>
+          {% endif %}
+        {% endif %}
       </div>
 
-      <!-- ABA 2: ARQUIVADOS & CONCLUÍDOS -->
+      <!-- ABA 2: CERTIDÕES, DAMs & ARQUIVADOS -->
       <div class="tab-pane" id="pane-archived">
-        <!-- DOCUMENTO 1 -->
+        {% for dam in dams %}
         <article class="protocol-card">
           <div class="protocol-top">
             <div>
-              <span class="protocol-code" style="background:#dcfce7; color:#166534;">CND-2026/9941</span>
+              <span class="protocol-code" style="background:#e0f2fe;color:#0369a1;">DAM {{ dam.numero_dam }}</span>
               <div class="protocol-title">
-                <h3>Certidão Negativa de Débitos Municipais (CND)</h3>
-                <p>Secretaria de Finanças e Tributos · Chave ICP-Brasil: <strong>8F3A-92BC-4410-EF01-2026</strong></p>
+                <h3>Guia de Arrecadação Municipal — R$ {{ dam.valor_total|floatformat:2 }}</h3>
+                <p>Vencimento: {{ dam.vencimento|date:"d/m/Y" }} · Linha Digitável: <code>{{ dam.linha_digitavel }}</code></p>
               </div>
             </div>
-            <span class="protocol-status status-done">✓ Válida até 01/05/2027</span>
+            <span class="protocol-status status-done">{{ dam.get_status_display }}</span>
           </div>
-
-          <p style="font-size: 0.88rem; color: var(--gov-text-dim);">
-            Certidão emitida com sucesso com base no Art. 205 do Código Tributário Nacional. Documento assinado digitalmente com certificado ICP-Brasil Nível Ouro.
-          </p>
-
-          <div class="protocol-actions">
-            <button class="btn-action-ghost" onclick="alert('QR Code e chave de autenticidade ICP-Brasil conferidos: DOCUMENTO VÁLIDO.')">Validar Autenticidade</button>
-            <button class="btn-action-primary" onclick="alert('Iniciando download do arquivo PDF oficial da Certidão Negativa...')">📥 Baixar Certidão PDF</button>
-          </div>
+          {% if dam.pix_copia_cola %}<p style="font-size:0.78rem;word-break:break-all;color:var(--gov-text-dim);"><strong>Pix Copia e Cola:</strong> <code>{{ dam.pix_copia_cola }}</code></p>{% endif %}
         </article>
+        {% endfor %}
 
-        <!-- DOCUMENTO 2 -->
+        {% for cert in certificates %}
         <article class="protocol-card">
           <div class="protocol-top">
             <div>
-              <span class="protocol-code" style="background:#f1f5f9; color:#475569;">HAB-2026/0441</span>
+              <span class="protocol-code" style="background:#dcfce7; color:#166534;">{{ cert.numero }}</span>
               <div class="protocol-title">
-                <h3>Carta de Habite-se Residencial · Loteamento Residencial Central</h3>
-                <p>Secretaria de Obras e Urbanismo · Concluído em 15/10/2026</p>
+                <h3>{{ cert.get_tipo_display }}</h3>
+                <p>Código de Verificação: <strong>{{ cert.codigo_autenticacao }}</strong> · {{ cert.finalidade }}</p>
               </div>
             </div>
-            <span class="protocol-status status-done">✓ Aprovado e Arquivado</span>
+            <span class="protocol-status status-done">{% if cert.valida_ate %}Válida até {{ cert.valida_ate|date:"d/m/Y" }}{% else %}{{ cert.tipo }}{% endif %}</span>
           </div>
-
+          <p style="font-size:0.85rem;color:var(--gov-text-dim);">Contribuinte: {{ cert.contribuinte.nome }}</p>
           <div class="protocol-actions">
-            <button class="btn-action-primary" onclick="alert('Baixando Habite-se digital autenticado.')">📥 Baixar Documento PDF</button>
+            <a class="btn-action-primary" href="{% url 'rh_municipal_public:public_certificate_validate' slug=organization.slug %}?codigo={{ cert.codigo_autenticacao }}" target="_blank" style="text-decoration:none;">Validar Autenticidade Pública</a>
           </div>
         </article>
+        {% endfor %}
 
-        <!-- DOCUMENTO 3 -->
+        {% for proc in archived_processes %}
         <article class="protocol-card">
           <div class="protocol-top">
             <div>
-              <span class="protocol-code" style="background:#f1f5f9; color:#475569;">VAC-2026/3012</span>
+              <span class="protocol-code" style="background:#f1f5f9; color:#475569;">{{ proc.numero }}</span>
               <div class="protocol-title">
-                <h3>Declaração de Vacinação Atualizada e-SUS APS</h3>
-                <p>Secretaria Municipal de Saúde · Unidade Básica de Saúde</p>
+                <h3>{{ proc.titulo }}</h3>
+                <p>{{ proc.secretaria.nome|default:"Protocolo Geral" }} · {{ proc.atualizado_em|date:"d/m/Y" }}</p>
               </div>
             </div>
-            <span class="protocol-status status-done">✓ Homologado</span>
-          </div>
-
-          <div class="protocol-actions">
-            <button class="btn-action-primary" onclick="alert('Baixando Comprovante Vacinal oficial.')">📥 Baixar Comprovante</button>
+            <span class="protocol-status status-done">✓ {{ proc.get_status_display }}</span>
           </div>
         </article>
+        {% endfor %}
+
+        {% if not dams and not certificates and not archived_processes %}
+        <article class="protocol-card"><p style="color:var(--gov-text-dim);">Nenhuma guia DAM, certidão ou processo concluído encontrado ainda para este CPF.</p></article>
+        {% endif %}
       </div>
     </section>
   </main>
@@ -968,30 +930,25 @@
         <button onclick="closeNewProtocolModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
       </div>
 
-      <form onsubmit="handleNewProtocol(event)">
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create_protocol">
         <div class="form-group">
           <label>Secretaria Municipal de Destino</label>
-          <select id="new-sec" required>
-            <option value="Secretaria de Saúde">Secretaria Municipal de Saúde</option>
-            <option value="Secretaria de Obras">Secretaria de Obras e Urbanismo</option>
-            <option value="Secretaria de Finanças">Secretaria de Finanças e Tributos</option>
-            <option value="Secretaria de Educação">Secretaria Municipal de Educação</option>
+          <select id="new-sec" name="secretaria_id">
+            <option value="">Protocolo Geral / Distribuição Automática</option>
+            {% for sec in secretarias %}
+            <option value="{{ sec.pk }}">{{ sec.nome }}</option>
+            {% endfor %}
           </select>
         </div>
 
         <div class="form-group">
           <label>Assunto do Requerimento</label>
-          <input type="text" id="new-subject" placeholder="Ex: Solicitação de exame especializado, poda de árvore..." required>
+          <input type="text" id="new-subject" name="assunto" placeholder="Ex: Solicitação de exame especializado, certidão..." required>
         </div>
 
         <div class="form-group">
           <label>Descrição Detalhada da Solicitação</label>
-          <textarea id="new-desc" rows="3" placeholder="Descreva os motivos e dados da sua solicitação..." required></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>Anexar Documento / Foto (Opcional)</label>
-          <input type="file" id="new-file">
+          <textarea id="new-desc" name="descricao" rows="3" placeholder="Descreva os motivos e dados da sua solicitação..." required></textarea>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
@@ -1002,83 +959,48 @@
     </div>
   </div>
 
-  <!-- 1. MODAL DE AGENDAMENTO DE CONSULTA SUS (PADRÃO MEDPLUM / MEU SUS DIGITAL) -->
+  <!-- 1. MODAL DE AGENDAMENTO DE CONSULTA SUS -->
   <div class="modal-overlay" id="appointment-modal">
     <div class="modal-box" style="max-width: 680px;">
       <div class="modal-head">
         <div>
           <h3>Agendar Consulta na Atenção Primária</h3>
-          <p style="font-size: 0.8rem; color: var(--gov-text-dim);">Rede Municipal de Saúde · Integração e-SUS APS</p>
+          <p style="font-size: 0.8rem; color: var(--gov-text-dim);">Rede Municipal de Saúde · {{ organization.display_name }}</p>
         </div>
         <button onclick="closeAppointmentModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
       </div>
 
-      <form onsubmit="handleNewAppointment(event)">
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="book_appointment">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
           <div class="form-group">
-            <label>Especialidade Desejada</label>
-            <select id="app-spec" required onchange="updateDoctorsList()">
-              <option value="Clínica Médica Geral">Clínica Médica Geral / APS</option>
-              <option value="Medicina de Família">Medicina de Família e Comunidade</option>
-              <option value="Pediatria">Pediatria</option>
-              <option value="Pré-Natal e Saúde da Mulher">Pré-Natal & Saúde da Mulher</option>
-              <option value="Odontologia">Odontologia e Saúde Bucal</option>
+            <label>Especialidade / Procedimento SUS</label>
+            <select id="app-spec" name="procedimento" required>
+              <option value="0301010064">Consulta Médica na Atenção Básica</option>
+              <option value="0301010030">Atendimento de Enfermagem / Pré-Natal</option>
+              <option value="0301010153">Consulta Odontológica Geral</option>
             </select>
           </div>
 
           <div class="form-group">
             <label>Unidade Básica de Saúde (UBS)</label>
-            <select id="app-unit" required>
-              <option value="UBS Central (Sede)">UBS Central (Sede)</option>
-              <option value="UBS Povoado Brejão">UBS Povoado Brejão</option>
-              <option value="Centro de Saúde Municipal">Centro de Saúde Municipal</option>
+            <select id="app-unit" name="unidade_id" required>
+              {% for u in health_units %}
+              <option value="{{ u.pk }}">{{ u.unidade.nome }}</option>
+              {% empty %}
+              <option value="">Nenhuma UBS ativa configurada</option>
+              {% endfor %}
             </select>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label>Profissional Designado</label>
-            <select id="app-doctor" required>
-              <option value="Dra. Beatriz Carvalho (CRM/SE 4.821)">Dra. Beatriz Carvalho (Clínica Geral)</option>
-              <option value="Dr. Marcos Vinícius Melo (CRM/SE 5.120)">Dr. Marcos Vinícius Melo (Med. Família)</option>
-              <option value="Dra. Camila Nogueira (CRM/SE 6.304)">Dra. Camila Nogueira (Pediatria)</option>
-              <option value="Dr. Fernando Diniz (CRO/SE 2.891)">Dr. Fernando Diniz (Dentista)</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Data Preferencial</label>
-            <input type="date" id="app-date" required value="2026-11-12">
-          </div>
-        </div>
-
         <div class="form-group">
-          <label>Horário Disponível</label>
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.25rem;">
-            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
-              <input type="radio" name="app-time" value="08:30" checked> 08:30
-            </label>
-            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
-              <input type="radio" name="app-time" value="09:15"> 09:15
-            </label>
-            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
-              <input type="radio" name="app-time" value="10:00"> 10:00
-            </label>
-            <label style="border:1px solid #cbd5e1; padding:0.5rem; border-radius:6px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:700;">
-              <input type="radio" name="app-time" value="11:30"> 11:30
-            </label>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Motivo da Consulta / Observações</label>
-          <input type="text" id="app-reason" placeholder="Ex: Avaliação de exames, dor crônica, renovação de receita" required>
+          <label>Motivo da Consulta / Queixa Principal</label>
+          <input type="text" id="app-reason" name="queixa" placeholder="Ex: Avaliação de exames, pressão arterial, renovação de receita" required>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
           <button type="button" class="btn-action-ghost" onclick="closeAppointmentModal()">Cancelar</button>
-          <button type="submit" class="btn-action-primary">Confirmar Agendamento</button>
+          <button type="submit" class="btn-action-primary">Confirmar Agendamento SUS</button>
         </div>
       </form>
     </div>
@@ -1216,11 +1138,9 @@
       <div class="form-group">
         <label>Selecione a Prefeitura / Município:</label>
         <select id="select-city-input" style="width:100%; padding:0.75rem; border-radius:8px; border:1px solid var(--gov-border); font-size:0.95rem; font-weight:600;">
-          <option value="Poço Redondo">Poço Redondo - SE</option>
-          <option value="Brejo Grande">Brejo Grande - SE</option>
-          <option value="Aracaju">Aracaju - SE</option>
-          <option value="Propriá">Propriá - SE</option>
-          <option value="Canindé de São Francisco">Canindé de São Francisco - SE</option>
+          {% for org_item in active_orgs %}
+          <option value="{{ org_item.slug }}" {% if org_item.slug == organization.slug %}selected{% endif %}>{{ org_item.display_name }}</option>
+          {% endfor %}
         </select>
       </div>
 
@@ -1231,7 +1151,21 @@
     </div>
   </div>
 
-  <script>
+  <!-- MODAL DE TRAMITAÇÃO REAL -->
+  <div class="modal-overlay" id="timeline-modal">
+    <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-head">
+        <h3 id="timeline-title">Histórico de Tramitação</h3>
+        <button onclick="document.getElementById('timeline-modal').classList.remove('open')" style="background:none;border:none;font-size:1.5rem;cursor:pointer;">&times;</button>
+      </div>
+      <div id="timeline-body" style="display:flex;flex-direction:column;gap:0.75rem;max-height:360px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  {{ timeline_data|json_script:"citizen-timeline-data" }}
+<script>
+    const PROCESS_TIMELINES = JSON.parse(document.getElementById("citizen-timeline-data").textContent);
+
     function switchInboxTab(tabKey) {
       document.getElementById('tab-open-btn').classList.toggle('active', tabKey === 'open');
       document.getElementById('tab-arch-btn').classList.toggle('active', tabKey === 'archived');
@@ -1252,7 +1186,6 @@
     function closeExamsModal() { document.getElementById('exams-modal').classList.remove('open'); }
 
     function openOuvidoriaModal() {
-      document.getElementById('new-sec').value = 'Secretaria de Saúde';
       document.getElementById('new-subject').value = 'Manifestação de Ouvidoria / E-SIC';
       openNewProtocolModal();
     }
@@ -1261,96 +1194,41 @@
     function closeCityModal() { document.getElementById('city-modal').classList.remove('open'); }
 
     function applyCitySelection() {
-      const city = document.getElementById('select-city-input').value;
-      document.querySelector('.geo-text p').innerHTML = `Você está conectado a partir de: <strong>${city} - SE</strong>. Serviços municipais e agendamento SUS ativados com sucesso.`;
-      document.querySelector('.gov-entity h1').textContent = `Prefeitura Municipal de ${city}`;
-      closeCityModal();
+      const slug = document.getElementById('select-city-input').value;
+      if (slug) {
+        window.location.href = `/gestao-publica/publico/${encodeURIComponent(slug)}/central/`;
+      }
     }
 
-    function handleNewProtocol(e) {
-      e.preventDefault();
-      const sec = document.getElementById('new-sec').value;
-      const subj = document.getElementById('new-subject').value;
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      const code = `PROT-2026/${randomNum}`;
-
-      createProtocolCard(code, subj, `${sec} · Protocolo Aberto Agora`, '● Protocolado');
-      closeNewProtocolModal();
-      switchInboxTab('open');
-      alert(`Protocolo gerado com sucesso!\nNúmero: ${code}\nVocê pode acompanhar os despachos e notificações aqui na sua Caixa de Entrada.`);
+    function openTimelineModal(numero) {
+      document.getElementById('timeline-title').textContent = `Tramitações · ${numero}`;
+      const body = document.getElementById('timeline-body');
+      body.innerHTML = '';
+      const entry = PROCESS_TIMELINES[String(numero)] || {};
+      const rows = Array.isArray(entry.tramites) ? entry.tramites : [];
+      if (rows.length === 0) {
+        body.innerHTML = '<p style="color:var(--gov-text-dim);">Nenhuma movimentação registrada ainda neste processo.</p>';
+      } else {
+        rows.forEach((tr) => {
+          const card = document.createElement('div');
+          card.style.cssText = 'border:1px solid var(--gov-border);border-radius:10px;padding:0.75rem;';
+          const h = document.createElement('strong');
+          h.textContent = tr.acao || 'Tramitação';
+          const d = document.createElement('p');
+          d.style.cssText = 'font-size:0.85rem;margin-top:0.25rem;color:var(--gov-text-dim);';
+          d.textContent = tr.descricao || '';
+          const tm = document.createElement('small');
+          tm.style.cssText = 'font-size:0.75rem;color:#64748b;';
+          tm.textContent = tr.data || '';
+          card.appendChild(h);
+          card.appendChild(d);
+          card.appendChild(tm);
+          body.appendChild(card);
+        });
+      }
+      document.getElementById('timeline-modal').classList.add('open');
     }
 
-    function handleNewAppointment(e) {
-      e.preventDefault();
-      const spec = document.getElementById('app-spec').value;
-      const unit = document.getElementById('app-unit').value;
-      const doc = document.getElementById('app-doctor').value;
-      const date = document.getElementById('app-date').value;
-      const time = document.querySelector('input[name="app-time"]:checked').value;
-      const reason = document.getElementById('app-reason').value;
-
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      const code = `CONS-2026/${randomNum}`;
-
-      createProtocolCard(
-        code,
-        `Consulta Agendada: ${spec} · ${date.split('-').reverse().join('/')} às ${time}`,
-        `${unit} · ${doc} · Motivo: ${reason}`,
-        '● Agendamento Confirmado'
-      );
-
-      closeAppointmentModal();
-      switchInboxTab('open');
-      alert(`Consulta agendada com sucesso no Sistema Municipal de Saúde!\nProtocolo: ${code}\nData: ${date.split('-').reverse().join('/')} às ${time}\nLocal: ${unit}\nProfissional: ${doc}\nCompareça com seu Cartão SUS e documento oficial.`);
-    }
-
-    function createProtocolCard(code, title, desc, statusText) {
-      const pane = document.getElementById('pane-open');
-      const card = document.createElement('article');
-      card.className = 'protocol-card';
-      card.innerHTML = `
-        <div class="protocol-top">
-          <div>
-            <span class="protocol-code">${code}</span>
-            <div class="protocol-title">
-              <h3>${title}</h3>
-              <p>${desc}</p>
-            </div>
-          </div>
-          <span class="protocol-status status-running">${statusText}</span>
-        </div>
-        <div class="tramitation-stepper">
-          <div class="step-item active">
-            <div class="step-circle">1</div>
-            <div class="step-title">Confirmado</div>
-            <div class="step-time">Agora</div>
-          </div>
-          <div class="step-item">
-            <div class="step-circle">2</div>
-            <div class="step-title">Recepção UBS</div>
-            <div class="step-time">No dia</div>
-          </div>
-          <div class="step-item">
-            <div class="step-circle">3</div>
-            <div class="step-title">Atendimento</div>
-            <div class="step-time">Pendente</div>
-          </div>
-          <div class="step-item">
-            <div class="step-circle">4</div>
-            <div class="step-title">Conclusão</div>
-            <div class="step-time">Pendente</div>
-          </div>
-        </div>
-        <div class="protocol-actions">
-          <button class="btn-action-ghost" onclick="alert('Comprovante oficial emitido sob o protocolo ${code}.')">Comprovante Digital</button>
-          <button class="btn-action-primary" onclick="alert('Seu agendamento está ativo e confirmado no sistema e-SUS APS.')">Ver Detalhes</button>
-        </div>
-      `;
-      pane.insertBefore(card, pane.firstChild);
-
-      const badge = document.getElementById('badge-open');
-      badge.textContent = parseInt(badge.textContent) + 1;
-    }
     // SINCRONISMO DINÂMICO DE IDENTIDADE VISUAL
     function applyDynamicBranding(b) {
       if (!b) return;

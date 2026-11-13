@@ -12,6 +12,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.http import require_GET
 
 from platform_core.context import current_organization
+from . import cidadao_tributario_services as ct_svc
 from . import phase_f_models as m
 from . import phase_f_services as svc
 from .phase_f_forms import (
@@ -85,10 +86,15 @@ def tributary_home(request):
     initial = {'request_id': uuid.uuid4()}
     context = {
         'contributors': scoped_queryset(request.user, m.ContribuinteMunicipal.objects.filter(organization=org)).order_by('nome')[:50],
-        'launches': scoped_queryset(request.user, m.LancamentoTributarioMunicipal.objects.filter(organization=org)).select_related('contribuinte', 'regra').order_by('-pk')[:50],
+        'properties': scoped_queryset(request.user, m.ImovelMunicipal.objects.filter(organization=org)).select_related('proprietario').order_by('inscricao')[:50],
+        'launches': scoped_queryset(request.user, m.LancamentoTributarioMunicipal.objects.filter(organization=org)).select_related('contribuinte', 'regra', 'imovel').order_by('-pk')[:50],
         'installments': scoped_queryset(request.user, m.ParcelaTributariaMunicipal.objects.filter(organization=org)).select_related('lancamento', 'lancamento__contribuinte').order_by('-pk')[:50],
         'payments': scoped_queryset(request.user, m.PagamentoArrecadacaoMunicipal.objects.filter(organization=org)).select_related('parcela').order_by('-pk')[:30],
         'debts': scoped_queryset(request.user, m.InscricaoDividaAtivaMunicipal.objects.filter(organization=org)).select_related('contribuinte', 'lancamento').order_by('-pk')[:30],
+        'dams': scoped_queryset(request.user, m.GuiaArrecadacaoDAM.objects.filter(organization=org)).select_related('contribuinte', 'lancamento').order_by('-emitida_em')[:40],
+        'certificates': scoped_queryset(request.user, m.CertidaoTributariaMunicipal.objects.filter(organization=org)).select_related('contribuinte', 'imovel').order_by('-emitida_em')[:30],
+        'itbis': scoped_queryset(request.user, m.SolicitacaoITBIMunicipal.objects.filter(organization=org)).select_related('imovel', 'transmitente', 'adquirente', 'lancamento').order_by('-criado_em')[:30],
+        'itbi_rules': scoped_queryset(request.user, m.RegraTributariaMunicipal.objects.filter(organization=org, tributo=m.RegraTributariaMunicipal.Tributo.ITBI, ativa=True)).order_by('-versao'),
         'rules': scoped_queryset(request.user, m.RegraTributariaMunicipal.objects.filter(organization=org)).order_by('tributo', '-versao')[:40],
         'contributor_form': ContributorForm(organization=org, actor=request.user),
         'rule_form': TaxRuleForm(organization=org, actor=request.user),
@@ -151,10 +157,39 @@ def tributary_home(request):
             require_municipal_permission(request.user, 'divida.manage', module=m.PHASE_F_MODULES['tributos'])
             if _execute(request, lambda: svc.cancel_active_debt(request.user, debt_id=request.POST.get('debt_id'), reason=request.POST.get('reason')), 'Inscrição cancelada com justificativa auditada.'):
                 return redirect('rh_municipal_public:tributary_home')
+        elif action == 'emit_dam':
+            require_municipal_permission(request.user, 'tributo.manage', module=m.PHASE_F_MODULES['tributos'])
+            if _execute(request, lambda: ct_svc.emit_dam(
+                org, launch_id=request.POST.get('launch_id'),
+                installment_id=request.POST.get('installment_id') or None, actor=request.user,
+            ), 'Guia DAM emitida com código de barras FEBRABAN Segmento 8 e Pix.'):
+                return redirect('rh_municipal_public:tributary_home')
+        elif action == 'issue_certidao':
+            require_municipal_permission(request.user, 'tributo.manage', module=m.PHASE_F_MODULES['tributos'])
+            if _execute(request, lambda: ct_svc.issue_tax_certificate(
+                org, contribuinte_id=request.POST.get('contribuinte_id'),
+                imovel_id=request.POST.get('imovel_id') or None,
+                finalidade=request.POST.get('finalidade', 'Fins Gerais e Licitações'),
+                actor=request.user,
+            ), 'Certidão Tributária (CND/CPEN) emitida com chave criptográfica.'):
+                return redirect('rh_municipal_public:tributary_home')
+        elif action == 'evaluate_itbi':
+            require_municipal_permission(request.user, 'tributo.manage', module=m.PHASE_F_MODULES['tributos'])
+            if _execute(request, lambda: ct_svc.evaluate_itbi_transfer(
+                request.user,
+                property_id=request.POST.get('property_id'),
+                seller_id=request.POST.get('seller_id'),
+                buyer_id=request.POST.get('buyer_id'),
+                valor_venal=request.POST.get('valor_venal'),
+                valor_transacao=request.POST.get('valor_transacao'),
+                rule_id=request.POST.get('rule_id'),
+                registry_office=request.POST.get('cartorio_matricula', ''),
+            ), 'Avaliação de ITBI e Guia DAM geradas conforme regra vigente.'):
+                return redirect('rh_municipal_public:tributary_home')
         else:
             raise PermissionDenied('Ação tributária não autorizada.')
-    return _render(request, title='Tributos e Arrecadação',
-        subtitle='Cadastros e lançamentos parametrizados. Regras legais, cobrança bancária e transmissão oficial ainda dependem de validação específica.',
+    return _render(request, title='Tributos, DAM, ITBI e Certidões (CND)',
+        subtitle='Gestão Tributária Municipal parametrizada (IPTU, ISS, ITBI, Taxas, DAM FEBRABAN/Pix, Dívida Ativa e Certidão Negativa).',
         module_code='tributos_municipais', **context)
 
 
@@ -180,16 +215,17 @@ def territory_home(request):
 def nfse_home(request):
     org = current_organization()
     _require_any(request, [('nfse.view', m.PHASE_F_MODULES['nfse']), ('nfse.manage', m.PHASE_F_MODULES['nfse'])])
-    notes = scoped_queryset(request.user, m.NotaServicoMunicipal.objects.filter(organization=org)).select_related('prestador', 'tomador').order_by('-pk')[:100]
+    notes = list(scoped_queryset(request.user, m.NotaServicoMunicipal.objects.filter(organization=org)).select_related('prestador', 'tomador').order_by('-pk')[:100])
+    note_rows = [{'note': n, 'rps': ct_svc.build_nfse_rps_preview(org, n)} for n in notes]
     form = NfseDraftForm(organization=org, actor=request.user)
     if request.method == 'POST':
         require_municipal_permission(request.user, 'nfse.manage', module=m.PHASE_F_MODULES['nfse'])
         form = NfseDraftForm(request.POST, organization=org, actor=request.user)
-        if form.is_valid() and _execute(request, lambda: svc.create_nfse_draft(request.user, data=form.cleaned_data), 'Rascunho NFS-e salvo. Nenhuma transmissão foi realizada.'):
+        if form.is_valid() and _execute(request, lambda: svc.create_nfse_draft(request.user, data=form.cleaned_data), 'Rascunho NFS-e salvo com XML RPS ABRASF. Nenhuma transmissão externa foi realizada.'):
             return redirect('rh_municipal_public:nfse_home')
-    return _render(request, title='NFS-e Municipal',
-        subtitle='Preparação de rascunhos. Emissão, cancelamento e transmissão oficial estão bloqueados até integração homologada.',
-        module_code='nfse_municipal', notes=notes, nfse_form=form)
+    return _render(request, title='NFS-e Municipal & Prévia RPS/ISS',
+        subtitle='Preparação de rascunhos com prévia XML ABRASF e cálculo ISS parametrizado. Transmissão oficial bloqueada até credenciamento municipal.',
+        module_code='nfse_municipal', notes=notes, note_rows=note_rows, nfse_form=form)
 
 
 @require_GET
